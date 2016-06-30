@@ -1,7 +1,7 @@
 agent
 ========
 
-A microservice that does micro things.
+This agent runs on compute nodes in a Rancher cluster. It receives events from the Rancher server, acts upon them, and returns response events.
 
 ## Building
 
