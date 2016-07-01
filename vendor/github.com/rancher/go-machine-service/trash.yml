@@ -1,0 +1,45 @@
+package: github.com/rancher/go-machine-service
+
+import:
+- package: github.com/Sirupsen/logrus
+  version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
+
+- package: github.com/docker/docker/pkg/term
+  version: 954613fb248ee31ed1a919f72153eb43268f2c30
+
+- package: github.com/docker/machine/libmachine/drivers
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/log
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/mcnflag
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/mcnutils
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/ssh
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/state
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/docker/machine/libmachine/version
+  version: 7246b2c9650c505b6bd3cbeb8b95d0d0f9983f84
+
+- package: github.com/fsouza/go-dockerclient
+  version: 2fb7694010aa553998ed513dc8805ab00708077a
+
+- package: github.com/gorilla/websocket
+  version: 3986be78bf859e01f01af631ad76da5b269d270c
+
+- package: github.com/rancher/go-rancher
+  version: 851a63f83cf826247db80424bcc754bc3601b6a0
+
+- package: golang.org/x/crypto/curve25519
+  version: 3760e016850398b85094c4c99e955b8c3dea5711
+
+- package: golang.org/x/crypto/ssh
+  version: 3760e016850398b85094c4c99e955b8c3dea5711
+

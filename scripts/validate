@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+lint_ignore() {
+    read line
+    fileName=$(echo $line | cut -d':' -f1 )
+    lineNumber=$(echo $line | cut -d':' -f2 )
+    match=$(grep -n golint_ignore $fileName | grep -e "^${lineNumber}:")
+    if [ -z "$match" ]; then
+        echo $line
+    fi
+}
+
+
 cd $(dirname $0)/..
 
 echo Running validation
@@ -11,7 +22,7 @@ echo Running: go vet
 go vet ${PACKAGES}
 echo Running: golint
 for i in ${PACKAGES}; do
-    if [ -n "$(golint $i | grep -v 'should have comment.*or be unexported' | tee /dev/stderr)" ]; then
+    if [ -n "$(golint $i | grep -v 'should have comment.*or be unexported' | lint_ignore | tee /dev/stderr)" ]; then
         failed=true
     fi
 done
