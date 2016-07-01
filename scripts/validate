@@ -2,13 +2,14 @@
 set -e
 
 lint_ignore() {
-    read line
-    fileName=$(echo $line | cut -d':' -f1 )
-    lineNumber=$(echo $line | cut -d':' -f2 )
-    match=$(grep -n golint_ignore $fileName | grep -e "^${lineNumber}:")
-    if [ -z "$match" ]; then
-        echo $line
-    fi
+    while read line; do
+        fileName=$(echo $line | cut -d':' -f1 )
+        lineNumber=$(echo $line | cut -d':' -f2 )
+        match=$(grep -n golint_ignore $fileName | grep -e "^${lineNumber}:")
+        if [ -z "$match" ]; then
+            echo $line
+        fi
+    done
 }
 
 
