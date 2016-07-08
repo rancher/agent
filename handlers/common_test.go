@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-
-	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"gopkg.in/check.v1"
+	"github.com/Sirupsen/logrus"
+	"strings"
 )
 
 func loadEvent(eventFile string, c *check.C) []byte {
@@ -21,26 +20,14 @@ func loadEvent(eventFile string, c *check.C) []byte {
 
 }
 
-type container struct {
-	Name      string
-	AccountID int
-}
 
 func getInstance(event map[string]interface{}, c *check.C) map[string]interface{} {
 	data := event["data"].(map[string]interface{})
 	ihm := data["instanceHostMap"].(map[string]interface{})
-
-	container := &model.Container{}
 	instance := ihm["instance"].(map[string]interface{})
-	if err := mapstructure.Decode(instance, container); err != nil {
-		fmt.Printf("%#v", err)
-		c.Fatalf("Failed converting to container: %v", err)
-	}
-
-	fmt.Printf("%+v", container)
-
 	return instance
 }
+
 
 func unmarshalEvent(rawEvent []byte, c *check.C) map[string]interface{} {
 	event := map[string]interface{}{}
