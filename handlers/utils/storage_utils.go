@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"golang.org/x/net/context"
@@ -9,16 +9,19 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/docker/engine-api/types"
 	"os"
-	"../handlers/marshaller"
+	"../marshaller"
 	"github.com/docker/engine-api/client"
+	"../progress"
+	"../../model"
+	"../docker_client"
 )
 
-func is_volume_active(volume Volume) bool {
+func is_volume_active(volume model.Volume) bool {
 	if is_managed_volume(volume) {
 		return true
 	}
 	version := storage_api_version()
-	vol, err := Get_client(version).VolumeInspect(context.Background(), volume.Name)
+	vol, err := docker_client.Get_client(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		return false
 	}
@@ -28,7 +31,7 @@ func is_volume_active(volume Volume) bool {
 	return true
 }
 
-func is_managed_volume(volume Volume) bool {
+func is_managed_volume(volume model.Volume) bool {
 	if driver := volume.Data["field"].(map[string]string)["driver"]; driver == "" {
 		return false
 	}
@@ -38,7 +41,11 @@ func is_managed_volume(volume Volume) bool {
 	return true
 }
 
-func do_volume_activate(volume Volume){
+func image_pull(params *model.Image_Params, progress *progress.Progress) error {
+	return Do_instance_activate(params.Image, nil, progress)
+}
+
+func do_volume_activate(volume model.Volume){
 	if !is_managed_volume(volume) {
 		return nil
 	}
@@ -46,7 +53,7 @@ func do_volume_activate(volume Volume){
 	driver_opts := make(map[string]string)
 	driver_opts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
 	v := storage_api_version()
-	client := Get_client(v)
+	client := docker_client.Get_client(v)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -61,7 +68,7 @@ func do_volume_activate(volume Volume){
 			client.VolumeRemove(context.Background(), volume.Name)
 		}
 	}
-	options := VolumeCreateRequest{
+	options := model.VolumeCreateRequest{
 		Name: volume.Name,
 		Driver: driver,
 		DriverOpts: driver_opts,
@@ -72,16 +79,16 @@ func do_volume_activate(volume Volume){
 	} else {
 		logrus.Info(fmt.Sprintf("volume %s created", new_volume.Name))
 	}
-
 }
 
-func pull_image(image Image, progress Progress) {
+func pull_image(image model.Image, progress *progress.Progress) {
 	if !is_image_active(image, nil) {
-
+		do_image_activate(image, nil, progress)
 	}
 }
 
-func do_image_activate(image Image, storage_popl interface{}, progress Progress) (error){
+//TODO what is a storage pool?
+func do_image_activate(image model.Image, storage_pool interface{}, progress *progress.Progress) (error){
 	if is_no_op(image) {
 		return nil
 	}
@@ -107,8 +114,8 @@ func do_image_activate(image Image, storage_popl interface{}, progress Progress)
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
-	client := Get_client(DEFAULT_VERSION)
-	var data DockerImage
+	client := docker_client.Get_client(DEFAULT_VERSION)
+	var data model.DockerImage
 	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err {
 		panic(err)
 	}
@@ -121,7 +128,7 @@ func do_image_activate(image Image, storage_popl interface{}, progress Progress)
         from pre-verifying the registry. Let the docker daemon handle
         the verification of and connection to the registry.
 	 */
-	var auth AuthConfig
+	var auth model.AuthConfig
 	if err := mapstructure.Decode(auth_config, &auth); err {
 		panic(err)
 	}
@@ -161,19 +168,19 @@ func do_image_activate(image Image, storage_popl interface{}, progress Progress)
 			}
 		}
 		if last_message != message {
-			progress.update(message)
+			progress.Update(message)
 			last_message = message
 		}
 	}
 	return nil
 }
 
-func image_build (image *Image, progress *Progress) {
-	client := Get_client(DEFAULT_VERSION)
+func image_build (image *model.Image, progress *progress.Progress) {
+	client := docker_client.Get_client(DEFAULT_VERSION)
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
 	if is_str_set(opts, "context") {
-		file, err := download_file(opts["context"], builds())
+		file, err := download_file(opts["context"], builds(), nil, nil)
 		if err == nil {
 			delete(opts, "context")
 			opts["fileobj"] = file
@@ -181,7 +188,7 @@ func image_build (image *Image, progress *Progress) {
 			do_build(opts, progress, &client)
 		}
 		if file != nil {
-			os.Remove(file.Name())
+			os.Remove(file)
 		}
 	} else {
 		remote := opts["remote"]
@@ -194,7 +201,7 @@ func image_build (image *Image, progress *Progress) {
 	}
 }
 
-func do_build(opts map[string]interface{}, progress *Progress, client *client.Client){
+func do_build(opts map[string]interface{}, progress *progress.Progress, client *client.Client){
 	for _, key := range []string{"context", "remote"} {
 		if opts[key] != nil {
 			delete(opts, key)
@@ -221,22 +228,26 @@ func do_build(opts map[string]interface{}, progress *Progress, client *client.Cl
 	buffer := readBuffer(response.Body)
 	status_list := marshaller.From_string(buffer)
 	for _, status := range status_list {
-		progress.update(status["stream"])
+		progress.Update(status["stream"])
 	}
 }
 
-func is_build(image Image){
-	if build, ok := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{}); ok {
-		if
+func is_build(image model.Image){
+	if build, ok := get_fields_if_exist(image.Data, "field", "build"); ok {
+		if is_str_set(build.(map[string]interface{}), "context") ||
+			is_str_set(build.(map[string]interface{}), "remote") {
+			return true
+		}
 	}
+	return false
 }
 
-func is_image_active(image Image, storage_pool interface{}) bool {
+func is_image_active(image model.Image, storage_pool interface{}) bool {
 	if is_no_op(image) {
 		return true
 	}
 	parsed_tag := parse_repo_tag(image.Data["dockerImage"].(map[string]interface{})["fullName"])
-	inspects, _, err := Get_client(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
+	inspects, _, err := docker_client.Get_client(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
 	if err == nil {
 		if len(inspects) > 0 {
 			return true
@@ -245,7 +256,7 @@ func is_image_active(image Image, storage_pool interface{}) bool {
 	return false
 }
 
-func parse_repo_tag(name string) string map[string]string {
+func parse_repo_tag(name string) map[string]string {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}

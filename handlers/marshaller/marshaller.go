@@ -16,5 +16,6 @@ func UnmarshalEventList(rawEvent []byte) map[string]interface{} {
 }
 
 func From_string(rawstring string) map[string]interface{} {
-
+	return nil
 }
+

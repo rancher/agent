@@ -1,13 +1,16 @@
-package handlers
+package utils
 
 import (
 	"strings"
 	"os"
 	"fmt"
-	"encoding/json"
-	"errors"
 	"io"
-	"reflect"
+	"path"
+	"net/http"
+	"github.com/Sirupsen/logrus"
+	"../../model"
+	"io/ioutil"
+	"github.com/rancher/go-machine-service/events"
 )
 
 func unwrap(obj map[string]interface{}) map[string]interface {
@@ -49,7 +52,7 @@ func default_value(name string, df string) string {
 	return df
 }
 
-func is_nonrancher_container(instance Instance) bool {
+func is_nonrancher_container(instance model.Instance) bool {
 	return instance.NativeContainer
 }
 
@@ -72,10 +75,10 @@ func add_to_env(config *map[string]interface{}, result *map[string]string, args 
 
 }
 
-func get_or_create_port_list(config *map[string]interface{}, key string) *[]Port {
+func get_or_create_port_list(config *map[string]interface{}, key string) *[]model.Port {
 	list, ok := config[key]
 	if !ok {
-		list = list.([]Port{})
+		list = list.([]model.Port{})
 		config[key] = list
 	}
 
@@ -96,12 +99,12 @@ func has_key(m map[string]interface{}, key string) bool {
 	return ok
 }
 
-//TODO implement this function
-func check_output(kwargs map[string]interface{}, args ...string){
+//TODO mock not implemented
+func check_output(strs []string){
 
 }
 
-func has_label(instance *Instance){
+func has_label(instance *model.Instance){
 	return instance.Labels["io.rancher.container.cattle_url"]
 }
 
@@ -144,4 +147,60 @@ func get_fields_if_exist(m map[string]interface{}, fields ...string) (interface{
 		}
 	}
 	return temp_map, true
+}
+
+func temp_file_in_work_dir(destination string) string {
+	dst_path := path.Join(destination, _TEMP_NAME)
+	if _, err := os.Stat(dst_path); os.IsNotExist(err) {
+		os.Mkdir(dst_path, 0777)
+	}
+	return temp_file(dst_path)
+}
+
+func temp_file(destination string) string {
+	temp_dst, err := ioutil.TempFile(destination, _TEMP_PREFIX)
+	if err == nil {
+		return temp_dst.Name()
+	}
+	return nil
+}
+
+func download_from_url(rawurl string, filepath string) error {
+	file, err := os.Open(filepath)
+	if err == nil {
+		response, err1 := http.Get(rawurl)
+		if err1 != nil {
+			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
+			return err1
+		}
+		defer response.Body.Close()
+		n, ok := io.Copy(file, response.Body)
+		if ok != nil {
+			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
+			return ok
+		}
+		logrus.Info(fmt.Sprintf("%s bytes downloaded successfully", n))
+		return nil
+	}
+	return err
+}
+
+func Get_response_data(event *events.Event, event_data map[string]interface{}) map[string]string {
+	// TODO not implemented
+	/*
+	resource_type := event.ResourceType
+	var ihm model.InstanceHostMap
+	mapstructure.Decode(event_data, &ihm)
+	tp := ihm.Type
+	if tp != nil && len(tp) > 0{
+		r := regexp.Compile("([A-Z])")
+		inner_name := strings.Replace(tp, r.FindStringSubmatch(tp)[0], "_\1", -1)
+		method_name := strings.ToLower(fmt.Sprintf("_get_%s_data", inner_name))
+		method := ""
+
+	}
+	*/
+	return map[string]string{
+		"mock": "mock not implemented",
+	}
 }

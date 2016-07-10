@@ -1,4 +1,4 @@
-package handlers
+package utils
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 	"github.com/Sirupsen/logrus"
-	gouuid "github.com/nu7hatch/gouuid"
+	go_uuid "github.com/nu7hatch/gouuid"
 	"net/url"
 )
 
@@ -74,7 +74,7 @@ func _get_uuid_from_file(uuid_file_path string) string {
 		uuid = readBuffer(file_reader)
 	}
 	if uuid == nil {
-		new_uuid, err1 := gouuid.NewV4()
+		new_uuid, err1 := go_uuid.NewV4()
 		if err1 != nil {
 			logrus.Error(err)
 		} else {
@@ -140,14 +140,6 @@ func api_auth() (string, string) {
 	return access_key(), secret_key()
 }
 
-func config_url() {
-	ret := default_value("CONFIG_URL", nil)
-	if ret == nil {
-		return api_url(nil)
-	}
-	return ret
-}
-
 func is_multi_proc() {
 	multi_style() == "proc"
 }
@@ -195,7 +187,7 @@ func config_sh() string {
 
 func physical_host() map[string]string {
 	return map[string]string{
-		"uuid": physical_host_uuid(),
+		"uuid": physical_host_uuid(false),
 		"type": "physicalHost",
 		"kind": "physicalHost",
 		"name": hostname(),
@@ -246,8 +238,9 @@ func cadvisor_ip() int {
 	return default_value("CADVISOR", "127.0.0.1")
 }
 
+//TODO
 func cadvisor_docker_root() string {
-
+	return nil
 }
 
 func cadvisor_opts() string {

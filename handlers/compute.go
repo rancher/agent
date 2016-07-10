@@ -5,7 +5,9 @@ import (
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"sync"
-	"github.com/docker/engine-api/client"
+	"../handlers/progress"
+	"../handlers/utils"
+	"../handlers/docker_client"
 )
 
 type InstanceWithLock struct {
@@ -15,9 +17,9 @@ type InstanceWithLock struct {
 
 func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
-	instance, host := getInstanceAndHost(event)
+	instance, host := utils.GetInstanceAndHost(event)
 
-	progess := Progress(event)
+	progress := progress.Progress{}
 
 	if instance != nil {
 		processData, ok := event.Data["processData"]
@@ -28,14 +30,15 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	ins_with_lock := InstanceWithLock{mu:&sync.Mutex{}, in: &instance}
 	ins_with_lock.mu.Lock()
-	if is_instance_active(ins_with_lock.in, host) {
-		record_state(client, instance)
-		return reply(event, get_response_data(event, event.Data), cli)
+	defer ins_with_lock.mu.Unlock()
+	if utils.Is_instance_active(ins_with_lock.in, host) {
+		utils.Record_state(docker_client.Get_client(utils.DEFAULT_VERSION), instance, nil)
+		return reply(event, utils.Get_response_data(event, event.Data), cli)
 	}
 
 
-	do_instance_activate(instance, host, progress)
-	data := get_response_data(event, event.Data)
+	utils.Do_instance_activate(instance, host, &progress)
+	//data := utils.Get_response_data(event, event.Data)
 
 	return reply(nil, event, cli)
 }

@@ -7,8 +7,6 @@ import (
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"gopkg.in/check.v1"
-	"github.com/Sirupsen/logrus"
-	"strings"
 )
 
 func loadEvent(eventFile string, c *check.C) []byte {
