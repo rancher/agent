@@ -6,8 +6,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
-	"gopkg.in/check.v1"
-	"strings"
 )
 
 func GetHandlers() map[string]revents.EventHandler {

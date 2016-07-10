@@ -31,7 +31,7 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	ins_with_lock := InstanceWithLock{mu:&sync.Mutex{}, in: &instance}
 	ins_with_lock.mu.Lock()
 	defer ins_with_lock.mu.Unlock()
-	if utils.Is_instance_active(ins_with_lock.in, host) {
+	if utils.Is_instance_active(&ins_with_lock.in, host) {
 		utils.Record_state(docker_client.Get_client(utils.DEFAULT_VERSION), instance, nil)
 		return reply(event, utils.Get_response_data(event, event.Data), cli)
 	}

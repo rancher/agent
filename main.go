@@ -2,8 +2,10 @@ package main
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/events"
+	//"github.com/rancher/agent/events"
+	"../agent/events"
 	"os"
+	//"github.com/rancher/go-machine-service/events"
 )
 
 func main() {

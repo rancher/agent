@@ -13,7 +13,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	urls "net/url"
 	"strconv"
-	"../host_info"
 	"../../model"
 	"../progress"
 	"github.com/docker/engine-api/types"
@@ -756,7 +755,7 @@ func setup_device_options(config *map[string]interface{}, instance *model.Instan
 		device_options = device_options.(map[string]map[string]string)
 		for dev, options := range device_options{
 			if dev == "DEFAULT_DICK" {
-				dev = host_info.Get_default_disk()
+				//dev = host_info.Get_default_disk()
 				if dev == nil {
 					logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting".
 					"device options: %s", options))
