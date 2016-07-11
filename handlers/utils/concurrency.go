@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/strongmonkey/agent/model"
+	"github.com/rancher/agent/model"
 )
 
 //TODO implement blocking

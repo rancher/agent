@@ -2,8 +2,7 @@ package events
 
 import (
 	"github.com/Sirupsen/logrus"
-	//"github.com/rancher/agent/handlers"
-	"github.com/strongmonkey/agent/handlers"
+	"github.com/rancher/agent/handlers"
 	revents "github.com/rancher/go-machine-service/events"
 )
 

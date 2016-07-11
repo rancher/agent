@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"regexp"
 	"strconv"
-	"github.com/strongmonkey/agent/model"
+	"github.com/rancher/agent/model"
 )
 
 func setup_mac_and_ip(instance *model.Instance, create_config map[string]interface{}, set_mac bool, set_hostname bool) {

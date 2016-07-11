@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/strongmonkey/agent/events"
+	"github.com/rancher/agent/events"
 	"os"
 
 )

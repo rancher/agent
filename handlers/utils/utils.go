@@ -7,7 +7,7 @@ import (
 	"path"
 	"net/http"
 	"github.com/Sirupsen/logrus"
-	"github.com/strongmonkey/agent/model"
+	"github.com/rancher/agent/model"
 	"io/ioutil"
 	"github.com/rancher/go-machine-service/events"
 )

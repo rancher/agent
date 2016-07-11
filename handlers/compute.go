@@ -5,10 +5,10 @@ import (
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"sync"
-	"github.com/strongmonkey/agent/handlers/progress"
-	"github.com/strongmonkey/agent/handlers/utils"
-	"github.com/strongmonkey/agent/handlers/docker_client"
-	"github.com/strongmonkey/agent/model"
+	"github.com/rancher/agent/handlers/progress"
+	"github.com/rancher/agent/handlers/utils"
+	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/model"
 )
 
 type InstanceWithLock struct {
