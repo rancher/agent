@@ -25,8 +25,8 @@ func is_volume_active(volume model.Volume) bool {
 	if err != nil {
 		return false
 	}
-	if _, ok := vol["Mountpoint"]; ok {
-		return vol["Mountpoint"] != "moved"
+	if vol.Mountpoint != "" {
+		return vol.Mountpoint != "moved"
 	}
 	return true
 }
@@ -42,12 +42,15 @@ func is_managed_volume(volume model.Volume) bool {
 }
 
 func image_pull(params *model.Image_Params, progress *progress.Progress) error {
-	return Do_instance_activate(params.Image, nil, progress)
+	if !is_image_active(params.Image, nil) {
+		return do_image_activate(params.Image, nil, progress)
+	}
+	return nil
 }
 
 func do_volume_activate(volume model.Volume){
 	if !is_managed_volume(volume) {
-		return nil
+		return
 	}
 	driver := volume.Data["field"].(map[string]interface{})["driver"].(string)
 	driver_opts := make(map[string]string)
@@ -63,12 +66,12 @@ func do_volume_activate(volume model.Volume){
 	if err != nil {
 		logrus.Error(err)
 	} else {
-		if vol != nil && vol.Mountpoint == "moved" {
+		if vol.Mountpoint == "moved" {
 			logrus.Info(fmt.Sprintf("Removing moved volume %s so that it can be re-added.", volume.Name))
 			client.VolumeRemove(context.Background(), volume.Name)
 		}
 	}
-	options := model.VolumeCreateRequest{
+	options := types.VolumeCreateRequest{
 		Name: volume.Name,
 		Driver: driver,
 		DriverOpts: driver_opts,
@@ -89,24 +92,26 @@ func pull_image(image model.Image, progress *progress.Progress) {
 
 //TODO what is a storage pool?
 func do_image_activate(image model.Image, storage_pool interface{}, progress *progress.Progress) (error){
-	if is_no_op(image) {
+	if is_no_op(image.Data) {
 		return nil
 	}
 
 	if is_build(image) {
-		image_build(image, progress)
+		image_build(&image, progress)
 		return nil
 	}
 	//TODO why do we need auth_config? for private registry?
 	auth_config := map[string]string{}
 	rc := image.RegistryCredential
 	if rc != nil {
-		auth_config["username"] = rc["publicValue"]
-		auth_config["email"] = rc["data"].(map[string]interface{})["fields"].
-		(map[string]interface{})["email"]
-		auth_config["password"] = rc["secretValue"]
-		auth_config["serveraddress"] =  rc["registry"].(map[string]interface{})["data"].
-		(map[string]interface{})["fields"].(map[string]interface{})["serverAddress"]
+		auth_config["username"] = rc["publicValue"].(string)
+		if value, ok := get_fields_if_exist(rc, "data", "fields", "email"); ok {
+			auth_config["email"] = value.(string)
+		}
+		auth_config["password"] = rc["secretValue"].(string)
+		if value, ok := get_fields_if_exist(rc, "data", "fields", "serverAddress"); ok {
+			auth_config["serverAddress"] = value.(string)
+		}
 		if auth_config["serveraddress"] == "https://docker.io" {
 			auth_config["serveraddress"] = "https://index.docker.io"
 		}
@@ -116,7 +121,7 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 
 	client := docker_client.Get_client(DEFAULT_VERSION)
 	var data model.DockerImage
-	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err {
+	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
 		panic(err)
 	}
 	temp := data.QualifiedName
@@ -128,8 +133,8 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
         from pre-verifying the registry. Let the docker daemon handle
         the verification of and connection to the registry.
 	 */
-	var auth model.AuthConfig
-	if err := mapstructure.Decode(auth_config, &auth); err {
+	var auth types.AuthConfig
+	if err := mapstructure.Decode(auth_config, &auth); err != nil {
 		panic(err)
 	}
 	token_info, auth_err := client.RegistryLogin(context.Background(), auth)
@@ -143,7 +148,7 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 			})
 		if err2 != nil {
 			return errors.New(fmt.Sprintf("Image [%s] failed to pull: %s",
-				data["fullname"], err2))
+				data.FullName, err2))
 		}
 	} else {
 		last_message := ""
@@ -158,13 +163,13 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 		buffer := readBuffer(reader)
 		//TODO not sure what response we got from status
 		//Attention! status is a json array so we have to alter unmarshaller
-		status_list := marshaller.UnmarshalEventList(buffer)
+		status_list := marshaller.UnmarshalEventList([]byte(buffer))
 		for _, status := range status_list {
 			if has_key(status, "error") {
 				return errors.New(fmt.Sprintf("Image [%s] failed to pull: %s", data.FullName, message))
 			}
 			if has_key(status, "status") {
-				message = status["error"]
+				message = status["error"].(string)
 			}
 		}
 		if last_message != message {
@@ -180,20 +185,20 @@ func image_build (image *model.Image, progress *progress.Progress) {
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
 	if is_str_set(opts, "context") {
-		file, err := download_file(opts["context"], builds(), nil, nil)
+		file, err := download_file(opts["context"].(string), builds(), nil, "")
 		if err == nil {
 			delete(opts, "context")
 			opts["fileobj"] = file
 			opts["custom_context"] = true
-			do_build(opts, progress, &client)
+			do_build(opts, progress, client)
 		}
-		if file != nil {
+		if file != "" {
 			os.Remove(file)
 		}
 	} else {
 		remote := opts["remote"]
-		if strings.HasPrefix(remote, "git@github.com:") {
-			remote = strings.Replace(remote, "git@github.com:", "git://github.com/", -1)
+		if strings.HasPrefix(remote.(string), "git@github.com:") {
+			remote = strings.Replace(remote.(string), "git@github.com:", "git://github.com/", -1)
 		}
 		delete(opts, "remote")
 		opts["path"] = remote
@@ -212,7 +217,7 @@ func do_build(opts map[string]interface{}, progress *progress.Progress, client *
 	docker_file := ""
 	//TODO check if this logic is correct
 	if opts["fileobj"] != nil {
-		docker_file = opts["fileobj"].(os.File).Name()
+		docker_file = opts["fileobj"].(string)
 	} else {
 		docker_file = opts["path"].(string)
 	}
@@ -228,11 +233,12 @@ func do_build(opts map[string]interface{}, progress *progress.Progress, client *
 	buffer := readBuffer(response.Body)
 	status_list := marshaller.From_string(buffer)
 	for _, status := range status_list {
-		progress.Update(status["stream"])
+		status := status.(map[string]interface{})
+		progress.Update(status["stream"].(string))
 	}
 }
 
-func is_build(image model.Image){
+func is_build(image model.Image) bool {
 	if build, ok := get_fields_if_exist(image.Data, "field", "build"); ok {
 		if is_str_set(build.(map[string]interface{}), "context") ||
 			is_str_set(build.(map[string]interface{}), "remote") {
@@ -243,15 +249,13 @@ func is_build(image model.Image){
 }
 
 func is_image_active(image model.Image, storage_pool interface{}) bool {
-	if is_no_op(image) {
+	if is_no_op(image.Data) {
 		return true
 	}
-	parsed_tag := parse_repo_tag(image.Data["dockerImage"].(map[string]interface{})["fullName"])
-	inspects, _, err := docker_client.Get_client(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
+	parsed_tag := parse_repo_tag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
+	_, _, err := docker_client.Get_client(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
 	if err == nil {
-		if len(inspects) > 0 {
-			return true
-		}
+		return true
 	}
 	return false
 }

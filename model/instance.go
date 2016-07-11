@@ -6,8 +6,8 @@ type Instance struct {
 	Created int64 `json:"created"`
 	Data map[string]interface{}
 	Ports []Port
-	Description interface{} `json:"description"`
-	Hostname interface{} `json:"hostname"`
+	Description string `json:"description"`
+	Hostname string `json:"hostname"`
 	ID int `json:"id"`
 	Image Image
 	ImageID int `json:"imageId"`
@@ -36,4 +36,5 @@ type Instance struct {
 	DataVolumesFromContainers []map[string]interface{}
 	Command_args []string
 	Labels map[string]interface{}
+	ProcessData interface{}
 }

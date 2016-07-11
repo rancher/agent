@@ -17,7 +17,7 @@ func UnmarshalEventList(rawEvent []byte) []map[string]interface{} {
 
 func From_string(rawstring string) map[string]interface{} {
 	obj := map[string]interface{}{}
-	err := json.Unmarshal([]byte{rawstring}, &obj)
+	err := json.Unmarshal([]byte(rawstring), &obj)
 	if err != nil {
 		panic(errors.New("Error unmarshalling event %v"))
 	}

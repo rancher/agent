@@ -14,7 +14,7 @@ import (
 )
 
 func download_file(url string, dest string, reporthook interface{}, checksum string) (string, error) {
-	return blocking(download_file_util, url, dest, reporthook, checksum)
+	return download_file_util(url, dest, reporthook, checksum)
 }
 
 func download_file_util(url string, dest string, reporthook interface{}, checksum string) (string, error) {
@@ -22,10 +22,10 @@ func download_file_util(url string, dest string, reporthook interface{}, checksu
 	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, temp_name))
 	err := download_from_url(url, temp_name)
 	if err == nil {
-		if checksum != nil {
+		if checksum != "" {
 			err1 := validate_checksum(temp_name, checksum)
 			if err != nil {
-				return nil, err1
+				return "", err1
 			}
 		}
 		return temp_name, nil
@@ -36,14 +36,14 @@ func download_file_util(url string, dest string, reporthook interface{}, checksu
 func checksum(file_path string, digest hash.Hash) (string, error){
 	file, err := os.Open(file_path)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer file.Close()
 	_, err1 := io.Copy(digest, file)
 	if err1 != nil {
-		return nil, err1
+		return "", err1
 	}
-	return fmt.Sprintf("%x", digest.Sum(nil)), nil
+	return fmt.Sprintf("%x", digest.Sum([]byte{})), nil
 }
 
 func validate_checksum(file_name string, checksum_value string) error {

@@ -31,4 +31,4 @@ type Config container.Config
 
 type AuthConfig types.AuthConfig
 
-type Method func(map[string]interface{}, ...string) interface{}
+type Method func(map[string]string, []string) (interface{}, error)

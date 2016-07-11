@@ -4,6 +4,7 @@ type Port struct {
 	Protocol string `json:"protocol"`
 	PrivatePort int `json:"privatePort"`
 	PublicPort int `json:"publicPort"`
+	Data map[string]interface{}
 }
 
 type Nic struct {

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"strings"
 	"os"
 	"fmt"
 	"io"
@@ -13,16 +12,18 @@ import (
 	"github.com/rancher/go-machine-service/events"
 )
 
-func unwrap(obj *interface{}) interface{} {
+func unwrap(obj interface{}) interface{} {
 	switch obj.(type) {
 	case []map[string]interface{}:
 		ret := []map[string]interface{}{}
+		obj := []map[string]interface{}{}
 		for _, o := range obj {
-			append(ret, unwrap(o))
+			ret = append(ret, unwrap(o).(map[string]interface{}))
 		}
 		return ret
 	case map[string]interface{}:
 		ret := map[string]interface{}{}
+		obj := map[string]interface{}{}
 		for key, value := range obj {
 			ret[key] = unwrap(value)
 		}
@@ -33,16 +34,16 @@ func unwrap(obj *interface{}) interface{} {
 
 }
 
-func add_label(config *map[string]interface{}, new_labels map[string]string){
+func add_label(config map[string]interface{}, new_labels map[string]string){
 	labels, ok := config["labels"]
-	if ok != nil {
+	if !ok {
 		labels = make(map[string]string)
 		config["labels"] = labels
 	}
 	update(config, new_labels)
 }
 
-func update(config *map[string]interface{}, new_labels map[string]string){
+func update(config map[string]interface{}, new_labels map[string]string){
 	for key, value := range new_labels {
 		config["labels"].(map[string]string)[key] = value
 	}
@@ -50,7 +51,7 @@ func update(config *map[string]interface{}, new_labels map[string]string){
 
 func search_in_list(slice []string, target string) bool {
 	for _, value := range slice {
-		if strings.Compare(target, value) {
+		if target == value {
 			return true
 		}
 	}
@@ -67,15 +68,16 @@ func default_value(name string, df string) string {
 	return df
 }
 
-func is_nonrancher_container(instance model.Instance) bool {
+func is_nonrancher_container(instance *model.Instance) bool {
 	return instance.NativeContainer
 }
 
-func add_to_env(config *map[string]interface{}, result *map[string]string, args ...string){
+func add_to_env(config map[string]interface{}, result map[string]string, args ...string){
 	if env, ok := config["enviroment"]; !ok {
 		env = make(map[string]string)
 		config["enviroment"] = env
 	} else {
+		env := env.(map[string]interface{})
 		for i := 0 ; i < len(args) ; i += 2 {
 			if _, ok := env[args[i]]; !ok {
 				env[args[i]] = args[i+1]
@@ -90,27 +92,26 @@ func add_to_env(config *map[string]interface{}, result *map[string]string, args 
 
 }
 
-func get_or_create_port_list(config *map[string]interface{}, key string) *[]model.Port {
+func get_or_create_port_list(config map[string]interface{}, key string) []model.Port {
 	list, ok := config[key]
 	if !ok {
-		list = list.([]model.Port{})
 		config[key] = list
 	}
 
-	return &config[key]
+	return config[key].([]model.Port)
 }
 
-func get_or_create_binding_map(config *map[string]interface{}, key string) *map[string]string {
+func get_or_create_binding_map(config map[string]interface{}, key string) map[string][]string {
 	m, ok := config[key]
 	if !ok {
 		m = make(map[string]string)
 		config[key] = m
 	}
-	return &config[key]
+	return config[key].(map[string][]string)
 }
 
-func has_key(m map[string]interface{}, key string) bool {
-	_, ok := m[key]
+func has_key(m interface{}, key string) bool {
+	_, ok := m.(map[string]interface{})[key]
 	return ok
 }
 
@@ -119,12 +120,13 @@ func check_output(strs []string){
 
 }
 
-func has_label(instance *model.Instance){
-	return instance.Labels["io.rancher.container.cattle_url"]
+func has_label(instance *model.Instance) bool{
+	_, ok := instance.Labels["io.rancher.container.cattle_url"]
+	return ok
 }
 
 func readBuffer(reader io.ReadCloser) string {
-	buffer := [1024]byte{}
+	buffer := make([]byte, 1024)
 	s := ""
 	defer reader.Close()
 	for {
@@ -138,7 +140,7 @@ func readBuffer(reader io.ReadCloser) string {
 }
 
 func is_str_set(m map[string]interface{}, key string) bool {
-	return m[key] != nil && len(m[key]) > 0
+	return m[key] != nil && len(m[key].([]string)) > 0
 }
 
 
@@ -177,7 +179,7 @@ func temp_file(destination string) string {
 	if err == nil {
 		return temp_dst.Name()
 	}
-	return nil
+	return ""
 }
 
 func download_from_url(rawurl string, filepath string) error {
@@ -200,7 +202,7 @@ func download_from_url(rawurl string, filepath string) error {
 	return err
 }
 
-func Get_response_data(event *events.Event, event_data map[string]interface{}) map[string]string {
+func Get_response_data(event *events.Event, event_data map[string]interface{}) *events.Event {
 	// TODO not implemented
 	/*
 	resource_type := event.ResourceType
@@ -215,7 +217,5 @@ func Get_response_data(event *events.Event, event_data map[string]interface{}) m
 
 	}
 	*/
-	return map[string]string{
-		"mock": "mock not implemented",
-	}
+	return &events.Event{}
 }

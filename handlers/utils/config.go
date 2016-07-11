@@ -16,16 +16,16 @@ func storage_api_version() string {
 }
 
 func config_url() string {
-	ret := default_value("CONFIG_URL", nil)
-	if ret == nil {
-		return api_url(nil)
+	ret := default_value("CONFIG_URL", "")
+	if len(ret) > 0 {
+		return api_url("")
 	}
 	return ret
 }
 
 func strip_schemas(url string) string {
-	if url == nil {
-		return nil
+	if len(url) > 0 {
+		return ""
 	}
 
 	if strings.HasSuffix(url, "/schemas") {
@@ -40,7 +40,8 @@ func api_url(df string) string {
 }
 
 func api_proxy_listen_port() int {
-	return strconv.Atoi(default_value("API_PROXY_LISTEN_PORT", 9342))
+	ret, _ := strconv.Atoi(default_value("API_PROXY_LISTEN_PORT", "9342"))
+	return ret
 }
 
 func builds() string {
@@ -73,7 +74,7 @@ func _get_uuid_from_file(uuid_file_path string) string {
 	} else {
 		uuid = readBuffer(file_reader)
 	}
-	if uuid == nil {
+	if uuid == "" {
 		new_uuid, err1 := go_uuid.NewV4()
 		if err1 != nil {
 			logrus.Error(err)
@@ -86,8 +87,8 @@ func _get_uuid_from_file(uuid_file_path string) string {
 }
 
 func get_uuid_from_file(env_name string, uuid_file_path string, force_write bool) string {
-	uuid := default_value(env_name, nil)
-	if uuid != nil {
+	uuid := default_value(env_name, "")
+	if uuid != "" {
 		if force_write{
 			file, err := os.Open(uuid_file_path)
 			if err == nil {
@@ -109,7 +110,8 @@ func do_ping() bool {
 }
 
 func hostname() string {
-	return default_value("HOSTNAME", os.Hostname())
+	name, _ := os.Hostname()
+	return default_value("HOSTNAME", name)
 }
 
 func workers() string {
@@ -140,29 +142,32 @@ func api_auth() (string, string) {
 	return access_key(), secret_key()
 }
 
-func is_multi_proc() {
-	multi_style() == "proc"
+func is_multi_proc() bool {
+	return multi_style() == "proc"
 }
 
-func is_multi_style() {
-	multi_style() == "thread"
+func is_multi_style() bool {
+	return multi_style() == "thread"
 }
 
 //TODO don't know how to implement it
-func is_eventlet() {
-
+func is_eventlet() bool {
+	// mock
+	return false
 }
 
 func multi_style() string {
-	return default_value("AGENT_MULTI", nil)
+	return default_value("AGENT_MULTI", "")
 }
 
 func queue_depth() int {
-	return int(default_value("QUEUE_DEPTH", 5))
+	ret, _ := strconv.Atoi(default_value("QUEUE_DEPTH", "5"))
+	return ret
 }
 
 func stop_timeout() int {
-	return int(default_value("STOP_TIMEOUT", 60))
+	ret, _ := strconv.Atoi(default_value("STOP_TIMEOUT", "60"))
+	return ret
 }
 
 func log() string {
@@ -170,15 +175,15 @@ func log() string {
 }
 
 func debug() bool {
-	return default_value("DEBUG", "false") == false
+	return default_value("DEBUG", "false") == "false"
 }
 
 func agent_ip() string {
-	return default_value("AGENT_IP", nil)
+	return default_value("AGENT_IP", "")
 }
 
 func agent_port() string {
-	return default_value("AGENT_PORT", nil)
+	return default_value("AGENT_PORT", "")
 }
 
 func config_sh() string {
@@ -223,28 +228,31 @@ func config_update_pyagent() bool {
 }
 
 func max_dropped_ping() int {
-	return int(default_value("MAX_DROPPED_PING", "10"))
+	ret, _ := strconv.Atoi(default_value("MAX_DROPPED_PING", "10"))
+	return ret
 }
 
 func max_dropped_requests() int {
-	return int(default_value("MAX_DROPPED_REQUESTS", "1000"))
+	ret, _ := strconv.Atoi(default_value("MAX_DROPPED_REQUESTS", "1000"))
+	return ret
 }
 
 func cadvisor_port() int {
-	return int(default_value("CADVISOR", "9344"))
+	ret, _ := strconv.Atoi(default_value("CADVISOR", "9344"))
+	return ret
 }
 
-func cadvisor_ip() int {
+func cadvisor_ip() string {
 	return default_value("CADVISOR", "127.0.0.1")
 }
 
 //TODO
 func cadvisor_docker_root() string {
-	return nil
+	return ""
 }
 
 func cadvisor_opts() string {
-	return default_value("CADVISOR_OPTS", nil)
+	return default_value("CADVISOR_OPTS", "")
 }
 
 func host_api_ip() string {
@@ -252,11 +260,13 @@ func host_api_ip() string {
 }
 
 func host_api_port() int {
-	return int(default_value("HOST_API_PORT", "9345"))
+	ret, _ := strconv.Atoi(default_value("HOST_API_PORT", "9345"))
+	return ret
 }
 
 func console_agent_port() int {
-	return int(default_value("CONSOLE_AGENT_PORT", "9346"))
+	ret, _ := strconv.Atoi(default_value("CONSOLE_AGENT_PORT", "9346"))
+	return ret
 }
 
 func jwt_public_key_file() string {
@@ -270,28 +280,29 @@ func host_api_config_file() string {
 }
 
 func host_proxy() string {
-	return default_value("HOST_API_PROXY", nil)
+	return default_value("HOST_API_PROXY", "")
 }
 
 func event_read_timeout() string {
-	return int(default_value("EVENT_READ_TIMEOUT", "60"))
+	return default_value("EVENT_READ_TIMEOUT", "60")
 }
 
 func eventlet_backdoor() int {
-	val := default_value("EVENTLET_BACKDOOR", nil)
-	if val != nil {
-		return int(val)
+	val := default_value("EVENTLET_BACKDOOR", "")
+	if val != "" {
+		ret, _ := strconv.Atoi(val)
+		return ret
 	}
-	return nil
+	return 0
 }
 
 func cadvisor_wrapper() string {
-	return default_value("CADVISOR_WRAPPER", nil)
+	return default_value("CADVISOR_WRAPPER", "")
 }
 
 func labels() map[string][]string {
-	val := default_value("HOST_LABELS", nil)
-	if val != nil {
+	val := default_value("HOST_LABELS", "")
+	if val != "" {
 		m, err := url.ParseQuery(val)
 		if err != nil {
 			logrus.Error(err)
@@ -299,5 +310,5 @@ func labels() map[string][]string {
 			return m
 		}
 	}
-	return nil
+	return map[string][]string{}
 }

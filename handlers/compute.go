@@ -8,11 +8,12 @@ import (
 	"github.com/strongmonkey/agent/handlers/progress"
 	"github.com/strongmonkey/agent/handlers/utils"
 	"github.com/strongmonkey/agent/handlers/docker_client"
+	"github.com/strongmonkey/agent/model"
 )
 
 type InstanceWithLock struct {
 	mu sync.Mutex
-	in *map[string]interface{}
+	in *model.Instance
 }
 
 func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -23,17 +24,17 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	if instance != nil {
 		processData, ok := event.Data["processData"]
-		if ok != nil {
-			instance["processData"] = processData
+		if !ok {
+			instance.ProcessData = processData
 		}
 	}
 
-	ins_with_lock := InstanceWithLock{mu:&sync.Mutex{}, in: &instance}
+	ins_with_lock := InstanceWithLock{mu:sync.Mutex{}, in: instance}
 	ins_with_lock.mu.Lock()
 	defer ins_with_lock.mu.Unlock()
-	if utils.Is_instance_active(&ins_with_lock.in, host) {
-		utils.Record_state(docker_client.Get_client(utils.DEFAULT_VERSION), instance, nil)
-		return reply(event, utils.Get_response_data(event, event.Data), cli)
+	if utils.Is_instance_active(ins_with_lock.in, host) {
+		utils.Record_state(docker_client.Get_client(utils.DEFAULT_VERSION), instance, "")
+		return reply(event.Data, utils.Get_response_data(event, event.Data), cli)
 	}
 
 

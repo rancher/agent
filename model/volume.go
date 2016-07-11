@@ -12,7 +12,7 @@ type Volume struct {
 	ID int `json:"id"`
 	ImageID int `json:"imageId"`
 	InstanceID int `json:"instanceId"`
-	Name interface{} `json:"name"`
+	Name string `json:"name"`
 	Offering interface{} `json:"offering"`
 	OfferingID interface{} `json:"offeringId"`
 	PhysicalSizeBytes interface{} `json:"physicalSizeBytes"`
