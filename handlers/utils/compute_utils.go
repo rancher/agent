@@ -225,7 +225,7 @@ func Record_state(client *client.Client, instance *model.Instance, docker_id str
 
 }
 
-func Do_instance_activate(instance *model.Instance, host *model.Host, progress *progress.Progress) (error){
+func Do_instance_activate(instance *model.Instance, host *model.Host, progress *progress.Progress) (error) {
 	if is_no_op(instance.Data) {
 		return nil
 	}
