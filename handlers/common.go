@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-
 	"github.com/Sirupsen/logrus"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
