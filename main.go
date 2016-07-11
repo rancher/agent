@@ -4,6 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/events"
 	"os"
+
 )
 
 func main() {
