@@ -141,7 +141,7 @@ func get_container(client *client.Client, instance *model.Instance, by_agent boo
 		return container
 	}
 	if externalId := instance.ExternalId; externalId != "" {
-		container = find_first(&container_list, func (c *types.Container) bool{
+		container = find_first(&container_list, func (c *types.Container) bool {
 			return id_filter(externalId, c)
 		})
 	}
@@ -151,7 +151,7 @@ func get_container(client *client.Client, instance *model.Instance, by_agent boo
 	}
 
 	if agentId := instance.AgentId; by_agent{
-		container = find_first(&container_list, func (c *types.Container) bool{
+		container = find_first(&container_list, func (c *types.Container) bool {
 			return agent_id_filter(string(agentId), c)
 		})
 	}
