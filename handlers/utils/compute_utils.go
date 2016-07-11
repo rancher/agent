@@ -57,7 +57,8 @@ var START_CONFIG_FIELDS = []model.Tuple{
 func GetInstanceAndHost(event *events.Event) (*model.Instance, *model.Host) {
 
 	data := event.Data
-	ihm := data["instanceHostMap"].(model.InstanceHostMap)
+	var ihm model.InstanceHostMap
+	mapstructure.Decode(data["instanceHostMap"], &ihm)
 
 	var instance model.Instance
 	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
@@ -308,11 +309,11 @@ func Do_instance_activate(instance *model.Instance, host *model.Host, progress *
 		created = true
 	}
 
-	logrus.Info(fmt.Sprintf("Starting docker container [%s] docker id [%s] %s", name, container_id, start_config))
+	logrus.Info(fmt.Sprintf("Starting docker container [%s] docker id [%s] %v", name, container_id, start_config))
 
 	start_err := client.ContainerStart(context.Background(), container_id, types.ContainerStartOptions{})
 
-	if start_err!= nil {
+	if start_err != nil {
 		if created {
 			if err1 := remove_container(client, container_id); err1 != nil {
 				logrus.Error(err1)
@@ -326,8 +327,9 @@ func Do_instance_activate(instance *model.Instance, host *model.Host, progress *
 
 func create_container(client *client.Client, create_config map[string]interface{},
 	image_tag string, instance *model.Instance, name string, progress *progress.Progress) string {
-	logrus.Info(fmt.Sprintf("Creating docker container [%s] from config %s", name, create_config))
-
+	logrus.Info(fmt.Sprintf("Creating docker container [%s] from config %v", name, create_config))
+	// debug
+	logrus.Info("debug")
 	labels := create_config["labels"]
 	if labels.(map[string]string)["io.rancher.container.pull_image"] == "always" {
 		do_instance_pull(&model.Image_Params{
@@ -339,7 +341,9 @@ func create_container(client *client.Client, create_config map[string]interface{
 	}
 	delete(create_config, "name")
 	command := ""
-	command = create_config["command"].(string)
+	if create_config["command"] != nil {
+		command = create_config["command"].(string)
+	}
 	delete(create_config, "command")
 	config := create_container_config(image_tag, command, create_config)
 	host_config := create_config["host_config"].(container.HostConfig)
@@ -363,6 +367,7 @@ func create_container(client *client.Client, create_config map[string]interface{
 			panic(err)
 		}
 	}
+
 	return container_response.ID
 }
 
@@ -406,7 +411,7 @@ func do_instance_pull(params *model.Image_Params, progress *progress.Progress) (
 }
 
 func create_container_config(image_tag string, command string, create_config map[string]interface{}) *container.Config {
-	create_config["cmd"] = command
+	create_config["cmd"] = []string{command}
 	create_config["image"] = image_tag
 	var config container.Config
 	err := mapstructure.Decode(create_config, &config)
@@ -696,7 +701,7 @@ func setup_cattle_config_url(instance *model.Instance, create_config map[string]
 	if has_key(create_config, "labels") {
 		create_config["labels"] = make(map[string]string)
 	}
-	create_config["labels"].(map[string]interface{})["io.rancher.container.agent_id"] = strconv.Itoa(instance.AgentId)
+	create_config["labels"].(map[string]string)["io.rancher.container.agent_id"] = strconv.Itoa(instance.AgentId)
 
 	url := config_url()
 
@@ -815,11 +820,11 @@ func setup_legacy_command(create_config map[string]interface{}, instance *model.
 	}
 }
 
-func create_host_config(start_config map[string]interface{}) *container.Config {
-	var host_config container.Config
+func create_host_config(start_config map[string]interface{}) container.HostConfig {
+	var host_config container.HostConfig
 	err := mapstructure.Decode(start_config, &host_config)
 	if err == nil {
-		return &host_config
+		return host_config
 	} else {
 		panic(err)
 	}
