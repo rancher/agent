@@ -8,13 +8,28 @@ import (
 	"path"
 	"net/http"
 	"github.com/Sirupsen/logrus"
-	"../../model"
+	"github.com/strongmonkey/agent/model"
 	"io/ioutil"
 	"github.com/rancher/go-machine-service/events"
 )
 
-func unwrap(obj map[string]interface{}) map[string]interface {
-
+func unwrap(obj *interface{}) interface{} {
+	switch obj.(type) {
+	case []map[string]interface{}:
+		ret := []map[string]interface{}{}
+		for _, o := range obj {
+			append(ret, unwrap(o))
+		}
+		return ret
+	case map[string]interface{}:
+		ret := map[string]interface{}{}
+		for key, value := range obj {
+			ret[key] = unwrap(value)
+		}
+		return ret
+	default:
+		return obj
+	}
 
 }
 

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"../../model"
+	"github.com/strongmonkey/agent/model"
 )
 
 //TODO implement blocking

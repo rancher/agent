@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"regexp"
 	"strconv"
-	"../../model"
+	"github.com/strongmonkey/agent/model"
 )
 
 func setup_mac_and_ip(instance *model.Instance, create_config *map[string]interface{}, set_mac bool, set_hostname bool) {
@@ -82,7 +82,7 @@ func setup_network_mode(instance *model.Instance, client client.Client,
 		} else if kind == "dockerContainer" {
 			ports_supported = false
 			hostname_supported = false
-			id := instance.NetworkContainer.UUID
+			id := instance.NetworkContainer["uuid"]
 			other := get_container(&client, instance.NetworkContainer, false)
 			if other != nil {
 				id = other.ID

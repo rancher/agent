@@ -9,11 +9,11 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/docker/engine-api/types"
 	"os"
-	"../marshaller"
+	"github.com/strongmonkey/agent/handlers/marshaller"
 	"github.com/docker/engine-api/client"
-	"../progress"
-	"../../model"
-	"../docker_client"
+	"github.com/strongmonkey/agent/handlers/progress"
+	"github.com/strongmonkey/agent/model"
+	"github.com/strongmonkey/agent/handlers/docker_client"
 )
 
 func is_volume_active(volume model.Volume) bool {

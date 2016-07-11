@@ -13,10 +13,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	urls "net/url"
 	"strconv"
-	"../../model"
-	"../progress"
+	"github.com/strongmonkey/agent/model"
+	"github.com/strongmonkey/agent/handlers/progress"
 	"github.com/docker/engine-api/types"
-	"../docker_client"
+	"github.com/strongmonkey/agent/handlers/docker_client"
 	"github.com/rancher/go-machine-service/events"
 )
 
@@ -256,48 +256,48 @@ func Do_instance_activate(instance *model.Instance, host *model.Host, progress i
 	// These _setup_simple_config_fields calls should happen before all
 	// other config because they stomp over config fields that other
 	// setup methods might append to. Example: the environment field
-	setup_simple_config_fields(create_config, instance,
+	setup_simple_config_fields(&create_config, instance,
 		CREATE_CONFIG_FIELDS)
 
-	setup_simple_config_fields(start_config, instance,
+	setup_simple_config_fields(&start_config, instance,
 		START_CONFIG_FIELDS)
 
-	add_label(create_config, map[string]string{UUID_LABEL: instance["uuid"].(string)})
+	add_label(&create_config, map[string]string{UUID_LABEL: instance["uuid"].(string)})
 
 	if instance_name != nil && len(instance_name) > 0 {
-		add_label(create_config, map[string]string{"io.rancher.container.name": instance_name})
+		add_label(&create_config, map[string]string{"io.rancher.container.name": instance_name})
 	}
 
-	setup_dns_search(start_config, instance)
+	setup_dns_search(&start_config, instance)
 
-	setup_logging(start_config, instance)
+	setup_logging(&start_config, instance)
 
-	setup_hostname(create_config, instance)
+	setup_hostname(&create_config, instance)
 
-	setup_command(create_config, instance)
+	setup_command(&create_config, instance)
 
-	setup_ports(create_config, instance, start_config)
+	setup_ports(&create_config, instance, &start_config)
 
-	setup_volumes(create_config, instance, start_config, client)
+	setup_volumes(&create_config, instance, &start_config, client)
 
-	setup_links(start_config, instance)
+	setup_links(&start_config, instance)
 
-	setup_networking(instance, host, create_config, start_config)
+	setup_networking(instance, host, &create_config, &start_config)
 
-	flag_system_container(instance, create_config)
+	flag_system_container(instance, &create_config)
 
-	setup_proxy(instance, create_config)
+	setup_proxy(instance, &create_config)
 
-	setup_cattle_config_url(instance, create_config)
+	setup_cattle_config_url(instance, &create_config)
 
-	create_config["host_config"] = create_host_config(start_config)
+	create_config["host_config"] = create_host_config(&start_config)
 
-	setup_device_options(create_config["host_config"], instance)
+	setup_device_options(&create_config["host_config"], instance)
 
 	container := get_container(client, instance, false)
 	created := false
 	if container == nil {
-		container = create_container(client, create_config, image_tag, instance, name, progress)
+		container = create_container(client, &create_config, image_tag, instance, name, progress)
 		created = true
 	}
 

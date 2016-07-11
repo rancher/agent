@@ -30,10 +30,10 @@ type Instance struct {
 	ExternalId string
 	AgentId int
 	InstanceLinks []Link
-	NetworkContainer Instance
+	NetworkContainer map[string]interface{}
 	NativeContainer bool
 	SystemContainer string
-	DataVolumesFromContainers []Instance
+	DataVolumesFromContainers []map[string]interface{}
 	Command_args []string
 	Labels map[string]interface{}
 }

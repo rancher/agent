@@ -22,3 +22,15 @@ import:
 
 - package: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+
+- package: golang.org/x/net
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+
+- package: github.com/docker/distribution
+  version: 4e17ab5d319ac5b70b2769442947567a83386fbc
+
+- package: github.com/docker/go-units
+  version: f2d77a61e3c169b43402a0a1e84f06daf29b8190
+
+- package: github.com/docker/go-connections
+  version: 990a1a1a70b0da4c4cb70e117971a4f0babfbf1a
