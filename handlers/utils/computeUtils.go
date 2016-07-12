@@ -412,6 +412,7 @@ func createContainer(client *client.Client, createConfig map[string]interface{},
 				logrus.Error(fmt.Sprintf("container id %s fail to start", containerResponse.ID))
 				return "", err1
 			}
+			return containerResponse.ID, nil
 		}
 		return "", err
 	}

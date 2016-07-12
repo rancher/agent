@@ -162,13 +162,16 @@ func doImageActivate(image model.Image, storagePool interface{}, progress *progr
 		buffer := readBuffer(reader)
 		//TODO not sure what response we got from status
 		//Attention! status is a json array so we have to alter unmarshaller
-		statusList := marshaller.UnmarshalEventList([]byte(buffer))
-		for _, status := range statusList {
+		logrus.Infof("status data from pull image %s", buffer)
+		statusList := strings.Split(buffer, "\r\n")
+		for _, rawStatus := range statusList {
+			status := marshaller.FromString(rawStatus)
 			if hasKey(status, "error") {
 				return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
 			}
 			if hasKey(status, "status") {
-				message = status["error"].(string)
+				logrus.Infof("pull image status %s", status["status"].(string))
+				message = status["status"].(string)
 			}
 		}
 		if lastMessage != message {
