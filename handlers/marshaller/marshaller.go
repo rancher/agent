@@ -15,12 +15,16 @@ func UnmarshalEventList(rawEvent []byte) []map[string]interface{} {
 	return events
 }
 
-func From_string(rawstring string) map[string]interface{} {
+func FromString(rawstring string) map[string]interface{} {
 	obj := map[string]interface{}{}
 	err := json.Unmarshal([]byte(rawstring), &obj)
 	if err != nil {
 		panic(errors.New("Error unmarshalling event %v"))
 	}
 	return obj
+}
+
+func ToString(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
 }
 

@@ -16,12 +16,12 @@ import (
 	"github.com/rancher/agent/handlers/docker_client"
 )
 
-func is_volume_active(volume model.Volume) bool {
-	if is_managed_volume(volume) {
+func isVolumeActive(volume model.Volume) bool {
+	if isManagedVolume(volume) {
 		return true
 	}
-	version := storage_api_version()
-	vol, err := docker_client.Get_client(version).VolumeInspect(context.Background(), volume.Name)
+	version := storageApiVersion()
+	vol, err := docker_client.GetClient(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		return false
 	}
@@ -31,7 +31,7 @@ func is_volume_active(volume model.Volume) bool {
 	return true
 }
 
-func is_managed_volume(volume model.Volume) bool {
+func isManagedVolume(volume model.Volume) bool {
 	if driver := volume.Data["field"].(map[string]string)["driver"]; driver == "" {
 		return false
 	}
@@ -41,22 +41,22 @@ func is_managed_volume(volume model.Volume) bool {
 	return true
 }
 
-func image_pull(params *model.Image_Params, progress *progress.Progress) error {
-	if !is_image_active(params.Image, nil) {
-		return do_image_activate(params.Image, nil, progress)
+func imagePull(params *model.Image_Params, progress *progress.Progress) error {
+	if !isImageActive(params.Image, nil) {
+		return doImageActivate(params.Image, nil, progress)
 	}
 	return nil
 }
 
-func do_volume_activate(volume model.Volume){
-	if !is_managed_volume(volume) {
+func doVolumeActivate(volume model.Volume){
+	if !isManagedVolume(volume) {
 		return
 	}
 	driver := volume.Data["field"].(map[string]interface{})["driver"].(string)
 	driver_opts := make(map[string]string)
 	driver_opts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
-	v := storage_api_version()
-	client := docker_client.Get_client(v)
+	v := storageApiVersion()
+	client := docker_client.GetClient(v)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -84,20 +84,20 @@ func do_volume_activate(volume model.Volume){
 	}
 }
 
-func pull_image(image model.Image, progress *progress.Progress) {
-	if !is_image_active(image, nil) {
-		do_image_activate(image, nil, progress)
+func pullImage(image model.Image, progress *progress.Progress) {
+	if !isImageActive(image, nil) {
+		doImageActivate(image, nil, progress)
 	}
 }
 
 //TODO what is a storage pool?
-func do_image_activate(image model.Image, storage_pool interface{}, progress *progress.Progress) (error){
-	if is_no_op(image.Data) {
+func doImageActivate(image model.Image, storage_pool interface{}, progress *progress.Progress) (error){
+	if isNoOp(image.Data) {
 		return nil
 	}
 
-	if is_build(image) {
-		image_build(&image, progress)
+	if isBuild(image) {
+		imageBuild(&image, progress)
 		return nil
 	}
 	//TODO why do we need auth_config? for private registry?
@@ -105,11 +105,11 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 	rc := image.RegistryCredential
 	if rc != nil {
 		auth_config["username"] = rc["publicValue"].(string)
-		if value, ok := get_fields_if_exist(rc, "data", "fields", "email"); ok {
+		if value, ok := getFieldsIfExist(rc, "data", "fields", "email"); ok {
 			auth_config["email"] = value.(string)
 		}
 		auth_config["password"] = rc["secretValue"].(string)
-		if value, ok := get_fields_if_exist(rc, "data", "fields", "serverAddress"); ok {
+		if value, ok := getFieldsIfExist(rc, "data", "fields", "serverAddress"); ok {
 			auth_config["serverAddress"] = value.(string)
 		}
 		if auth_config["serveraddress"] == "https://docker.io" {
@@ -119,7 +119,7 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
-	client := docker_client.Get_client(DEFAULT_VERSION)
+	client := docker_client.GetClient(DEFAULT_VERSION)
 	var data model.DockerImage
 	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
 		panic(err)
@@ -165,10 +165,10 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 		//Attention! status is a json array so we have to alter unmarshaller
 		status_list := marshaller.UnmarshalEventList([]byte(buffer))
 		for _, status := range status_list {
-			if has_key(status, "error") {
+			if hasKey(status, "error") {
 				return errors.New(fmt.Sprintf("Image [%s] failed to pull: %s", data.FullName, message))
 			}
-			if has_key(status, "status") {
+			if hasKey(status, "status") {
 				message = status["error"].(string)
 			}
 		}
@@ -180,17 +180,17 @@ func do_image_activate(image model.Image, storage_pool interface{}, progress *pr
 	return nil
 }
 
-func image_build (image *model.Image, progress *progress.Progress) {
-	client := docker_client.Get_client(DEFAULT_VERSION)
+func imageBuild(image *model.Image, progress *progress.Progress) {
+	client := docker_client.GetClient(DEFAULT_VERSION)
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
-	if is_str_set(opts, "context") {
-		file, err := download_file(opts["context"].(string), builds(), nil, "")
+	if isStrSet(opts, "context") {
+		file, err := downloadFile(opts["context"].(string), builds(), nil, "")
 		if err == nil {
 			delete(opts, "context")
 			opts["fileobj"] = file
 			opts["custom_context"] = true
-			do_build(opts, progress, client)
+			doBuild(opts, progress, client)
 		}
 		if file != "" {
 			os.Remove(file)
@@ -202,11 +202,11 @@ func image_build (image *model.Image, progress *progress.Progress) {
 		}
 		delete(opts, "remote")
 		opts["path"] = remote
-		do_build(opts, progress, client)
+		doBuild(opts, progress, client)
 	}
 }
 
-func do_build(opts map[string]interface{}, progress *progress.Progress, client *client.Client){
+func doBuild(opts map[string]interface{}, progress *progress.Progress, client *client.Client){
 	for _, key := range []string{"context", "remote"} {
 		if opts[key] != nil {
 			delete(opts, key)
@@ -221,46 +221,46 @@ func do_build(opts map[string]interface{}, progress *progress.Progress, client *
 	} else {
 		docker_file = opts["path"].(string)
 	}
-	image_build_options := types.ImageBuildOptions{
+	imageBuild_options := types.ImageBuildOptions{
 		Dockerfile: docker_file,
 		Remove: true,
 	}
-	response, err := client.ImageBuild(context.Background(), nil, image_build_options)
+	response, err := client.ImageBuild(context.Background(), nil, imageBuild_options)
 	if err != nil {
 		logrus.Error(err)
 		fmt.Errorf("error: %s", err)
 	}
 	buffer := readBuffer(response.Body)
-	status_list := marshaller.From_string(buffer)
+	status_list := marshaller.FromString(buffer)
 	for _, status := range status_list {
 		status := status.(map[string]interface{})
 		progress.Update(status["stream"].(string))
 	}
 }
 
-func is_build(image model.Image) bool {
-	if build, ok := get_fields_if_exist(image.Data, "field", "build"); ok {
-		if is_str_set(build.(map[string]interface{}), "context") ||
-			is_str_set(build.(map[string]interface{}), "remote") {
+func isBuild(image model.Image) bool {
+	if build, ok := getFieldsIfExist(image.Data, "field", "build"); ok {
+		if isStrSet(build.(map[string]interface{}), "context") ||
+			isStrSet(build.(map[string]interface{}), "remote") {
 			return true
 		}
 	}
 	return false
 }
 
-func is_image_active(image model.Image, storage_pool interface{}) bool {
-	if is_no_op(image.Data) {
+func isImageActive(image model.Image, storage_pool interface{}) bool {
+	if isNoOp(image.Data) {
 		return true
 	}
-	parsed_tag := parse_repo_tag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
-	_, _, err := docker_client.Get_client(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
+	parsed_tag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
+	_, _, err := docker_client.GetClient(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
 	if err == nil {
 		return true
 	}
 	return false
 }
 
-func parse_repo_tag(name string) map[string]string {
+func parseRepoTag(name string) map[string]string {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}

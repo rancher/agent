@@ -11,19 +11,19 @@ import (
 	"net/url"
 )
 
-func storage_api_version() string {
-	return default_value("DOCKER_STORAGE_API_VERSION", "1.21")
+func storageApiVersion() string {
+	return defaultValue("DOCKER_storageApiVersion", "1.21")
 }
 
-func config_url() string {
-	ret := default_value("CONFIG_URL", "")
+func configUrl() string {
+	ret := defaultValue("configUrl", "")
 	if len(ret) > 0 {
-		return api_url("")
+		return apiUrl("")
 	}
 	return ret
 }
 
-func strip_schemas(url string) string {
+func stripSchemas(url string) string {
 	if len(url) > 0 {
 		return ""
 	}
@@ -35,37 +35,37 @@ func strip_schemas(url string) string {
 	return url
 }
 
-func api_url(df string) string {
-	return strip_schemas(default_value("URL", df))
+func apiUrl(df string) string {
+	return stripSchemas(defaultValue("URL", df))
 }
 
-func api_proxy_listen_port() int {
-	ret, _ := strconv.Atoi(default_value("API_PROXY_LISTEN_PORT", "9342"))
+func apiProxyListenPort() int {
+	ret, _ := strconv.Atoi(defaultValue("apiProxyListenPort", "9342"))
 	return ret
 }
 
 func builds() string {
-	return default_value("BUILD_DIR", path.Join(home(), "builds"))
+	return defaultValue("BUILD_DIR", path.Join(home(), "builds"))
 }
 
-func state_dir() string {
-	return default_value("STATE_DIR", home())
+func stateDir() string {
+	return defaultValue("stateDir", home())
 }
 
-func physical_host_uuid_file() string {
-	def_value := fmt.Sprintf("%s/.physical_host_uuid", state_dir())
-	return default_value("PHYSICAL_HOST_UUID_FILE", def_value)
+func physicalHostUuidFile() string {
+	def_value := fmt.Sprintf("%s/.physicalHostUuid", stateDir())
+	return defaultValue("physicalHostUuidFile", def_value)
 }
 
-func physical_host_uuid(force_write bool) string {
-	return get_uuid_from_file("PHYSICAL_HOST_UUID", physical_host_uuid_file(), force_write)
+func physicalHostUuid(force_write bool) string {
+	return GetUuidFromFile("physicalHostUuid", physicalHostUuidFile(), force_write)
 }
 
 func home() string {
-	return default_value("HOME", "/var/lib/cattle")
+	return defaultValue("HOME", "/var/lib/cattle")
 }
 
-func _get_uuid_from_file(uuid_file_path string) string {
+func getUuidFromFile(uuid_file_path string) string {
 	uuid := ""
 
 	file_reader, err := os.Open(uuid_file_path)
@@ -86,8 +86,8 @@ func _get_uuid_from_file(uuid_file_path string) string {
 	return uuid
 }
 
-func get_uuid_from_file(env_name string, uuid_file_path string, force_write bool) string {
-	uuid := default_value(env_name, "")
+func GetUuidFromFile(env_name string, uuid_file_path string, force_write bool) string {
+	uuid := defaultValue(env_name, "")
 	if uuid != "" {
 		if force_write{
 			file, err := os.Open(uuid_file_path)
@@ -98,197 +98,197 @@ func get_uuid_from_file(env_name string, uuid_file_path string, force_write bool
 		}
 		return uuid
 	}
-	return _get_uuid_from_file(uuid_file_path)
+	return getUuidFromFile(uuid_file_path)
 }
 
-func setup_logger() bool {
-	return default_value("LOGGER", "true") == "true"
+func setupLogger() bool {
+	return defaultValue("LOGGER", "true") == "true"
 }
 
-func do_ping() bool {
-	return default_value("PING_ENABLED", "true") == "true"
+func doPing() bool {
+	return defaultValue("PING_ENABLED", "true") == "true"
 }
 
 func hostname() string {
 	name, _ := os.Hostname()
-	return default_value("HOSTNAME", name)
+	return defaultValue("HOSTNAME", name)
 }
 
 func workers() string {
-	return default_value("WORKERS", "50")
+	return defaultValue("WORKERS", "50")
 }
 
-func set_secret_key(value string) {
+func setSecretKey(value string) {
 	CONFIG_OVERRIDE["SECRET_KEY"] = value
 }
 
 func secret_key() string {
-	return default_value("SECRET_KEY", "adminpass")
+	return defaultValue("SECRET_KEY", "adminpass")
 }
 
-func set_access_key(value string) {
-	CONFIG_OVERRIDE["ACCESS_KEY"] = value
+func setAccessKey(value string) {
+	CONFIG_OVERRIDE["accessKey"] = value
 }
 
-func access_key() string {
-	return default_value("ACCESS_KEY", "admin")
+func accessKey() string {
+	return defaultValue("accessKey", "admin")
 }
 
-func set_api_url(value string) {
+func setApiUrl(value string) {
 	CONFIG_OVERRIDE["URL"] = value
 }
 
-func api_auth() (string, string) {
-	return access_key(), secret_key()
+func apiAuth() (string, string) {
+	return accessKey(), secret_key()
 }
 
-func is_multi_proc() bool {
-	return multi_style() == "proc"
+func isMultiProc() bool {
+	return multiStyle() == "proc"
 }
 
-func is_multi_style() bool {
-	return multi_style() == "thread"
+func isMultiStyle() bool {
+	return multiStyle() == "thread"
 }
 
 //TODO don't know how to implement it
-func is_eventlet() bool {
+func isEventlet() bool {
 	// mock
 	return false
 }
 
-func multi_style() string {
-	return default_value("AGENT_MULTI", "")
+func multiStyle() string {
+	return defaultValue("AGENT_MULTI", "")
 }
 
-func queue_depth() int {
-	ret, _ := strconv.Atoi(default_value("QUEUE_DEPTH", "5"))
+func queueDepth() int {
+	ret, _ := strconv.Atoi(defaultValue("queueDepth", "5"))
 	return ret
 }
 
-func stop_timeout() int {
-	ret, _ := strconv.Atoi(default_value("STOP_TIMEOUT", "60"))
+func stopTimeout() int {
+	ret, _ := strconv.Atoi(defaultValue("stopTimeout", "60"))
 	return ret
 }
 
 func log() string {
-	return default_value("AGENT_LOG_FILE", "agent.log")
+	return defaultValue("AGENT_LOG_FILE", "agent.log")
 }
 
 func debug() bool {
-	return default_value("DEBUG", "false") == "false"
+	return defaultValue("DEBUG", "false") == "false"
 }
 
-func agent_ip() string {
-	return default_value("AGENT_IP", "")
+func agentIp() string {
+	return defaultValue("agentIp", "")
 }
 
-func agent_port() string {
-	return default_value("AGENT_PORT", "")
+func agentPort() string {
+	return defaultValue("agentPort", "")
 }
 
-func config_sh() string {
-	return default_value("CONFIG_SCRIPT", fmt.Sprintf("%s/congif.sh", home()))
+func configSh() string {
+	return defaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/congif.sh", home()))
 }
 
-func physical_host() map[string]string {
+func physicalHost() map[string]string {
 	return map[string]string{
-		"uuid": physical_host_uuid(false),
+		"uuid": physicalHostUuid(false),
 		"type": "physicalHost",
 		"kind": "physicalHost",
 		"name": hostname(),
 	}
 }
 
-func api_proxy_listen_host() string {
-	return default_value("API_PROXY_LISTEN_HOST", "0.0.0.0")
+func apiProxyListenHost() string {
+	return defaultValue("apiProxyListenHost", "0.0.0.0")
 }
 
-func agent_instance_cattle_home() string {
-	return default_value("AGENT_INSTANCE_CATTLE_HOME", "/var/lib/cattle")
+func agentInstanceCattleHome() string {
+	return defaultValue("agentInstanceCattleHome", "/var/lib/cattle")
 }
 
-func container_state_dir() string {
-	return path.Join(state_dir(), "containers")
+func containerStateDir() string {
+	return path.Join(stateDir(), "containers")
 }
 
-func lock_dir() string {
-	return default_value("LOCK_DIR", path.Join(home(), "locks"))
+func lockDir() string {
+	return defaultValue("lockDir", path.Join(home(), "locks"))
 }
 
 func client_certs_dir() string {
-	return default_value("CLIENT_CERTS_DIR", path.Join(home(), "client_certs"))
+	return defaultValue("CLIENT_CERTS_DIR", path.Join(home(), "client_certs"))
 }
 
 func stamp() string {
-	return default_value("STAMP_FILE", path.Join(home(), ".pyagent-stamp"))
+	return defaultValue("STAMP_FILE", path.Join(home(), ".pyagent-stamp"))
 }
 
-func config_update_pyagent() bool {
-	return default_value("CONFIG_UPDATE_PYAGENT", "true") == "true"
+func configUpdatePyagent() bool {
+	return defaultValue("configUpdatePyagent", "true") == "true"
 }
 
-func max_dropped_ping() int {
-	ret, _ := strconv.Atoi(default_value("MAX_DROPPED_PING", "10"))
+func maxDroppedPing() int {
+	ret, _ := strconv.Atoi(defaultValue("maxDroppedPing", "10"))
 	return ret
 }
 
-func max_dropped_requests() int {
-	ret, _ := strconv.Atoi(default_value("MAX_DROPPED_REQUESTS", "1000"))
+func maxDroppedRequests() int {
+	ret, _ := strconv.Atoi(defaultValue("maxDroppedRequests", "1000"))
 	return ret
 }
 
-func cadvisor_port() int {
-	ret, _ := strconv.Atoi(default_value("CADVISOR", "9344"))
+func cadvisorPort() int {
+	ret, _ := strconv.Atoi(defaultValue("CADVISOR", "9344"))
 	return ret
 }
 
-func cadvisor_ip() string {
-	return default_value("CADVISOR", "127.0.0.1")
+func cadvisorIp() string {
+	return defaultValue("CADVISOR", "127.0.0.1")
 }
 
 //TODO
-func cadvisor_docker_root() string {
+func cadvisorDockerRoot() string {
 	return ""
 }
 
-func cadvisor_opts() string {
-	return default_value("CADVISOR_OPTS", "")
+func cadvisorOpts() string {
+	return defaultValue("cadvisorOpts", "")
 }
 
-func host_api_ip() string {
-	return default_value("HOST_API_IP", "0.0.0.0")
+func hostApiIp() string {
+	return defaultValue("hostApiIp", "0.0.0.0")
 }
 
-func host_api_port() int {
-	ret, _ := strconv.Atoi(default_value("HOST_API_PORT", "9345"))
+func hostApiPort() int {
+	ret, _ := strconv.Atoi(defaultValue("hostApiPort", "9345"))
 	return ret
 }
 
-func console_agent_port() int {
-	ret, _ := strconv.Atoi(default_value("CONSOLE_AGENT_PORT", "9346"))
+func consoleAgentPort() int {
+	ret, _ := strconv.Atoi(defaultValue("consoleAgentPort", "9346"))
 	return ret
 }
 
-func jwt_public_key_file() string {
+func jwtPublicKeyFile() string {
 	path := path.Join(home(), "etc", "cattle", "api.crt")
-	return default_value("CONSOLE_HOST_API_PUBLIC_KEY", path)
+	return defaultValue("CONSOLE_HOST_API_PUBLIC_KEY", path)
 }
 
-func host_api_config_file() string {
+func hostApiConfigFile() string {
 	path := path.Join(home(), "etc", "cattle", "host-api.conf")
-	return default_value("HOST_API_CONFIG_FILE", path)
+	return defaultValue("hostApiConfigFile", path)
 }
 
-func host_proxy() string {
-	return default_value("HOST_API_PROXY", "")
+func hostProxy() string {
+	return defaultValue("HOST_API_PROXY", "")
 }
 
-func event_read_timeout() string {
-	return default_value("EVENT_READ_TIMEOUT", "60")
+func eventReadTimeout() string {
+	return defaultValue("eventReadTimeout", "60")
 }
 
-func eventlet_backdoor() int {
-	val := default_value("EVENTLET_BACKDOOR", "")
+func eventletBackdoor() int {
+	val := defaultValue("eventletBackdoor", "")
 	if val != "" {
 		ret, _ := strconv.Atoi(val)
 		return ret
@@ -296,12 +296,12 @@ func eventlet_backdoor() int {
 	return 0
 }
 
-func cadvisor_wrapper() string {
-	return default_value("CADVISOR_WRAPPER", "")
+func cadvisorWrapper() string {
+	return defaultValue("cadvisorWrapper", "")
 }
 
 func labels() map[string][]string {
-	val := default_value("HOST_LABELS", "")
+	val := defaultValue("HOST_LABELS", "")
 	if val != "" {
 		m, err := url.ParseQuery(val)
 		if err != nil {

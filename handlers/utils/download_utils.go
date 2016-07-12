@@ -13,17 +13,17 @@ import (
 	"errors"
 )
 
-func download_file(url string, dest string, reporthook interface{}, checksum string) (string, error) {
-	return download_file_util(url, dest, reporthook, checksum)
+func downloadFile(url string, dest string, reporthook interface{}, checksum string) (string, error) {
+	return downloadFileUtil(url, dest, reporthook, checksum)
 }
 
-func download_file_util(url string, dest string, reporthook interface{}, checksum string) (string, error) {
-	temp_name := temp_file_in_work_dir(dest)
+func downloadFileUtil(url string, dest string, reporthook interface{}, checksum string) (string, error) {
+	temp_name := tempFileInWorkDir(dest)
 	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, temp_name))
-	err := download_from_url(url, temp_name)
+	err := downloadFromUrl(url, temp_name)
 	if err == nil {
 		if checksum != "" {
-			err1 := validate_checksum(temp_name, checksum)
+			err1 := validateChecksum(temp_name, checksum)
 			if err != nil {
 				return "", err1
 			}
@@ -46,7 +46,7 @@ func checksum(file_path string, digest hash.Hash) (string, error){
 	return fmt.Sprintf("%x", digest.Sum([]byte{})), nil
 }
 
-func validate_checksum(file_name string, checksum_value string) error {
+func validateChecksum(file_name string, checksum_value string) error {
 	digest_type := len(checksum_value)
 	var digest hash.Hash
 	switch  digest_type {

@@ -10,6 +10,8 @@ import (
 	"github.com/rancher/agent/model"
 	"io/ioutil"
 	"github.com/rancher/go-machine-service/events"
+	"strconv"
+	"github.com/rancher/agent/handlers/marshaller"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -34,22 +36,21 @@ func unwrap(obj interface{}) interface{} {
 
 }
 
-func add_label(config map[string]interface{}, new_labels map[string]string){
+func addLabel(config map[string]interface{}, new_labels map[string]string){
 	labels, ok := config["labels"]
 	if !ok {
 		labels = make(map[string]string)
 		config["labels"] = labels
 	}
-	update(config, new_labels)
-}
-
-func update(config map[string]interface{}, new_labels map[string]string){
 	for key, value := range new_labels {
 		config["labels"].(map[string]string)[key] = value
 	}
+	//for debug
+	d, _ := marshaller.ToString(config["labels"])
+	logrus.Info(string(d))
 }
 
-func search_in_list(slice []string, target string) bool {
+func searchInList(slice []string, target string) bool {
 	for _, value := range slice {
 		if target == value {
 			return true
@@ -58,7 +59,7 @@ func search_in_list(slice []string, target string) bool {
 	return false
 }
 
-func default_value(name string, df string) string {
+func defaultValue(name string, df string) string {
 	if value, ok := CONFIG_OVERRIDE[name]; ok {
 		return value
 	}
@@ -68,11 +69,11 @@ func default_value(name string, df string) string {
 	return df
 }
 
-func is_nonrancher_container(instance *model.Instance) bool {
+func isNonrancherContainer(instance *model.Instance) bool {
 	return instance.NativeContainer
 }
 
-func add_to_env(config map[string]interface{}, result map[string]string, args ...string){
+func addToEnv(config map[string]interface{}, result map[string]string, args ...string){
 	if env, ok := config["enviroment"]; !ok {
 		env = make(map[string]string)
 		config["enviroment"] = env
@@ -92,7 +93,7 @@ func add_to_env(config map[string]interface{}, result map[string]string, args ..
 
 }
 
-func get_or_create_port_list(config map[string]interface{}, key string) []model.Port {
+func getOrCreatePortList(config map[string]interface{}, key string) []model.Port {
 	list, ok := config[key]
 	if !ok {
 		config[key] = list
@@ -101,7 +102,7 @@ func get_or_create_port_list(config map[string]interface{}, key string) []model.
 	return config[key].([]model.Port)
 }
 
-func get_or_create_binding_map(config map[string]interface{}, key string) map[string][]string {
+func getOrCreateBindingMap(config map[string]interface{}, key string) map[string][]string {
 	m, ok := config[key]
 	if !ok {
 		m = make(map[string]string)
@@ -110,7 +111,7 @@ func get_or_create_binding_map(config map[string]interface{}, key string) map[st
 	return config[key].(map[string][]string)
 }
 
-func has_key(m interface{}, key string) bool {
+func hasKey(m interface{}, key string) bool {
 	_, ok := m.(map[string]interface{})[key]
 	return ok
 }
@@ -120,7 +121,7 @@ func check_output(strs []string){
 
 }
 
-func has_label(instance *model.Instance) bool{
+func hasLabel(instance *model.Instance) bool{
 	_, ok := instance.Labels["io.rancher.container.cattle_url"]
 	return ok
 }
@@ -139,13 +140,13 @@ func readBuffer(reader io.ReadCloser) string {
 	return s
 }
 
-func is_str_set(m map[string]interface{}, key string) bool {
+func isStrSet(m map[string]interface{}, key string) bool {
 	return m[key] != nil && len(m[key].([]string)) > 0
 }
 
 
 // this method check if a field exists in a map
-func get_fields_if_exist(m map[string]interface{}, fields ...string) (interface{}, bool) {
+func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
 	var temp_map map[string]interface{}
 	temp_map = m
 	for i, field := range fields {
@@ -166,15 +167,15 @@ func get_fields_if_exist(m map[string]interface{}, fields ...string) (interface{
 	return temp_map, true
 }
 
-func temp_file_in_work_dir(destination string) string {
+func tempFileInWorkDir(destination string) string {
 	dst_path := path.Join(destination, _TEMP_NAME)
 	if _, err := os.Stat(dst_path); os.IsNotExist(err) {
 		os.Mkdir(dst_path, 0777)
 	}
-	return temp_file(dst_path)
+	return tempFile(dst_path)
 }
 
-func temp_file(destination string) string {
+func tempFile(destination string) string {
 	temp_dst, err := ioutil.TempFile(destination, _TEMP_PREFIX)
 	if err == nil {
 		return temp_dst.Name()
@@ -182,7 +183,7 @@ func temp_file(destination string) string {
 	return ""
 }
 
-func download_from_url(rawurl string, filepath string) error {
+func downloadFromUrl(rawurl string, filepath string) error {
 	file, err := os.Open(filepath)
 	if err == nil {
 		response, err1 := http.Get(rawurl)
@@ -202,7 +203,7 @@ func download_from_url(rawurl string, filepath string) error {
 	return err
 }
 
-func Get_response_data(event *events.Event, event_data map[string]interface{}) *events.Event {
+func GetResponseData(event *events.Event, event_data map[string]interface{}) *events.Event {
 	// TODO not implemented
 	/*
 	resource_type := event.ResourceType
@@ -218,4 +219,12 @@ func Get_response_data(event *events.Event, event_data map[string]interface{}) *
 	}
 	*/
 	return &events.Event{}
+}
+
+func convertPortToString(port int) string {
+	if port == 0 {
+		return ""
+	} else {
+		return strconv.Itoa(port)
+	}
 }

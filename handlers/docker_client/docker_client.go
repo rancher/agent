@@ -6,7 +6,7 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-func Get_client(version string) (*client.Client){
+func GetClient(version string) (*client.Client){
 // Launch client from environment variables if go-agent is not running on host
 	env_err := os.Setenv("DOCKER_API_VERSION", version)
 	if env_err != nil {

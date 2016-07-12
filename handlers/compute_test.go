@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"testing"
-
 	"gopkg.in/check.v1"
+	"github.com/Sirupsen/logrus"
+	"fmt"
 )
 
+func init(){
+
+}
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) {
 	check.TestingT(t)
@@ -34,9 +38,12 @@ func (s *ComputeTestSuite) TestInstanceActivate(c *check.C) {
 
 	// Run the event through the framework
 	reply := testEvent(rawEvent, c)
-
+	if reply != nil {
+		logrus.Info(fmt.Sprintf("reply data: %v", reply.Data))
+	}
 	// Assert whatever you need to on the reply event. This is equivalent to the "post" functions in python-agent
 	c.Assert(reply.Name, check.Equals, "new-reply-to")
+	//c.Assert(reply.Data.(map[string]interface{}).["instance"].(map[string]interface{})[])
 	// As an example, once you implement some more logic, you could verify that the reply has the instance name as "new-name"
 
 }
