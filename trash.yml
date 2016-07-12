@@ -34,3 +34,6 @@ import:
 
 - package: github.com/docker/go-connections
   version: 990a1a1a70b0da4c4cb70e117971a4f0babfbf1a
+
+- package: github.com/opencontainers/runc
+  version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
