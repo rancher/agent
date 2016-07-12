@@ -27,4 +27,3 @@ func FromString(rawstring string) map[string]interface{} {
 func ToString(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
-

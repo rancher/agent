@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"github.com/Sirupsen/logrus"
+	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/handlers/progress"
+	"github.com/rancher/agent/handlers/utils"
+	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"sync"
-	"github.com/rancher/agent/handlers/progress"
-	"github.com/rancher/agent/handlers/utils"
-	"github.com/rancher/agent/handlers/docker_client"
-	"github.com/rancher/agent/model"
 )
 
 type InstanceWithLock struct {
@@ -29,7 +29,7 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 		}
 	}
 
-	ins_with_lock := InstanceWithLock{mu:sync.Mutex{}, in: instance}
+	ins_with_lock := InstanceWithLock{mu: sync.Mutex{}, in: instance}
 	ins_with_lock.mu.Lock()
 	defer ins_with_lock.mu.Unlock()
 	if utils.IsInstanceActive(ins_with_lock.in, host) {
@@ -37,7 +37,6 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 		utils.RecordState(docker_client.GetClient(utils.DEFAULT_VERSION), instance, "")
 		return reply(event.Data, utils.GetResponseData(event, event.Data), cli)
 	}
-
 
 	utils.DoInstanceActivate(instance, host, &progress)
 	//data := utils.Get_response_data(event, event.Data)

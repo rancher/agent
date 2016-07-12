@@ -5,12 +5,12 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-	"github.com/Sirupsen/logrus"
+	"errors"
 	"fmt"
-	"os"
+	"github.com/Sirupsen/logrus"
 	"hash"
 	"io"
-	"errors"
+	"os"
 )
 
 func downloadFile(url string, dest string, reporthook interface{}, checksum string) (string, error) {
@@ -33,7 +33,7 @@ func downloadFileUtil(url string, dest string, reporthook interface{}, checksum 
 	return temp_name, err
 }
 
-func checksum(file_path string, digest hash.Hash) (string, error){
+func checksum(file_path string, digest hash.Hash) (string, error) {
 	file, err := os.Open(file_path)
 	if err != nil {
 		return "", err
@@ -49,7 +49,7 @@ func checksum(file_path string, digest hash.Hash) (string, error){
 func validateChecksum(file_name string, checksum_value string) error {
 	digest_type := len(checksum_value)
 	var digest hash.Hash
-	switch  digest_type {
+	switch digest_type {
 	case 32:
 		digest = md5.New()
 	case 40:

@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"strings"
-	"strconv"
-	"path"
 	"fmt"
-	"os"
 	"github.com/Sirupsen/logrus"
 	go_uuid "github.com/nu7hatch/gouuid"
 	"net/url"
+	"os"
+	"path"
+	"strconv"
+	"strings"
 )
 
 func storageApiVersion() string {
@@ -29,7 +29,7 @@ func stripSchemas(url string) string {
 	}
 
 	if strings.HasSuffix(url, "/schemas") {
-		return url[0:len(url)-len("schemas")]
+		return url[0 : len(url)-len("schemas")]
 	}
 
 	return url
@@ -89,7 +89,7 @@ func getUuidFromFile(uuid_file_path string) string {
 func GetUuidFromFile(env_name string, uuid_file_path string, force_write bool) string {
 	uuid := defaultValue(env_name, "")
 	if uuid != "" {
-		if force_write{
+		if force_write {
 			file, err := os.Open(uuid_file_path)
 			if err == nil {
 				os.Remove(uuid_file_path)

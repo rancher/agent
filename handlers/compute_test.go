@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"testing"
-	"gopkg.in/check.v1"
-	"github.com/Sirupsen/logrus"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"gopkg.in/check.v1"
+	"testing"
 )
 
-func init(){
+func init() {
 
 }
+
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) {
 	check.TestingT(t)

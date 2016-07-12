@@ -1,17 +1,17 @@
 package utils
 
 import (
-	"os"
 	"fmt"
-	"io"
-	"path"
-	"net/http"
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/model"
-	"io/ioutil"
-	"github.com/rancher/go-machine-service/events"
-	"strconv"
 	"github.com/rancher/agent/handlers/marshaller"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/go-machine-service/events"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path"
+	"strconv"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -36,7 +36,7 @@ func unwrap(obj interface{}) interface{} {
 
 }
 
-func addLabel(config map[string]interface{}, new_labels map[string]string){
+func addLabel(config map[string]interface{}, new_labels map[string]string) {
 	labels, ok := config["labels"]
 	if !ok {
 		labels = make(map[string]string)
@@ -73,13 +73,13 @@ func isNonrancherContainer(instance *model.Instance) bool {
 	return instance.NativeContainer
 }
 
-func addToEnv(config map[string]interface{}, result map[string]string, args ...string){
+func addToEnv(config map[string]interface{}, result map[string]string, args ...string) {
 	if env, ok := config["enviroment"]; !ok {
 		env = make(map[string]string)
 		config["enviroment"] = env
 	} else {
 		env := env.(map[string]interface{})
-		for i := 0 ; i < len(args) ; i += 2 {
+		for i := 0; i < len(args); i += 2 {
 			if _, ok := env[args[i]]; !ok {
 				env[args[i]] = args[i+1]
 			}
@@ -117,11 +117,11 @@ func hasKey(m interface{}, key string) bool {
 }
 
 //TODO mock not implemented
-func check_output(strs []string){
+func check_output(strs []string) {
 
 }
 
-func hasLabel(instance *model.Instance) bool{
+func hasLabel(instance *model.Instance) bool {
 	_, ok := instance.Labels["io.rancher.container.cattle_url"]
 	return ok
 }
@@ -144,7 +144,6 @@ func isStrSet(m map[string]interface{}, key string) bool {
 	return m[key] != nil && len(m[key].([]string)) > 0
 }
 
-
 // this method check if a field exists in a map
 func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
 	var temp_map map[string]interface{}
@@ -158,7 +157,7 @@ func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, 
 		default:
 			// if it is the last field and it is not empty
 			// it exists othewise return false
-			if i == len(fields) - 1 {
+			if i == len(fields)-1 {
 				return temp_map[field], true
 			}
 			return nil, false
@@ -197,7 +196,7 @@ func downloadFromUrl(rawurl string, filepath string) error {
 			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
 			return ok
 		}
-		logrus.Info(fmt.Sprintf("%s bytes downloaded successfully", n))
+		logrus.Info(fmt.Sprintf("%v bytes downloaded successfully", n))
 		return nil
 	}
 	return err
@@ -206,17 +205,17 @@ func downloadFromUrl(rawurl string, filepath string) error {
 func GetResponseData(event *events.Event, event_data map[string]interface{}) *events.Event {
 	// TODO not implemented
 	/*
-	resource_type := event.ResourceType
-	var ihm model.InstanceHostMap
-	mapstructure.Decode(event_data, &ihm)
-	tp := ihm.Type
-	if tp != nil && len(tp) > 0{
-		r := regexp.Compile("([A-Z])")
-		inner_name := strings.Replace(tp, r.FindStringSubmatch(tp)[0], "_\1", -1)
-		method_name := strings.ToLower(fmt.Sprintf("_get_%s_data", inner_name))
-		method := ""
+		resource_type := event.ResourceType
+		var ihm model.InstanceHostMap
+		mapstructure.Decode(event_data, &ihm)
+		tp := ihm.Type
+		if tp != nil && len(tp) > 0{
+			r := regexp.Compile("([A-Z])")
+			inner_name := strings.Replace(tp, r.FindStringSubmatch(tp)[0], "_\1", -1)
+			method_name := strings.ToLower(fmt.Sprintf("_get_%s_data", inner_name))
+			method := ""
 
-	}
+		}
 	*/
 	return &events.Event{}
 }

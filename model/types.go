@@ -14,16 +14,16 @@ type VolumeCreateRequest types.VolumeCreateRequest
 type Host_Config container.HostConfig
 
 type Option_Config struct {
-	Key string
-	Dev_List []map[string]string
+	Key          string
+	Dev_List     []map[string]string
 	Docker_Field string
-	Field string
+	Field        string
 }
 
 type Image_Params struct {
-	Image Image
-	Tag string
-	Mode string
+	Image    Image
+	Tag      string
+	Mode     string
 	Complete bool
 }
 

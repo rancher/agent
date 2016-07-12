@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"gopkg.in/check.v1"
+	"io/ioutil"
 )
 
 func loadEvent(eventFile string, c *check.C) []byte {
@@ -18,14 +18,12 @@ func loadEvent(eventFile string, c *check.C) []byte {
 
 }
 
-
 func getInstance(event map[string]interface{}, c *check.C) map[string]interface{} {
 	data := event["data"].(map[string]interface{})
 	ihm := data["instanceHostMap"].(map[string]interface{})
 	instance := ihm["instance"].(map[string]interface{})
 	return instance
 }
-
 
 func unmarshalEvent(rawEvent []byte, c *check.C) map[string]interface{} {
 	event := map[string]interface{}{}

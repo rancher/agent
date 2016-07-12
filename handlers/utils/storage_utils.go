@@ -1,19 +1,19 @@
 package utils
 
 import (
-	"golang.org/x/net/context"
-	"github.com/Sirupsen/logrus"
-	"fmt"
-	"strings"
 	"errors"
-	"github.com/mitchellh/mapstructure"
-	"github.com/docker/engine-api/types"
-	"os"
-	"github.com/rancher/agent/handlers/marshaller"
+	"fmt"
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/mitchellh/mapstructure"
+	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/handlers/marshaller"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/handlers/docker_client"
+	"golang.org/x/net/context"
+	"os"
+	"strings"
 )
 
 func isVolumeActive(volume model.Volume) bool {
@@ -48,7 +48,7 @@ func imagePull(params *model.Image_Params, progress *progress.Progress) error {
 	return nil
 }
 
-func doVolumeActivate(volume model.Volume){
+func doVolumeActivate(volume model.Volume) {
 	if !isManagedVolume(volume) {
 		return
 	}
@@ -72,8 +72,8 @@ func doVolumeActivate(volume model.Volume){
 		}
 	}
 	options := types.VolumeCreateRequest{
-		Name: volume.Name,
-		Driver: driver,
+		Name:       volume.Name,
+		Driver:     driver,
 		DriverOpts: driver_opts,
 	}
 	new_volume, err1 := client.VolumeCreate(context.Background(), options)
@@ -91,7 +91,7 @@ func pullImage(image model.Image, progress *progress.Progress) {
 }
 
 //TODO what is a storage pool?
-func doImageActivate(image model.Image, storage_pool interface{}, progress *progress.Progress) (error){
+func doImageActivate(image model.Image, storage_pool interface{}, progress *progress.Progress) error {
 	if isNoOp(image.Data) {
 		return nil
 	}
@@ -115,7 +115,7 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		if auth_config["serveraddress"] == "https://docker.io" {
 			auth_config["serveraddress"] = "https://index.docker.io"
 		}
-	} else{
+	} else {
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
@@ -129,10 +129,10 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		temp = "index." + temp
 	}
 	/*
-	Always pass insecure_registry=True to prevent docker-py
-        from pre-verifying the registry. Let the docker daemon handle
-        the verification of and connection to the registry.
-	 */
+		Always pass insecure_registry=True to prevent docker-py
+	        from pre-verifying the registry. Let the docker daemon handle
+	        the verification of and connection to the registry.
+	*/
 	var auth types.AuthConfig
 	if err := mapstructure.Decode(auth_config, &auth); err != nil {
 		panic(err)
@@ -206,7 +206,7 @@ func imageBuild(image *model.Image, progress *progress.Progress) {
 	}
 }
 
-func doBuild(opts map[string]interface{}, progress *progress.Progress, client *client.Client){
+func doBuild(opts map[string]interface{}, progress *progress.Progress, client *client.Client) {
 	for _, key := range []string{"context", "remote"} {
 		if opts[key] != nil {
 			delete(opts, key)
@@ -223,12 +223,11 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 	}
 	imageBuild_options := types.ImageBuildOptions{
 		Dockerfile: docker_file,
-		Remove: true,
+		Remove:     true,
 	}
 	response, err := client.ImageBuild(context.Background(), nil, imageBuild_options)
 	if err != nil {
 		logrus.Error(err)
-		fmt.Errorf("error: %s", err)
 	}
 	buffer := readBuffer(response.Body)
 	status_list := marshaller.FromString(buffer)
@@ -268,7 +267,7 @@ func parseRepoTag(name string) map[string]string {
 	if n < 0 {
 		return map[string]string{
 			"repo": name[:n],
-			"tag": "latest",
+			"tag":  "latest",
 			"uuid": name + ":latest",
 		}
 	}
@@ -276,13 +275,13 @@ func parseRepoTag(name string) map[string]string {
 	if strings.Index(tag, "/") < 0 {
 		return map[string]string{
 			"repo": name[:n],
-			"tag": tag,
+			"tag":  tag,
 			"uuid": name,
 		}
 	}
 	return map[string]string{
 		"repo": name,
-		"tag": "latest",
+		"tag":  "latest",
 		"uuid": name + ":latest",
 	}
 }
