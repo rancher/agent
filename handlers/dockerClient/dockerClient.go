@@ -1,4 +1,4 @@
-package docker_client
+package dockerClient
 
 import (
 	"github.com/Sirupsen/logrus"
@@ -8,13 +8,13 @@ import (
 
 func GetClient(version string) *client.Client {
 	// Launch client from environment variables if go-agent is not running on host
-	env_err := os.Setenv("DOCKER_API_VERSION", version)
-	if env_err != nil {
-		logrus.Error(env_err)
+	envErr := os.Setenv("DOCKER_API_VERSION", version)
+	if envErr != nil {
+		logrus.Error(envErr)
 	}
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		logrus.Error(env_err)
+		logrus.Error(err)
 	}
 	return cli
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 )
 
-//TODO unmarshal byte array into a map. May require to unmarshal a json array
 func UnmarshalEventList(rawEvent []byte) []map[string]interface{} {
 	events := []map[string]interface{}{}
 	err := json.Unmarshal(rawEvent, &events)

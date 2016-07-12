@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
@@ -20,7 +19,7 @@ func isVolumeActive(volume model.Volume) bool {
 	if isManagedVolume(volume) {
 		return true
 	}
-	version := storageApiVersion()
+	version := storageAPIVersion()
 	vol, err := dockerClient.GetClient(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		return false
@@ -41,7 +40,7 @@ func isManagedVolume(volume model.Volume) bool {
 	return true
 }
 
-func imagePull(params *model.Image_Params, progress *progress.Progress) error {
+func imagePull(params *model.ImageParams, progress *progress.Progress) error {
 	if !isImageActive(params.Image, nil) {
 		return doImageActivate(params.Image, nil, progress)
 	}
@@ -53,9 +52,9 @@ func doVolumeActivate(volume model.Volume) {
 		return
 	}
 	driver := volume.Data["field"].(map[string]interface{})["driver"].(string)
-	driver_opts := make(map[string]string)
-	driver_opts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
-	v := storageApiVersion()
+	driverOpts := make(map[string]string)
+	driverOpts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
+	v := storageAPIVersion()
 	client := dockerClient.GetClient(v)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
@@ -74,13 +73,13 @@ func doVolumeActivate(volume model.Volume) {
 	options := types.VolumeCreateRequest{
 		Name:       volume.Name,
 		Driver:     driver,
-		DriverOpts: driver_opts,
+		DriverOpts: driverOpts,
 	}
-	new_volume, err1 := client.VolumeCreate(context.Background(), options)
+	newVolume, err1 := client.VolumeCreate(context.Background(), options)
 	if err1 != nil {
 		logrus.Error(err)
 	} else {
-		logrus.Info(fmt.Sprintf("volume %s created", new_volume.Name))
+		logrus.Info(fmt.Sprintf("volume %s created", newVolume.Name))
 	}
 }
 
@@ -91,7 +90,7 @@ func pullImage(image model.Image, progress *progress.Progress) {
 }
 
 //TODO what is a storage pool?
-func doImageActivate(image model.Image, storage_pool interface{}, progress *progress.Progress) error {
+func doImageActivate(image model.Image, storagePool interface{}, progress *progress.Progress) error {
 	if isNoOp(image.Data) {
 		return nil
 	}
@@ -100,26 +99,26 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		imageBuild(&image, progress)
 		return nil
 	}
-	//TODO why do we need auth_config? for private registry?
-	auth_config := map[string]string{}
+	//TODO why do we need authConfig? for private registry?
+	authConfig := map[string]string{}
 	rc := image.RegistryCredential
 	if rc != nil {
-		auth_config["username"] = rc["publicValue"].(string)
+		authConfig["username"] = rc["publicValue"].(string)
 		if value, ok := getFieldsIfExist(rc, "data", "fields", "email"); ok {
-			auth_config["email"] = value.(string)
+			authConfig["email"] = value.(string)
 		}
-		auth_config["password"] = rc["secretValue"].(string)
+		authConfig["password"] = rc["secretValue"].(string)
 		if value, ok := getFieldsIfExist(rc, "data", "fields", "serverAddress"); ok {
-			auth_config["serverAddress"] = value.(string)
+			authConfig["serverAddress"] = value.(string)
 		}
-		if auth_config["serveraddress"] == "https://docker.io" {
-			auth_config["serveraddress"] = "https://index.docker.io"
+		if authConfig["serveraddress"] == "https://docker.io" {
+			authConfig["serveraddress"] = "https://index.docker.io"
 		}
 	} else {
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
-	client := dockerClient.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DefaultVersion)
 	var data model.DockerImage
 	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
 		panic(err)
@@ -129,33 +128,33 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		temp = "index." + temp
 	}
 	/*
-		Always pass insecure_registry=True to prevent docker-py
-	        from pre-verifying the registry. Let the docker daemon handle
-	        the verification of and connection to the registry.
+			Always pass insecure_registry=True to prevent docker-py
+		        from pre-verifying the registry. Let the docker daemon handle
+		        the verification of and connection to the registry.
 	*/
 	var auth types.AuthConfig
-	if err := mapstructure.Decode(auth_config, &auth); err != nil {
+	if err := mapstructure.Decode(authConfig, &auth); err != nil {
 		panic(err)
 	}
-	token_info, auth_err := client.RegistryLogin(context.Background(), auth)
-	if auth_err != nil {
-		logrus.Error(fmt.Sprintf("Authorization error; %s", auth_err))
+	tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
+	if authErr != nil {
+		logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
 	}
 	if progress == nil {
 		_, err2 := client.ImagePull(context.Background(), data.FullName,
 			types.ImagePullOptions{
-				RegistryAuth: token_info.IdentityToken,
+				RegistryAuth: tokenInfo.IdentityToken,
 			})
 		if err2 != nil {
-			return errors.New(fmt.Sprintf("Image [%s] failed to pull: %s",
-				data.FullName, err2))
+			return fmt.Errorf("Image [%s] failed to pull: %s",
+				data.FullName, err2)
 		}
 	} else {
-		last_message := ""
+		lastMessage := ""
 		message := ""
 		reader, err := client.ImagePull(context.Background(), data.FullName,
 			types.ImagePullOptions{
-				RegistryAuth: token_info.IdentityToken,
+				RegistryAuth: tokenInfo.IdentityToken,
 			})
 		if err != nil {
 			logrus.Error(err)
@@ -163,25 +162,25 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		buffer := readBuffer(reader)
 		//TODO not sure what response we got from status
 		//Attention! status is a json array so we have to alter unmarshaller
-		status_list := marshaller.UnmarshalEventList([]byte(buffer))
-		for _, status := range status_list {
+		statusList := marshaller.UnmarshalEventList([]byte(buffer))
+		for _, status := range statusList {
 			if hasKey(status, "error") {
-				return errors.New(fmt.Sprintf("Image [%s] failed to pull: %s", data.FullName, message))
+				return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
 			}
 			if hasKey(status, "status") {
 				message = status["error"].(string)
 			}
 		}
-		if last_message != message {
+		if lastMessage != message {
 			progress.Update(message)
-			last_message = message
+			lastMessage = message
 		}
 	}
 	return nil
 }
 
 func imageBuild(image *model.Image, progress *progress.Progress) {
-	client := dockerClient.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DefaultVersion)
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
 	if isStrSet(opts, "context") {
@@ -214,24 +213,24 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 	}
 	opts["stream"] = true
 	opts["rm"] = true
-	docker_file := ""
+	dockerFile := ""
 	//TODO check if this logic is correct
 	if opts["fileobj"] != nil {
-		docker_file = opts["fileobj"].(string)
+		dockerFile = opts["fileobj"].(string)
 	} else {
-		docker_file = opts["path"].(string)
+		dockerFile = opts["path"].(string)
 	}
-	imageBuild_options := types.ImageBuildOptions{
-		Dockerfile: docker_file,
+	imageBuildOptions := types.ImageBuildOptions{
+		Dockerfile: dockerFile,
 		Remove:     true,
 	}
-	response, err := client.ImageBuild(context.Background(), nil, imageBuild_options)
+	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
 	if err != nil {
 		logrus.Error(err)
 	}
 	buffer := readBuffer(response.Body)
-	status_list := marshaller.FromString(buffer)
-	for _, status := range status_list {
+	statusList := marshaller.FromString(buffer)
+	for _, status := range statusList {
 		status := status.(map[string]interface{})
 		progress.Update(status["stream"].(string))
 	}
@@ -247,12 +246,12 @@ func isBuild(image model.Image) bool {
 	return false
 }
 
-func isImageActive(image model.Image, storage_pool interface{}) bool {
+func isImageActive(image model.Image, storagePool interface{}) bool {
 	if isNoOp(image.Data) {
 		return true
 	}
-	parsed_tag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
-	_, _, err := dockerClient.GetClient(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
+	parsedTag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
+	_, _, err := dockerClient.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), parsedTag["uuid"], false)
 	if err == nil {
 		return true
 	}

@@ -1,1 +1,1 @@
-package host_info
+package hostInfo

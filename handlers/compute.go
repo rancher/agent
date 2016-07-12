@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/handlers/dockerClient"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
 	"github.com/rancher/agent/model"
@@ -29,12 +29,12 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 		}
 	}
 
-	ins_with_lock := InstanceWithLock{mu: sync.Mutex{}, in: instance}
-	ins_with_lock.mu.Lock()
-	defer ins_with_lock.mu.Unlock()
-	if utils.IsInstanceActive(ins_with_lock.in, host) {
+	insWithLock := InstanceWithLock{mu: sync.Mutex{}, in: instance}
+	insWithLock.mu.Lock()
+	defer insWithLock.mu.Unlock()
+	if utils.IsInstanceActive(insWithLock.in, host) {
 		logrus.Info("instance is activated")
-		utils.RecordState(docker_client.GetClient(utils.DEFAULT_VERSION), instance, "")
+		utils.RecordState(dockerClient.GetClient(utils.DefaultVersion), instance, "")
 		return reply(event.Data, utils.GetResponseData(event, event.Data), cli)
 	}
 

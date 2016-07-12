@@ -36,13 +36,13 @@ func unwrap(obj interface{}) interface{} {
 
 }
 
-func addLabel(config map[string]interface{}, new_labels map[string]string) {
+func addLabel(config map[string]interface{}, newLabels map[string]string) {
 	labels, ok := config["labels"]
 	if !ok {
 		labels = make(map[string]string)
 		config["labels"] = labels
 	}
-	for key, value := range new_labels {
+	for key, value := range newLabels {
 		config["labels"].(map[string]string)[key] = value
 	}
 	//for debug
@@ -60,7 +60,7 @@ func searchInList(slice []string, target string) bool {
 }
 
 func defaultValue(name string, df string) string {
-	if value, ok := CONFIG_OVERRIDE[name]; ok {
+	if value, ok := ConfigOverride[name]; ok {
 		return value
 	}
 	if result := os.Getenv(fmt.Sprintf("CATTLE_%s", name)); result != "" {
@@ -117,7 +117,7 @@ func hasKey(m interface{}, key string) bool {
 }
 
 //TODO mock not implemented
-func check_output(strs []string) {
+func checkOutput(strs []string) {
 
 }
 
@@ -146,43 +146,43 @@ func isStrSet(m map[string]interface{}, key string) bool {
 
 // this method check if a field exists in a map
 func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
-	var temp_map map[string]interface{}
-	temp_map = m
+	var tempMap map[string]interface{}
+	tempMap = m
 	for i, field := range fields {
-		switch temp_map[field].(type) {
+		switch tempMap[field].(type) {
 		case map[string]interface{}:
-			temp_map = temp_map[field].(map[string]interface{})
+			tempMap = tempMap[field].(map[string]interface{})
 		case nil:
 			return nil, false
 		default:
 			// if it is the last field and it is not empty
 			// it exists othewise return false
 			if i == len(fields)-1 {
-				return temp_map[field], true
+				return tempMap[field], true
 			}
 			return nil, false
 		}
 	}
-	return temp_map, true
+	return tempMap, true
 }
 
 func tempFileInWorkDir(destination string) string {
-	dst_path := path.Join(destination, _TEMP_NAME)
-	if _, err := os.Stat(dst_path); os.IsNotExist(err) {
-		os.Mkdir(dst_path, 0777)
+	dstPath := path.Join(destination, TempName)
+	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
+		os.Mkdir(dstPath, 0777)
 	}
-	return tempFile(dst_path)
+	return tempFile(dstPath)
 }
 
 func tempFile(destination string) string {
-	temp_dst, err := ioutil.TempFile(destination, _TEMP_PREFIX)
+	tempDst, err := ioutil.TempFile(destination, TempPrefix)
 	if err == nil {
-		return temp_dst.Name()
+		return tempDst.Name()
 	}
 	return ""
 }
 
-func downloadFromUrl(rawurl string, filepath string) error {
+func downloadFromURL(rawurl string, filepath string) error {
 	file, err := os.Open(filepath)
 	if err == nil {
 		response, err1 := http.Get(rawurl)
@@ -202,7 +202,7 @@ func downloadFromUrl(rawurl string, filepath string) error {
 	return err
 }
 
-func GetResponseData(event *events.Event, event_data map[string]interface{}) *events.Event {
+func GetResponseData(event *events.Event, eventData map[string]interface{}) *events.Event {
 	// TODO not implemented
 	/*
 		resource_type := event.ResourceType
@@ -223,7 +223,6 @@ func GetResponseData(event *events.Event, event_data map[string]interface{}) *ev
 func convertPortToString(port int) string {
 	if port == 0 {
 		return ""
-	} else {
-		return strconv.Itoa(port)
 	}
+	return strconv.Itoa(port)
 }

@@ -24,8 +24,8 @@ type Nic struct {
 	} `json:"network"`
 }
 
-type Host_Bind struct {
-	Bind_addr  string
+type HostBind struct {
+	BindAddr   string
 	PublicPort int
 }
 
@@ -34,7 +34,7 @@ type Service struct {
 }
 
 type Link struct {
-	TargetInstanceId string
+	TargetInstanceID string
 	LinkName         string
 	TargetInstance   Instance
 	Data             map[string]interface{}

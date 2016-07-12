@@ -18,23 +18,23 @@ func downloadFile(url string, dest string, reporthook interface{}, checksum stri
 }
 
 func downloadFileUtil(url string, dest string, reporthook interface{}, checksum string) (string, error) {
-	temp_name := tempFileInWorkDir(dest)
-	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, temp_name))
-	err := downloadFromUrl(url, temp_name)
+	tempName := tempFileInWorkDir(dest)
+	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, tempName))
+	err := downloadFromURL(url, tempName)
 	if err == nil {
 		if checksum != "" {
-			err1 := validateChecksum(temp_name, checksum)
+			err1 := validateChecksum(tempName, checksum)
 			if err != nil {
 				return "", err1
 			}
 		}
-		return temp_name, nil
+		return tempName, nil
 	}
-	return temp_name, err
+	return tempName, err
 }
 
-func checksum(file_path string, digest hash.Hash) (string, error) {
-	file, err := os.Open(file_path)
+func checksum(filePath string, digest hash.Hash) (string, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
@@ -46,10 +46,10 @@ func checksum(file_path string, digest hash.Hash) (string, error) {
 	return fmt.Sprintf("%x", digest.Sum([]byte{})), nil
 }
 
-func validateChecksum(file_name string, checksum_value string) error {
-	digest_type := len(checksum_value)
+func validateChecksum(fileName string, checksumValue string) error {
+	digestType := len(checksumValue)
 	var digest hash.Hash
-	switch digest_type {
+	switch digestType {
 	case 32:
 		digest = md5.New()
 	case 40:
@@ -59,14 +59,14 @@ func validateChecksum(file_name string, checksum_value string) error {
 	case 128:
 		digest = sha512.New()
 	default:
-		return errors.New("invalid digest_type!")
+		return errors.New("invalid digestType")
 	}
-	new_value, err := checksum(file_name, digest)
+	newValue, err := checksum(fileName, digest)
 	if err != nil {
 		return err
 	}
-	if new_value != checksum_value {
-		return errors.New(fmt.Sprintf("Invalid checksum [%s]", new_value))
+	if newValue != checksumValue {
+		return fmt.Errorf("Invalid checksum [%s]", newValue)
 	}
 	return nil
 }

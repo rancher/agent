@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	go_uuid "github.com/nu7hatch/gouuid"
+	goUUID "github.com/nu7hatch/gouuid"
 	"net/url"
 	"os"
 	"path"
@@ -11,14 +11,14 @@ import (
 	"strings"
 )
 
-func storageApiVersion() string {
-	return defaultValue("DOCKER_storageApiVersion", "1.21")
+func storageAPIVersion() string {
+	return defaultValue("DOCKER_storageAPIVersion", "1.21")
 }
 
-func configUrl() string {
+func configURL() string {
 	ret := defaultValue("configUrl", "")
 	if len(ret) > 0 {
-		return apiUrl("")
+		return apiURL("")
 	}
 	return ret
 }
@@ -35,7 +35,7 @@ func stripSchemas(url string) string {
 	return url
 }
 
-func apiUrl(df string) string {
+func apiURL(df string) string {
 	return stripSchemas(defaultValue("URL", df))
 }
 
@@ -52,53 +52,53 @@ func stateDir() string {
 	return defaultValue("stateDir", home())
 }
 
-func physicalHostUuidFile() string {
-	def_value := fmt.Sprintf("%s/.physicalHostUuid", stateDir())
-	return defaultValue("physicalHostUuidFile", def_value)
+func physicalHostUUIDFile() string {
+	defValue := fmt.Sprintf("%s/.physicalHostUuid", stateDir())
+	return defaultValue("physicalHostUuidFile", defValue)
 }
 
-func physicalHostUuid(force_write bool) string {
-	return GetUuidFromFile("physicalHostUuid", physicalHostUuidFile(), force_write)
+func physicalHostUUID(forceWrite bool) string {
+	return GetUUIDFromFile("physicalHostUuid", physicalHostUUIDFile(), forceWrite)
 }
 
 func home() string {
 	return defaultValue("HOME", "/var/lib/cattle")
 }
 
-func getUuidFromFile(uuid_file_path string) string {
+func getUUIDFromFile(uuidFilePath string) string {
 	uuid := ""
 
-	file_reader, err := os.Open(uuid_file_path)
+	fileReader, err := os.Open(uuidFilePath)
 	if err != nil {
 		logrus.Error(err)
 	} else {
-		uuid = readBuffer(file_reader)
+		uuid = readBuffer(fileReader)
 	}
 	if uuid == "" {
-		new_uuid, err1 := go_uuid.NewV4()
+		newUUID, err1 := goUUID.NewV4()
 		if err1 != nil {
 			logrus.Error(err)
 		} else {
-			uuid = new_uuid.String()
+			uuid = newUUID.String()
 		}
-		file_reader.WriteString(uuid)
+		fileReader.WriteString(uuid)
 	}
 	return uuid
 }
 
-func GetUuidFromFile(env_name string, uuid_file_path string, force_write bool) string {
-	uuid := defaultValue(env_name, "")
+func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) string {
+	uuid := defaultValue(envName, "")
 	if uuid != "" {
-		if force_write {
-			file, err := os.Open(uuid_file_path)
+		if forceWrite {
+			file, err := os.Open(uuidFilePath)
 			if err == nil {
-				os.Remove(uuid_file_path)
+				os.Remove(uuidFilePath)
 			}
 			file.WriteString(uuid)
 		}
 		return uuid
 	}
-	return getUuidFromFile(uuid_file_path)
+	return getUUIDFromFile(uuidFilePath)
 }
 
 func setupLogger() bool {
@@ -119,27 +119,27 @@ func workers() string {
 }
 
 func setSecretKey(value string) {
-	CONFIG_OVERRIDE["SECRET_KEY"] = value
+	ConfigOverride["SECRET_KEY"] = value
 }
 
-func secret_key() string {
+func secretKey() string {
 	return defaultValue("SECRET_KEY", "adminpass")
 }
 
 func setAccessKey(value string) {
-	CONFIG_OVERRIDE["accessKey"] = value
+	ConfigOverride["accessKey"] = value
 }
 
 func accessKey() string {
 	return defaultValue("accessKey", "admin")
 }
 
-func setApiUrl(value string) {
-	CONFIG_OVERRIDE["URL"] = value
+func setAPIURL(value string) {
+	ConfigOverride["URL"] = value
 }
 
 func apiAuth() (string, string) {
-	return accessKey(), secret_key()
+	return accessKey(), secretKey()
 }
 
 func isMultiProc() bool {
@@ -178,7 +178,7 @@ func debug() bool {
 	return defaultValue("DEBUG", "false") == "false"
 }
 
-func agentIp() string {
+func agentIP() string {
 	return defaultValue("agentIp", "")
 }
 
@@ -192,7 +192,7 @@ func configSh() string {
 
 func physicalHost() map[string]string {
 	return map[string]string{
-		"uuid": physicalHostUuid(false),
+		"uuid": physicalHostUUID(false),
 		"type": "physicalHost",
 		"kind": "physicalHost",
 		"name": hostname(),
@@ -215,7 +215,7 @@ func lockDir() string {
 	return defaultValue("lockDir", path.Join(home(), "locks"))
 }
 
-func client_certs_dir() string {
+func clientCertsDir() string {
 	return defaultValue("CLIENT_CERTS_DIR", path.Join(home(), "client_certs"))
 }
 
@@ -242,7 +242,7 @@ func cadvisorPort() int {
 	return ret
 }
 
-func cadvisorIp() string {
+func cadvisorIP() string {
 	return defaultValue("CADVISOR", "127.0.0.1")
 }
 
@@ -255,11 +255,11 @@ func cadvisorOpts() string {
 	return defaultValue("cadvisorOpts", "")
 }
 
-func hostApiIp() string {
+func hostAPIIP() string {
 	return defaultValue("hostApiIp", "0.0.0.0")
 }
 
-func hostApiPort() int {
+func hostAPIPort() int {
 	ret, _ := strconv.Atoi(defaultValue("hostApiPort", "9345"))
 	return ret
 }
@@ -274,7 +274,7 @@ func jwtPublicKeyFile() string {
 	return defaultValue("CONSOLE_HOST_API_PUBLIC_KEY", path)
 }
 
-func hostApiConfigFile() string {
+func hostAPIConfigFile() string {
 	path := path.Join(home(), "etc", "cattle", "host-api.conf")
 	return defaultValue("hostApiConfigFile", path)
 }

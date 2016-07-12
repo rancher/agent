@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-func setupMacAndIp(instance *model.Instance, create_config map[string]interface{}, set_mac bool, set_hostname bool) {
+func setupMacAndIP(instance *model.Instance, createConfig map[string]interface{}, setMac bool, setHostname bool) {
 	/*
 		Configures the mac address and primary ip address for the the supplied
-		container. The mac_address is configured directly as part of the native
+		container. The macAddress is configured directly as part of the native
 		docker API. The primary IP address is set as an environment variable on the
 		container. Another Rancher micro-service will detect this environment
 		variable when the container is started and inject the IP into the
@@ -24,68 +24,68 @@ func setupMacAndIp(instance *model.Instance, create_config map[string]interface{
 		resource schema, this implementation assumes a single nic for the purpose
 		of configuring the mac address and IP.
 	*/
-	mac_address := ""
-	device_number := -1
+	macAddress := ""
+	deviceNumber := -1
 	for _, nic := range instance.Nics {
-		if device_number == -1 {
-			mac_address = nic.MacAddress
-			device_number = nic.DeviceNumber
-		} else if device_number > nic.DeviceNumber {
-			mac_address = nic.MacAddress
-			device_number = nic.DeviceNumber
+		if deviceNumber == -1 {
+			macAddress = nic.MacAddress
+			deviceNumber = nic.DeviceNumber
+		} else if deviceNumber > nic.DeviceNumber {
+			macAddress = nic.MacAddress
+			deviceNumber = nic.DeviceNumber
 		}
 	}
 
-	if set_mac {
-		create_config["mac_address"] = mac_address
+	if setMac {
+		createConfig["macAddress"] = macAddress
 	}
 
-	if !set_hostname {
-		delete(create_config, "hostname")
+	if !setHostname {
+		delete(createConfig, "hostname")
 	}
 
 	if instance.Nics != nil && len(instance.Nics) > 0 && instance.Nics[0].IPAddresses != nil {
 		// Assume one nic
 		nic := instance.Nics[0]
 		logrus.Info("nic info %v", nic)
-		ip_address := ""
+		ipAddress := ""
 		for _, ip := range nic.IPAddresses {
 			logrus.Info("ip info %v", ip)
 			if ip.Role == "primary" {
-				ip_address = fmt.Sprintf("%s/%s", ip.Address, strconv.Itoa(ip.Subnet.CidrSize))
+				ipAddress = fmt.Sprintf("%s/%s", ip.Address, strconv.Itoa(ip.Subnet.CidrSize))
 				break
 			}
 		}
-		logrus.Info("ip info %s", ip_address)
-		if ip_address != "" {
-			addLabel(create_config, map[string]string{"io.rancher.container.ip": ip_address})
+		logrus.Info("ip info %s", ipAddress)
+		if ipAddress != "" {
+			addLabel(createConfig, map[string]string{"io.rancher.container.ip": ipAddress})
 		}
 	}
 }
 
 func setupNetworkMode(instance *model.Instance, client *client.Client,
-	create_config map[string]interface{}, start_config map[string]interface{}) (bool, bool) {
+	createConfig map[string]interface{}, startConfig map[string]interface{}) (bool, bool) {
 	/*
-		Based on the network configuration we choose the network mode to set in
-	    Docker.  We only really look for none, host, or container.  For all
-	    all other configurations we assume bridge mode
+			Based on the network configuration we choose the network mode to set in
+		    Docker.  We only really look for none, host, or container.  For all
+		    all other configurations we assume bridge mode
 	*/
-	ports_supported := true
-	hostname_supported := true
+	portsSupported := true
+	hostnameSupported := true
 	if len(instance.Nics) > 0 {
 		kind := instance.Nics[0].Network.Kind
 		if kind == "dockermodel.model.Host" {
-			ports_supported = false
-			hostname_supported = false
-			start_config["network_mode"] = "host"
-			delete(start_config, "link")
+			portsSupported = false
+			hostnameSupported = false
+			startConfig["network_mode"] = "host"
+			delete(startConfig, "link")
 		} else if kind == "dockerNone" {
-			ports_supported = false
-			create_config["network_mode"] = "none"
-			delete(start_config, "link")
+			portsSupported = false
+			createConfig["network_mode"] = "none"
+			delete(startConfig, "link")
 		} else if kind == "dockerContainer" {
-			ports_supported = false
-			hostname_supported = false
+			portsSupported = false
+			hostnameSupported = false
 			id := instance.NetworkContainer["uuid"]
 			var in model.Instance
 			mapstructure.Decode(instance.NetworkContainer, &in)
@@ -93,46 +93,46 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 			if other != nil {
 				id = other.ID
 			}
-			start_config["network_mode"] = fmt.Sprintf("container:%s", id)
-			delete(start_config, "link")
+			startConfig["network_mode"] = fmt.Sprintf("container:%s", id)
+			delete(startConfig, "link")
 		}
 	}
-	return ports_supported, hostname_supported
+	return portsSupported, hostnameSupported
 
 }
 
-func setupPortsNetwork(instance *model.Instance, create_config map[string]interface{},
-	start_config map[string]interface{}, ports_supported bool) {
+func setupPortsNetwork(instance *model.Instance, createConfig map[string]interface{},
+	startConfig map[string]interface{}, portsSupported bool) {
 	/*
-		Docker 1.9+ does not allow you to pass port info for networks that don't
-	    support ports (net, none, container:x)
+			Docker 1.9+ does not allow you to pass port info for networks that don't
+		    support ports (net, none, container:x)
 	*/
-	if !ports_supported {
-		start_config["publish_all_ports"] = false
-		delete(create_config, "ports")
-		delete(start_config, "port_bindings")
+	if !portsSupported {
+		startConfig["publish_all_ports"] = false
+		delete(createConfig, "ports")
+		delete(startConfig, "port_bindings")
 	}
 }
 
-func setupIpsec(instance *model.Instance, host *model.Host, create_config map[string]interface{},
-	start_config map[string]interface{}) {
+func setupIpsec(instance *model.Instance, host *model.Host, createConfig map[string]interface{},
+	startConfig map[string]interface{}) {
 	/*
-		If the supplied instance is a network agent, configures the ports needed
-	    to achieve multi-host networking.
+			If the supplied instance is a network agent, configures the ports needed
+		    to achieve multi-host networking.
 	*/
-	network_agent := false
+	networkAgent := false
 	if instance.SystemContainer == "" || instance.SystemContainer == "NetworkAgent" {
-		network_agent = true
+		networkAgent = true
 	}
-	if !network_agent || !hasService(instance, "ipsecTunnelService") {
+	if !networkAgent || !hasService(instance, "ipsecTunnelService") {
 		return
 	}
-	host_id := strconv.Itoa(host.ID)
-	if info, ok := instance.Data["ipsec"].(map[string]interface{})[host_id].(map[string]interface{}); ok {
+	hostID := strconv.Itoa(host.ID)
+	if info, ok := instance.Data["ipsec"].(map[string]interface{})[hostID].(map[string]interface{}); ok {
 		nat := info["nat"].(string)
 		isakmp := info["isakmp"].(string)
-		ports := getOrCreatePortList(create_config, "ports")
-		binding := getOrCreateBindingMap(start_config, "port_bindings")
+		ports := getOrCreatePortList(createConfig, "ports")
+		binding := getOrCreateBindingMap(startConfig, "port_bindings")
 
 		// private port or public ?
 		ports = append(ports, model.Port{PrivatePort: 500, Protocol: "udp"}, model.Port{PrivatePort: 4500, Protocol: "udp"})
@@ -141,17 +141,17 @@ func setupIpsec(instance *model.Instance, host *model.Host, create_config map[st
 	}
 }
 
-func setupDns(instance *model.Instance) {
+func setupDNS(instance *model.Instance) {
 	if !hasService(instance, "dnsService") || instance.Kind == "virtualMachine" {
 		return
 	}
-	ip_address, mac_address, subnet := findIpAndMac(instance)
+	ipAddress, macAddress, subnet := findIPAndMac(instance)
 
-	if ip_address == "" || mac_address == "" {
+	if ipAddress == "" || macAddress == "" {
 		return
 	}
 
-	parts := strings.Split(ip_address, ".")
+	parts := strings.Split(ipAddress, ".")
 	if len(parts) != 4 {
 		return
 	}
@@ -161,59 +161,59 @@ func setupDns(instance *model.Instance) {
 
 	//TODO implement check_output function
 
-	check_output([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_PREROUTING",
+	checkOutput([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_PREROUTING",
 		"!", "-s", subnet, "-d", "169.254.169.250", "-m", "mac",
-		"--mac-source", mac_address, "-j", "MARK", "--set-mark",
+		"--mac-source", macAddress, "-j", "MARK", "--set-mark",
 		mark})
-	check_output([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_POSTROUTING",
+	checkOutput([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_POSTROUTING",
 		"!", "-s", subnet, "-d", "169.254.169.250", "-m", "mark", "--mark", mark,
-		"-j", "SNAT", "--to", ip_address})
+		"-j", "SNAT", "--to", ipAddress})
 
 }
 
-func setupLinksNetwork(instance *model.Instance, create_config map[string]interface{},
-	start_config map[string]interface{}) {
+func setupLinksNetwork(instance *model.Instance, createConfig map[string]interface{},
+	startConfig map[string]interface{}) {
 	/*
-		Sets up a container's config for rancher-managed links by removing the
-	    docker native link configuration and emulating links through environment
-	    variables.
+			Sets up a container's config for rancher-managed links by removing the
+		    docker native link configuration and emulating links through environment
+		    variables.
 
-	    Note that a non-rancher container (one created and started outside the
-	    rancher API) container will not have its link configuration manipulated.
-	    This is because on a container restart, we would not be able to properly
-	    rebuild the link configuration because it depends on manipulating the
-	    create_config.
+		    Note that a non-rancher container (one created and started outside the
+		    rancher API) container will not have its link configuration manipulated.
+		    This is because on a container restart, we would not be able to properly
+		    rebuild the link configuration because it depends on manipulating the
+		    createConfig.
 	*/
 	if !hasService(instance, "linkService") || isNonrancherContainer(instance) {
 		return
 	}
 
-	if hasKey(start_config, "links") {
-		delete(start_config, "links")
+	if hasKey(startConfig, "links") {
+		delete(startConfig, "links")
 	}
 	result := make(map[string]string)
 	if instance.InstanceLinks != nil {
 		for _, link := range instance.InstanceLinks {
-			link_name := link.LinkName
-			addLinkEnv(link_name, link, result, "")
-			copyLinkEnv(link_name, link, result)
+			linkName := link.LinkName
+			addLinkEnv(linkName, link, result, "")
+			copyLinkEnv(linkName, link, result)
 			if names, ok := link.Data["field"].(map[string]interface{})["instanceName"].([]string); ok {
 				for _, name := range names {
-					addLinkEnv(name, link, result, link_name)
+					addLinkEnv(name, link, result, linkName)
 					copyLinkEnv(name, link, result)
 					// This does assume the format {env}_{name}
 					parts := strings.SplitAfterN(name, "_", 1)
 					if len(parts) == 1 {
 						continue
 					}
-					addLinkEnv(name, link, result, link_name)
+					addLinkEnv(name, link, result, linkName)
 					copyLinkEnv(name, link, result)
 				}
 
 			}
 		}
 		if len(result) > 0 {
-			addToEnv(create_config, result)
+			addToEnv(createConfig, result)
 		}
 	}
 
@@ -238,12 +238,10 @@ func hasService(instance *model.Instance, kind string) bool {
 	return false
 }
 
-func addLinkEnv(name string, link model.Link, result map[string]string, in_ip string) {
+func addLinkEnv(name string, link model.Link, result map[string]string, inIP string) {
 	result[strings.ToUpper(fmt.Sprintf("%s_NAME", toEnvName(name)))] = fmt.Sprintf("/cattle/%s", name)
 
-	if ports, ok := link.Data["field"].(map[string]interface{})["link"]; !ok {
-		return
-	} else {
+	if ports, ok := link.Data["field"].(map[string]interface{})["link"]; ok {
 		for _, value := range ports.([]interface{}) {
 			var port model.Port
 			err := mapstructure.Decode(value, &port)
@@ -252,18 +250,18 @@ func addLinkEnv(name string, link model.Link, result map[string]string, in_ip st
 			}
 			protocol := port.Protocol
 			ip := strings.ToLower(name)
-			if in_ip != "" {
-				ip = in_ip
+			if inIP != "" {
+				ip = inIP
 			}
 			// different with python agent
 			dst := port.PublicPort
 			src := port.PrivatePort
 
-			full_port := fmt.Sprintf("%s://%s:%s", protocol, ip, dst)
+			fullPort := fmt.Sprintf("%s://%s:%s", protocol, ip, dst)
 			data := make(map[string]string)
 			data["NAME"] = fmt.Sprintf("/cattle/%s", name)
-			data["PORT"] = full_port
-			data[fmt.Sprintf("PORT_%s_%s", src, protocol)] = full_port
+			data["PORT"] = fullPort
+			data[fmt.Sprintf("PORT_%s_%s", src, protocol)] = fullPort
 			data[fmt.Sprintf("PORT_%s_%s_ADDR", src, protocol)] = ip
 			data[fmt.Sprintf("PORT_%s_%s_PORT", src, protocol)] = string(dst)
 			data[fmt.Sprintf("PORT_%s_%s_PROTO", src, protocol)] = protocol
@@ -286,22 +284,22 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 				continue
 			}
 			if strings.HasPrefix(parts[1], "/cattle/") {
-				env_name := toEnvName(parts[1][len("/cattle/"):])
-				ignores[env_name+"_NAME"] = true
-				ignores[env_name+"_PORT"] = true
-				ignores[env_name+"_ENV"] = true
+				envName := toEnvName(parts[1][len("/cattle/"):])
+				ignores[envName+"_NAME"] = true
+				ignores[envName+"_PORT"] = true
+				ignores[envName+"_ENV"] = true
 			}
 		}
 
 		for _, env := range envs {
-			should_ingnore := false
-			for ignore, _ := range ignores {
+			shouldIgnore := false
+			for ignore := range ignores {
 				if strings.HasPrefix(env, ignore) {
-					should_ingnore = true
+					shouldIgnore = true
 					break
 				}
 			}
-			if should_ingnore {
+			if shouldIgnore {
 				continue
 			}
 			parts := strings.SplitAfterN(env, "=", 1)
@@ -326,7 +324,7 @@ func toEnvName(name string) string {
 	}
 }
 
-func findIpAndMac(instance *model.Instance) (string, string, string) {
+func findIPAndMac(instance *model.Instance) (string, string, string) {
 	for _, nic := range instance.Nics {
 		for _, ip := range nic.IPAddresses {
 			if ip.Role != "primary" {

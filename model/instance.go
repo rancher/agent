@@ -27,14 +27,14 @@ type Instance struct {
 	UUID                      string      `json:"uuid"`
 	Volumes                   []Volume
 	ZoneID                    int `json:"zoneId"`
-	ExternalId                string
-	AgentId                   int
+	ExternalID                string
+	AgentID                   int
 	InstanceLinks             []Link
 	NetworkContainer          map[string]interface{}
 	NativeContainer           bool
 	SystemContainer           string
 	DataVolumesFromContainers []map[string]interface{}
-	Command_args              []string
+	CommandArgs               []string
 	Labels                    map[string]interface{}
 	ProcessData               interface{}
 }

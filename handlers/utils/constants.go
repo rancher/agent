@@ -1,9 +1,9 @@
 package utils
 
-const SYSTEM_LABEL = "io.rancher.container.system"
-const UUID_LABEL = "io.rancher.container.uuid"
-const DEFAULT_VERSION = "1.22"
-const _TEMP_NAME = "work"
-const _TEMP_PREFIX = "cattle-temp-"
+const SystemLables = "io.rancher.container.system"
+const UUIDLabel = "io.rancher.container.uuid"
+const DefaultVersion = "1.22"
+const TempName = "work"
+const TempPrefix = "cattle-temp-"
 
-var CONFIG_OVERRIDE = make(map[string]string)
+var ConfigOverride = make(map[string]string)
