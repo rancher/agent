@@ -12,7 +12,7 @@ import (
 	"github.com/docker/engine-api/types/filters"
 	"github.com/docker/go-connections/nat"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/handlers/dockerClient"
 	"github.com/rancher/agent/handlers/marshaller"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/model"
@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-var CREATE_CONFIG_FIELDS = []model.Tuple{
+var CreateConfigFields = []model.Tuple{
 	model.Tuple{Src: "labels", Dest: "labels"},
 	model.Tuple{Src: "environment", Dest: "environment"},
 	model.Tuple{Src: "directory'", Dest: "workingDir"},
@@ -43,7 +43,7 @@ var CREATE_CONFIG_FIELDS = []model.Tuple{
 	model.Tuple{Src: "entryPoint", Dest: "entrypoint"},
 }
 
-var START_CONFIG_FIELDS = []model.Tuple{
+var StartConfigFields = []model.Tuple{
 	model.Tuple{Src: "capAdd", Dest: "cap_add"},
 	model.Tuple{Src: "capDrop", Dest: "cap_drop"},
 	model.Tuple{Src: "dnsSearch", Dest: "dns_search"},
@@ -102,7 +102,7 @@ func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 		return true
 	}
 
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 	container := getContainer(client, instance, false)
 	return isRunning(client, container)
 }
@@ -115,7 +115,7 @@ func isNoOp(data map[string]interface{}) bool {
 	return false
 }
 
-func getContainer(client *client.Client, instance *model.Instance, by_agent bool) *types.Container {
+func getContainer(client *client.Client, instance *model.Instance, byAgent bool) *types.Container {
 	if instance == nil {
 		return nil
 	}
@@ -124,19 +124,19 @@ func getContainer(client *client.Client, instance *model.Instance, by_agent bool
 	args := filters.NewArgs()
 	args.Add("label", fmt.Sprintf("%s=%s", UUID_LABEL, instance.UUID))
 	options := types.ContainerListOptions{All: true, Filter: args}
-	labeled_containers, err := client.ContainerList(context.Background(), options)
-	if err == nil && len(labeled_containers) > 0 {
-		return &labeled_containers[0]
+	labeledContainers, err := client.ContainerList(context.Background(), options)
+	if err == nil && len(labeledContainers) > 0 {
+		return &labeledContainers[0]
 	}
 
 	// Nest look by UUID using fallback method
 	options = types.ContainerListOptions{All: true}
-	container_list, err := client.ContainerList(context.Background(), options)
+	containerList, err := client.ContainerList(context.Background(), options)
 	if err != nil {
 		return nil
 	}
-	container := findFirst(&container_list, func(c *types.Container) bool {
-		if getUuid(c) == instance.UUID {
+	container := findFirst(&containerList, func(c *types.Container) bool {
+		if getUUID(c) == instance.UUID {
 			return true
 		}
 		return false
@@ -145,9 +145,9 @@ func getContainer(client *client.Client, instance *model.Instance, by_agent bool
 	if container != nil {
 		return container
 	}
-	if externalId := instance.ExternalId; externalId != "" {
-		container = findFirst(&container_list, func(c *types.Container) bool {
-			return idFilter(externalId, c)
+	if externalID := instance.ExternalId; externalID != "" {
+		container = findFirst(&containerList, func(c *types.Container) bool {
+			return idFilter(externalID, c)
 		})
 	}
 
@@ -155,9 +155,9 @@ func getContainer(client *client.Client, instance *model.Instance, by_agent bool
 		return container
 	}
 
-	if agentId := instance.AgentId; by_agent {
-		container = findFirst(&container_list, func(c *types.Container) bool {
-			return agentIdFilter(string(agentId), c)
+	if agentID := instance.AgentId; byAgent {
+		container = findFirst(&containerList, func(c *types.Container) bool {
+			return agentIDFilter(string(agentID), c)
 		})
 	}
 
@@ -176,7 +176,7 @@ func isRunning(client *client.Client, container *types.Container) bool {
 	return false
 }
 
-func getUuid(container *types.Container) string {
+func getUUID(container *types.Container) string {
 	uuid, err := container.Labels[UUID_LABEL]
 	if err {
 		return uuid
@@ -189,9 +189,8 @@ func getUuid(container *types.Container) string {
 
 	if strings.HasPrefix(names[0], "/") {
 		return names[0][1:]
-	} else {
-		return names[0]
 	}
+	return names[0]
 }
 
 func findFirst(containers *[]types.Container, f func(*types.Container) bool) *types.Container {
@@ -207,7 +206,7 @@ func idFilter(id string, container *types.Container) bool {
 	return container.ID == id
 }
 
-func agentIdFilter(id string, container *types.Container) bool {
+func agentIDFilter(id string, container *types.Container) bool {
 	container_id, ok := container.Labels["io.rancher.container.agent_id"]
 	if ok {
 		return container_id == id
@@ -251,7 +250,7 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		return nil
 	}
 
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 
 	image_tag, err := getImageTag(instance)
 	if err != nil {
@@ -290,10 +289,10 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	// other config because they stomp over config fields that other
 	// setup methods might append to. Example: the environment field
 	setupSimpleConfigFields(create_config, instance,
-		CREATE_CONFIG_FIELDS)
+		CreateConfigFields)
 
 	setupSimpleConfigFields(start_config, instance,
-		START_CONFIG_FIELDS)
+		StartConfigFields)
 
 	addLabel(create_config, map[string]string{UUID_LABEL: instance.UUID})
 
@@ -426,7 +425,7 @@ func removeContainer(client *client.Client, container_id string) error {
 }
 
 func doInstancePull(params *model.Image_Params, progress *progress.Progress) (types.ImageInspect, error) {
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 
 	image_json, ok := getFieldsIfExist(params.Image.Data, "dockerImage")
 	if !ok {
@@ -722,7 +721,7 @@ func setupLinks(start_config map[string]interface{}, instance *model.Instance) {
 
 func setupNetworking(instance *model.Instance, host *model.Host,
 	create_config map[string]interface{}, start_config map[string]interface{}) {
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 	ports_supported, hostname_supported := setupNetworkMode(instance, client, create_config, start_config)
 	setupMacAndIp(instance, create_config, ports_supported, hostname_supported)
 	setupPortsNetwork(instance, create_config, start_config, ports_supported)

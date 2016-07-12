@@ -7,7 +7,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/docker_client"
+	"github.com/rancher/agent/handlers/dockerClient"
 	"github.com/rancher/agent/handlers/marshaller"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/model"
@@ -21,7 +21,7 @@ func isVolumeActive(volume model.Volume) bool {
 		return true
 	}
 	version := storageApiVersion()
-	vol, err := docker_client.GetClient(version).VolumeInspect(context.Background(), volume.Name)
+	vol, err := dockerClient.GetClient(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		return false
 	}
@@ -56,7 +56,7 @@ func doVolumeActivate(volume model.Volume) {
 	driver_opts := make(map[string]string)
 	driver_opts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
 	v := storageApiVersion()
-	client := docker_client.GetClient(v)
+	client := dockerClient.GetClient(v)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -119,7 +119,7 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 	var data model.DockerImage
 	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
 		panic(err)
@@ -181,7 +181,7 @@ func doImageActivate(image model.Image, storage_pool interface{}, progress *prog
 }
 
 func imageBuild(image *model.Image, progress *progress.Progress) {
-	client := docker_client.GetClient(DEFAULT_VERSION)
+	client := dockerClient.GetClient(DEFAULT_VERSION)
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
 	if isStrSet(opts, "context") {
@@ -252,7 +252,7 @@ func isImageActive(image model.Image, storage_pool interface{}) bool {
 		return true
 	}
 	parsed_tag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
-	_, _, err := docker_client.GetClient(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
+	_, _, err := dockerClient.GetClient(DEFAULT_VERSION).ImageInspectWithRaw(context.Background(), parsed_tag["uuid"], false)
 	if err == nil {
 		return true
 	}
