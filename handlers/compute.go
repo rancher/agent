@@ -24,8 +24,8 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	if instance != nil {
 		processData, ok := event.Data["processData"]
-		if !ok {
-			instance.ProcessData = processData
+		if ok {
+			instance.ProcessData = processData.(map[string]interface{})
 		}
 	}
 

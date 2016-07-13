@@ -89,7 +89,7 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 			id := instance.NetworkContainer["uuid"]
 			var in model.Instance
 			mapstructure.Decode(instance.NetworkContainer, &in)
-			other := getContainer(client, &in, false)
+			other := GetContainer(client, &in, false)
 			if other != nil {
 				id = other.ID
 			}

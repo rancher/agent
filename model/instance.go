@@ -36,5 +36,5 @@ type Instance struct {
 	DataVolumesFromContainers []map[string]interface{}
 	CommandArgs               []string
 	Labels                    map[string]interface{}
-	ProcessData               interface{}
+	ProcessData               map[string]interface{}
 }

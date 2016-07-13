@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var CreateConfigFields = []model.Tuple{
@@ -103,7 +104,7 @@ func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 	}
 
 	client := dockerClient.GetClient(DefaultVersion)
-	container := getContainer(client, instance, false)
+	container := GetContainer(client, instance, false)
 	return isRunning(client, container)
 }
 
@@ -115,7 +116,7 @@ func isNoOp(data map[string]interface{}) bool {
 	return false
 }
 
-func getContainer(client *client.Client, instance *model.Instance, byAgent bool) *types.Container {
+func GetContainer(client *client.Client, instance *model.Instance, byAgent bool) *types.Container {
 	if instance == nil {
 		return nil
 	}
@@ -216,7 +217,7 @@ func agentIDFilter(id string, container *types.Container) bool {
 
 func RecordState(client *client.Client, instance *model.Instance, dockerID string) {
 	if len(dockerID) > 0 {
-		container := getContainer(client, instance, false)
+		container := GetContainer(client, instance, false)
 		if container != nil {
 			dockerID = container.ID
 		}
@@ -336,7 +337,7 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	logrus.Info(fmt.Sprintf("container configuration %s", string(s1)))
 	logrus.Info(fmt.Sprintf("container host configuration %s", string(s2)))
 
-	container := getContainer(client, instance, false)
+	container := GetContainer(client, instance, false)
 	containerID := ""
 	if container != nil {
 		containerID = container.ID
@@ -679,7 +680,7 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 		for _, vfs := range vfsList {
 			var in model.Instance
 			mapstructure.Decode(vfs, &in)
-			container := getContainer(client, &in, false)
+			container := GetContainer(client, &in, false)
 			if container != nil {
 				containers = append(containers, container.ID)
 			}
@@ -880,4 +881,84 @@ func createHostConfig(startConfig map[string]interface{}) container.HostConfig {
 		return hostConfig
 	}
 	return container.HostConfig{}
+}
+
+func DeleteContainer(name string) {
+	client := dockerClient.GetClient(DefaultVersion)
+	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	for _, container := range containerList {
+		found := false
+		labels := container.Labels
+		if labels["io.rancher.container.uuid"] == name[1:] {
+			found = true
+		}
+		for _, containerName := range container.Names {
+			if name == containerName {
+				found = true
+				break
+			}
+		}
+		if found {
+			logrus.Infof("killing the container %v", container.ID)
+			killErr := client.ContainerKill(context.Background(), container.ID, "KILL")
+			if killErr == nil {
+				logrus.Infof("container %v killed", container.ID)
+			} else {
+				logrus.Error(killErr)
+			}
+			logrus.Infof("removing container %v", container.ID)
+			rmErr := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{})
+			if rmErr == nil {
+				logrus.Infof("container %v removed", container.ID)
+			} else {
+				logrus.Error(rmErr)
+			}
+			removeStateFile(container.ID)
+			/*
+				for i := 0; i < 10; i++ {
+					inspect, err := client.ContainerInspect(context.Background(), container.ID)
+					if err == nil && inspect.State.Pid == 0 {
+						break
+					}
+				}
+			*/
+		}
+	}
+}
+
+func removeStateFile(id string) {
+	if len(id) > 0 {
+		contDir := containerStateDir()
+		filePath := path.Join(contDir, id)
+		if _, err := os.Stat(filePath); err == nil {
+			os.Remove(filePath)
+		}
+	}
+}
+
+func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress) error {
+	if isNoOp(instance.Data) {
+		return nil
+	}
+
+	client := dockerClient.GetClient(DefaultVersion)
+	timeout := 10
+	if value, ok := getFieldsIfExist(instance.ProcessData, "timeout"); ok {
+		timeout = value.(int)
+	}
+	time := time.Duration(timeout)
+	container := GetContainer(client, instance, false)
+	client.ContainerStop(context.Background(), container.ID, &time)
+	container = GetContainer(client, instance, false)
+	if !isStopped(client, container) {
+		client.ContainerKill(context.Background(), container.ID, "KILL")
+	}
+	if !isStopped(client, container) {
+		return fmt.Errorf("Filed to stop container %v", instance.UUID)
+	}
+	return nil
+}
+
+func isStopped(client *client.Client, container *types.Container) bool {
+	return !isRunning(client, container)
 }
