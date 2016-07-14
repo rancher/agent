@@ -11,5 +11,10 @@ ENV DAPPER_ENV TAG REPO
 ENV GO15VENDOREXPERIMENT 1
 ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
 WORKDIR ${DAPPER_SOURCE}
+
+RUN apt-get update && \
+    apt-get install -y \
+        python-tox
+
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]
