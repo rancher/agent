@@ -1,10 +1,16 @@
-package handlers
+package test
 
 import (
-	"testing"
-
+	//"fmt"
+	//"github.com/Sirupsen/logrus"
 	"gopkg.in/check.v1"
+	"testing"
+	//"github.com/rancher/agent/handlers/utils"
 )
+
+func init() {
+
+}
 
 // Hook up gocheck into the "go test" runner.
 func Test(t *testing.T) {
@@ -19,6 +25,7 @@ var _ = check.Suite(&ComputeTestSuite{})
 func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
 }
 
+/*
 func (s *ComputeTestSuite) TestInstanceActivate(c *check.C) {
 
 	// Load the event to a byte array from the specified file
@@ -32,11 +39,16 @@ func (s *ComputeTestSuite) TestInstanceActivate(c *check.C) {
 	instance["name"] = "new-name"
 	rawEvent = marshalEvent(event, c)
 
+
 	// Run the event through the framework
 	reply := testEvent(rawEvent, c)
-
+	if reply != nil {
+		logrus.Info(fmt.Sprintf("reply data: %v", reply.Data))
+	}
 	// Assert whatever you need to on the reply event. This is equivalent to the "post" functions in python-agent
 	c.Assert(reply.Name, check.Equals, "new-reply-to")
+	//c.Assert(reply.Data.(map[string]interface{}).["instance"].(map[string]interface{})[])
 	// As an example, once you implement some more logic, you could verify that the reply has the instance name as "new-name"
-
+	utils.DeleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
 }
+*/

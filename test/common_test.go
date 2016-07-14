@@ -1,13 +1,15 @@
-package handlers
+package test
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-
+	"github.com/mitchellh/mapstructure"
+	"github.com/rancher/agent/handlers"
+	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"gopkg.in/check.v1"
+	"io/ioutil"
 )
 
 func loadEvent(eventFile string, c *check.C) []byte {
@@ -47,7 +49,7 @@ func testEvent(rawEvent []byte, c *check.C) *client.Publish {
 	apiClient, mockPublish := newTestClient()
 	workers := make(chan *revents.Worker, 1)
 	worker := &revents.Worker{}
-	worker.DoWork(rawEvent, GetHandlers(), apiClient, workers)
+	worker.DoWork(rawEvent, handlers.GetHandlers(), apiClient, workers)
 	return mockPublish.publishedResponse
 }
 
@@ -56,6 +58,12 @@ func newTestClient() (*client.RancherClient, *mockPublishOperations) {
 	return &client.RancherClient{
 		Publish: mock,
 	}, mock
+}
+
+func getInstanceID(v interface{}) string {
+	var instance model.Instance
+	mapstructure.Decode(v, &instance)
+	return instance.UUID
 }
 
 /*
