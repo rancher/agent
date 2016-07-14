@@ -3,3 +3,4 @@
 *.swp
 /.trash-cache
 .idea/*
+*.py[cod]
