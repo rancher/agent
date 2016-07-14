@@ -8,8 +8,11 @@ import:
 - package: github.com/rancher/go-rancher
   version: 37c17e456a2d6dce279f54ee2f957797d30a20dc
 
-- package: gopkg.in/check.v1
-  version: 4f90aeace3a26ad7021961c297b22c42160c7b25
+- package: github.com/gorilla/mux
+  version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e
+
+- package: github.com/gorilla/context
+  version: aed02d124ae4a0e94fea4541c8effd05bf0c8296
 
 - package: github.com/gorilla/websocket
   version: e2e3d8414d0fbae04004f151979f4e27c6747fe7
