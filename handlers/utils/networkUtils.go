@@ -275,7 +275,7 @@ func addLinkEnv(name string, link model.Link, result map[string]string, inIP str
 
 func copyLinkEnv(name string, link model.Link, result map[string]string) {
 	targetInstance := link.TargetInstance
-	if envs, ok := getFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
+	if envs, ok := GetFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
 		ignores := make(map[string]bool)
 		envs := envs.([]string)
 		for _, env := range envs {

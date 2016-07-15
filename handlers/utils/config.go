@@ -72,7 +72,7 @@ func getUUIDFromFile(uuidFilePath string) string {
 	if err != nil {
 		logrus.Error(err)
 	} else {
-		uuid = readBuffer(fileReader)
+		uuid = ReadBuffer(fileReader)
 	}
 	if uuid == "" {
 		newUUID, err1 := goUUID.NewV4()
@@ -105,7 +105,7 @@ func setupLogger() bool {
 	return defaultValue("LOGGER", "true") == "true"
 }
 
-func doPing() bool {
+func DoPing() bool {
 	return defaultValue("PING_ENABLED", "true") == "true"
 }
 
@@ -311,4 +311,12 @@ func labels() map[string][]string {
 		}
 	}
 	return map[string][]string{}
+}
+
+func DockerEnable() bool {
+	return defaultValue("DOCKER_ENABLED", "true") == "true"
+}
+
+func DockerHostIP() string {
+	return defaultValue("DOCKER_HOST_IP", agentIP())
 }

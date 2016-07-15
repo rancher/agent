@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"hash"
 	"io"
+	"net/http"
 	"os"
 )
 
@@ -69,4 +70,24 @@ func validateChecksum(fileName string, checksumValue string) error {
 		return fmt.Errorf("Invalid checksum [%s]", newValue)
 	}
 	return nil
+}
+
+func downloadFromURL(rawurl string, filepath string) error {
+	file, err := os.Open(filepath)
+	if err == nil {
+		response, err1 := http.Get(rawurl)
+		if err1 != nil {
+			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
+			return err1
+		}
+		defer response.Body.Close()
+		n, ok := io.Copy(file, response.Body)
+		if ok != nil {
+			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
+			return ok
+		}
+		logrus.Info(fmt.Sprintf("%v bytes downloaded successfully", n))
+		return nil
+	}
+	return err
 }

@@ -17,3 +17,13 @@ func FromString(rawstring string) map[string]interface{} {
 func ToString(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
+
+func ToMap(v interface{}) map[string]interface{} {
+	rawByte, _ := json.Marshal(v)
+	event := map[string]interface{}{}
+	err := json.Unmarshal(rawByte, &event)
+	if err != nil {
+		logrus.Infof("Error unmarshalling event %v", err)
+	}
+	return event
+}

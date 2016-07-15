@@ -126,8 +126,8 @@ def event_test(agent, name, pre_func=None, post_func=None, diff=True):
             post_func(req, resp)
 
     if diff:
-        del resp["id"]
-        del resp["time"]
+        # del resp["id"]
+        # del resp["time"]
 
         diff_dict(valid_resp, JsonObject.unwrap(resp))
         assert_equals(valid_resp, JsonObject.unwrap(resp))

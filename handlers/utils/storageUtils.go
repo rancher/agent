@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
@@ -12,10 +13,11 @@ import (
 	"github.com/rancher/agent/model"
 	"golang.org/x/net/context"
 	"os"
+	"strconv"
 	"strings"
 )
 
-func isVolumeActive(volume model.Volume) bool {
+func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
 	if isManagedVolume(volume) {
 		return true
 	}
@@ -30,7 +32,7 @@ func isVolumeActive(volume model.Volume) bool {
 	return true
 }
 
-func isManagedVolume(volume model.Volume) bool {
+func isManagedVolume(volume *model.Volume) bool {
 	if driver := volume.Data["field"].(map[string]string)["driver"]; driver == "" {
 		return false
 	}
@@ -41,15 +43,15 @@ func isManagedVolume(volume model.Volume) bool {
 }
 
 func imagePull(params *model.ImageParams, progress *progress.Progress) error {
-	if !isImageActive(params.Image, nil) {
-		return doImageActivate(params.Image, nil, progress)
+	if !IsImageActive(&params.Image, nil) {
+		return DoImageActivate(&params.Image, nil, progress)
 	}
 	return nil
 }
 
-func doVolumeActivate(volume model.Volume) {
+func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, progress *progress.Progress) error {
 	if !isManagedVolume(volume) {
-		return
+		return nil
 	}
 	driver := volume.Data["field"].(map[string]interface{})["driver"].(string)
 	driverOpts := make(map[string]string)
@@ -75,28 +77,29 @@ func doVolumeActivate(volume model.Volume) {
 		Driver:     driver,
 		DriverOpts: driverOpts,
 	}
+	logrus.Infof("start creating volume name[%v]", options.Name)
 	newVolume, err1 := client.VolumeCreate(context.Background(), options)
 	if err1 != nil {
 		logrus.Error(err)
-	} else {
-		logrus.Info(fmt.Sprintf("volume %s created", newVolume.Name))
+		return err
+	}
+	logrus.Info(fmt.Sprintf("volume [%s] created", newVolume.Name))
+	return nil
+}
+
+func pullImage(image *model.Image, progress *progress.Progress) {
+	if !IsImageActive(image, nil) {
+		DoImageActivate(image, nil, progress)
 	}
 }
 
-func pullImage(image model.Image, progress *progress.Progress) {
-	if !isImageActive(image, nil) {
-		doImageActivate(image, nil, progress)
-	}
-}
-
-//TODO what is a storage pool?
-func doImageActivate(image model.Image, storagePool interface{}, progress *progress.Progress) error {
+func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progress *progress.Progress) error {
 	if isNoOp(image.Data) {
 		return nil
 	}
 
 	if isBuild(image) {
-		imageBuild(&image, progress)
+		imageBuild(image, progress)
 		return nil
 	}
 	//TODO why do we need authConfig? for private registry?
@@ -104,11 +107,11 @@ func doImageActivate(image model.Image, storagePool interface{}, progress *progr
 	rc := image.RegistryCredential
 	if rc != nil {
 		authConfig["username"] = rc["publicValue"].(string)
-		if value, ok := getFieldsIfExist(rc, "data", "fields", "email"); ok {
+		if value, ok := GetFieldsIfExist(rc, "data", "fields", "email"); ok {
 			authConfig["email"] = value.(string)
 		}
 		authConfig["password"] = rc["secretValue"].(string)
-		if value, ok := getFieldsIfExist(rc, "data", "fields", "serverAddress"); ok {
+		if value, ok := GetFieldsIfExist(rc, "data", "fields", "serverAddress"); ok {
 			authConfig["serverAddress"] = value.(string)
 		}
 		if authConfig["serveraddress"] == "https://docker.io" {
@@ -159,7 +162,7 @@ func doImageActivate(image model.Image, storagePool interface{}, progress *progr
 		if err != nil {
 			logrus.Error(err)
 		}
-		buffer := readBuffer(reader)
+		buffer := ReadBuffer(reader)
 		//TODO not sure what response we got from status
 		//Attention! status is a json array so we have to alter unmarshaller
 		logrus.Infof("status data from pull image %s", buffer)
@@ -231,7 +234,7 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 	if err != nil {
 		logrus.Error(err)
 	}
-	buffer := readBuffer(response.Body)
+	buffer := ReadBuffer(response.Body)
 	statusList := marshaller.FromString(buffer)
 	for _, status := range statusList {
 		status := status.(map[string]interface{})
@@ -239,8 +242,8 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 	}
 }
 
-func isBuild(image model.Image) bool {
-	if build, ok := getFieldsIfExist(image.Data, "field", "build"); ok {
+func isBuild(image *model.Image) bool {
+	if build, ok := GetFieldsIfExist(image.Data, "field", "build"); ok {
 		if isStrSet(build.(map[string]interface{}), "context") ||
 			isStrSet(build.(map[string]interface{}), "remote") {
 			return true
@@ -249,7 +252,7 @@ func isBuild(image model.Image) bool {
 	return false
 }
 
-func isImageActive(image model.Image, storagePool interface{}) bool {
+func IsImageActive(image *model.Image, storagePool *model.StoragePool) bool {
 	if isNoOp(image.Data) {
 		return true
 	}
@@ -286,4 +289,73 @@ func parseRepoTag(name string) map[string]string {
 		"tag":  "latest",
 		"uuid": name + ":latest",
 	}
+}
+
+func DoVolumeDeactivate(volume *model.Volume, storagePool *model.StoragePool, progress *progress.Progress) error {
+	return errors.New("Not implemented")
+}
+
+func IsVolumeInactive(volume *model.Volume, storagePool *model.StoragePool) bool {
+	return true
+}
+
+func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progress *progress.Progress) error {
+	if IsVolumeRemoved(volume, storagePool) {
+		return nil
+	}
+	if volume.DeviceNumber == 0 {
+		client := dockerClient.GetClient(DefaultVersion)
+		container := GetContainer(client, &volume.Instance, false)
+		if container == nil {
+			return nil
+		}
+		removeContainer(client, container.ID)
+	} else if isManagedVolume(volume) {
+		version := storageAPIVersion()
+		err := dockerClient.GetClient(version).VolumeRemove(context.Background(), strconv.Itoa(volume.ID))
+		if err != nil {
+			if strings.Contains(err.Error(), "409") {
+				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
+					err.Error()))
+			}
+			return err
+		}
+		return nil
+	}
+	path := pathToVolume(volume)
+	var err error
+	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && !value.(bool) {
+		_, existErr := os.Stat(path)
+		if existErr == nil {
+			err = os.RemoveAll(path)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+	}
+	return err
+}
+
+func IsVolumeRemoved(volume *model.Volume, storagePool *model.StoragePool) bool {
+	if volume.DeviceNumber == 0 {
+		client := dockerClient.GetClient(DefaultVersion)
+		container := GetContainer(client, &volume.Instance, false)
+		return container == nil
+	} else if isManagedVolume(volume) {
+		return IsVolumeActive(volume, storagePool)
+	}
+	path := pathToVolume(volume)
+	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && value.(bool) {
+		return true
+	}
+	_, exist := os.Stat(path)
+	if exist != nil {
+		return true
+	}
+	return false
+
+}
+
+func pathToVolume(volume *model.Volume) string {
+	return strings.Replace(volume.URI, "file://", "", -1)
 }

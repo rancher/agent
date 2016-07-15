@@ -8,7 +8,6 @@ import (
 	"github.com/rancher/go-machine-service/events"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -126,7 +125,7 @@ func hasLabel(instance *model.Instance) bool {
 	return ok
 }
 
-func readBuffer(reader io.ReadCloser) string {
+func ReadBuffer(reader io.ReadCloser) string {
 	buffer := make([]byte, 1024)
 	s := ""
 	defer reader.Close()
@@ -144,8 +143,7 @@ func isStrSet(m map[string]interface{}, key string) bool {
 	return m[key] != nil && len(m[key].([]string)) > 0
 }
 
-// this method check if a field exists in a map
-func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
+func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
 	var tempMap map[string]interface{}
 	tempMap = m
 	for i, field := range fields {
@@ -182,42 +180,10 @@ func tempFile(destination string) string {
 	return ""
 }
 
-func downloadFromURL(rawurl string, filepath string) error {
-	file, err := os.Open(filepath)
-	if err == nil {
-		response, err1 := http.Get(rawurl)
-		if err1 != nil {
-			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
-			return err1
-		}
-		defer response.Body.Close()
-		n, ok := io.Copy(file, response.Body)
-		if ok != nil {
-			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
-			return ok
-		}
-		logrus.Info(fmt.Sprintf("%v bytes downloaded successfully", n))
-		return nil
-	}
-	return err
-}
-
-func GetResponseData(event *events.Event, eventData map[string]interface{}) *events.Event {
+func GetResponseData(event *events.Event, eventData map[string]interface{}) map[string]interface{} {
 	// TODO not implemented
-	/*
-		resource_type := event.ResourceType
-		var ihm model.InstanceHostMap
-		mapstructure.Decode(event_data, &ihm)
-		tp := ihm.Type
-		if tp != nil && len(tp) > 0{
-			r := regexp.Compile("([A-Z])")
-			inner_name := strings.Replace(tp, r.FindStringSubmatch(tp)[0], "_\1", -1)
-			method_name := strings.ToLower(fmt.Sprintf("_get_%s_data", inner_name))
-			method := ""
-
-		}
-	*/
-	return &events.Event{}
+	resourceType := event.ResourceType
+	return map[string]interface{}{resourceType: getInstanceHostMapData(event)}
 }
 
 func convertPortToString(port int) string {

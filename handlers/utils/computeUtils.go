@@ -17,6 +17,7 @@ import (
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/go-machine-service/events"
+	revents "github.com/rancher/go-machine-service/events"
 	"golang.org/x/net/context"
 	urls "net/url"
 	"os"
@@ -74,14 +75,14 @@ func GetInstanceAndHost(event *events.Event) (*model.Instance, *model.Host) {
 		panic(err)
 	}
 
-	clusterConnection, ok := getFieldsIfExist(data, "field", "clusterConnection")
+	clusterConnection, ok := GetFieldsIfExist(data, "field", "clusterConnection")
 	if ok {
 		logrus.Debugf("clusterConnection = %s", clusterConnection.(string))
 		host.Data["clusterConnection"] = clusterConnection.(string)
 		if strings.HasPrefix(clusterConnection.(string), "http") {
-			caCrt, ok1 := getFieldsIfExist(event.Data, "field", "caCrt")
-			clientCrt, ok2 := getFieldsIfExist(event.Data, "field", "clientCrt")
-			clientKey, ok3 := getFieldsIfExist(event.Data, "field", "clientKey")
+			caCrt, ok1 := GetFieldsIfExist(event.Data, "field", "caCrt")
+			clientCrt, ok2 := GetFieldsIfExist(event.Data, "field", "clientCrt")
+			clientKey, ok3 := GetFieldsIfExist(event.Data, "field", "clientKey")
 			// what if we miss certs/key? do we have to panic or ignore it?
 			if ok1 && ok2 && ok3 {
 				host.Data["caCrt"] = caCrt.(string)
@@ -109,7 +110,7 @@ func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 }
 
 func isNoOp(data map[string]interface{}) bool {
-	b, ok := getFieldsIfExist(data, "containerNoOpEvent")
+	b, ok := GetFieldsIfExist(data, "containerNoOpEvent")
 	if ok {
 		return b.(bool)
 	}
@@ -380,7 +381,7 @@ func createContainer(client *client.Client, createConfig map[string]interface{},
 	logrus.Debug("debug")
 	labels := createConfig["labels"]
 	if labels.(map[string]string)["io.rancher.container.pull_image"] == "always" {
-		doInstancePull(&model.ImageParams{
+		DoInstancePull(&model.ImageParams{
 			Image:    instance.Image,
 			Tag:      "",
 			Mode:     "all",
@@ -397,7 +398,7 @@ func createContainer(client *client.Client, createConfig map[string]interface{},
 	config := createContainerConfig(imageTag, command, createConfig)
 	hostConfig := createConfig["hostConfig"].(container.HostConfig)
 
-	if vDriver, ok := getFieldsIfExist(instance.Data, "field", "volumeDriver"); ok {
+	if vDriver, ok := GetFieldsIfExist(instance.Data, "field", "volumeDriver"); ok {
 		hostConfig.VolumeDriver = vDriver.(string)
 	}
 
@@ -407,7 +408,7 @@ func createContainer(client *client.Client, createConfig map[string]interface{},
 	if err != nil {
 		logrus.Error(err)
 		if strings.Contains(err.Error(), config.Image) {
-			pullImage(instance.Image, progress)
+			pullImage(&instance.Image, progress)
 			containerResponse, err1 := client.ContainerCreate(context.Background(), config, &hostConfig, nil, name)
 			if err1 != nil {
 				logrus.Error(fmt.Sprintf("container id %s fail to start", containerResponse.ID))
@@ -426,10 +427,10 @@ func removeContainer(client *client.Client, containerID string) error {
 	return err
 }
 
-func doInstancePull(params *model.ImageParams, progress *progress.Progress) (types.ImageInspect, error) {
+func DoInstancePull(params *model.ImageParams, progress *progress.Progress) (types.ImageInspect, error) {
 	client := dockerClient.GetClient(DefaultVersion)
 
-	imageJSON, ok := getFieldsIfExist(params.Image.Data, "dockerImage")
+	imageJSON, ok := GetFieldsIfExist(params.Image.Data, "dockerImage")
 	if !ok {
 		return types.ImageInspect{}, errors.New("field not exist")
 	}
@@ -468,7 +469,7 @@ func createContainerConfig(imageTag string, command string, createConfig map[str
 	var config container.Config
 	err := mapstructure.Decode(createConfig, &config)
 	res, _ := json.Marshal(config)
-	logrus.Info(string(res))
+	logrus.Infof("config created %v", string(res))
 	if err != nil {
 		panic(err)
 	}
@@ -486,7 +487,7 @@ func getImageTag(instance *model.Instance) (string, error) {
 }
 
 func isTrue(instance *model.Instance, field string) bool {
-	_, ok := getFieldsIfExist(instance.Data, field)
+	_, ok := GetFieldsIfExist(instance.Data, field)
 	return ok
 }
 
@@ -494,7 +495,7 @@ func setupSimpleConfigFields(config map[string]interface{}, instance *model.Inst
 	for _, tuple := range fields {
 		src := tuple.Src
 		dest := tuple.Dest
-		srcObj, ok := getFieldsIfExist(instance.Data, "field", src)
+		srcObj, ok := GetFieldsIfExist(instance.Data, "field", src)
 		if !ok {
 			break
 		}
@@ -592,7 +593,7 @@ func setupHostname(createConfig map[string]interface{}, instance *model.Instance
 }
 
 func setupCommand(createConfig map[string]interface{}, instance *model.Instance) {
-	command, ok := getFieldsIfExist(instance.Data, "field", "command")
+	command, ok := GetFieldsIfExist(instance.Data, "field", "command")
 	if !ok {
 		return
 	}
@@ -609,15 +610,16 @@ func setupCommand(createConfig map[string]interface{}, instance *model.Instance)
 func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 	startConfig map[string]interface{}) {
 	ports := []model.Port{}
+	exposedPorts := map[nat.Port]struct{}{}
 	bindings := nat.PortMap{}
 	if instance.Ports != nil && len(instance.Ports) > 0 {
 		for _, port := range instance.Ports {
 			ports = append(ports, model.Port{PrivatePort: port.PrivatePort, Protocol: port.Protocol})
 			if port.PrivatePort != 0 {
-				bind := nat.Port(fmt.Sprintf("%d/%s", port.PrivatePort, port.Protocol))
+				bind := nat.Port(fmt.Sprintf("%v/%v", port.PrivatePort, port.Protocol))
 				logrus.Info(bind)
 				bindAddr := ""
-				if bindAddress, ok := getFieldsIfExist(port.Data, "fields", "bindAddress"); ok {
+				if bindAddress, ok := GetFieldsIfExist(port.Data, "fields", "bindAddress"); ok {
 					bindAddr = bindAddress.(string)
 				}
 				if _, ok := bindings[bind]; !ok {
@@ -627,14 +629,13 @@ func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 					bindings[bind] = append(bindings[bind], nat.PortBinding{HostIP: bindAddr,
 						HostPort: convertPortToString(port.PublicPort)})
 				}
+				exposedPorts[bind] = struct{}{}
 			}
 
 		}
 	}
 
-	if len(ports) > 0 {
-		createConfig["port"] = ports
-	}
+	createConfig["exposedPorts"] = exposedPorts
 
 	if len(bindings) > 0 {
 		startConfig["portbindings"] = bindings
@@ -644,7 +645,7 @@ func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 
 func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 	startConfig map[string]interface{}, client *client.Client) {
-	if volumes, ok := getFieldsIfExist(instance.Data, "field", "dataVolumes"); ok {
+	if volumes, ok := GetFieldsIfExist(instance.Data, "field", "dataVolumes"); ok {
 		volumes := volumes.([]string)
 		volumesMap := make(map[string]interface{})
 		bindsMap := make(map[string]interface{})
@@ -694,9 +695,11 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 		for vMount := range vMounts {
 			var volume model.Volume
 			err := mapstructure.Decode(vMount, &volume)
+			storagePool := model.StoragePool{}
+			progress := progress.Progress{}
 			if err != nil {
-				if !isVolumeActive(volume) {
-					doVolumeActivate(volume)
+				if !IsVolumeActive(&volume, &storagePool) {
+					DoVolumeActivate(&volume, &storagePool, &progress)
 				}
 			} else {
 				panic(err)
@@ -820,7 +823,7 @@ func setupDeviceOptions(config container.HostConfig, instance *model.Instance) {
 		},
 	}
 
-	if deviceOptions, ok := getFieldsIfExist(instance.Data, "field", "blkioDeviceOptions"); ok {
+	if deviceOptions, ok := GetFieldsIfExist(instance.Data, "field", "blkioDeviceOptions"); ok {
 		deviceOptions := deviceOptions.(map[string]map[string]string)
 		for dev, options := range deviceOptions {
 			if dev == "DEFAULT_DICK" {
@@ -943,8 +946,8 @@ func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress)
 
 	client := dockerClient.GetClient(DefaultVersion)
 	timeout := 10
-	if value, ok := getFieldsIfExist(instance.ProcessData, "timeout"); ok {
-		timeout = value.(int)
+	if value, ok := GetFieldsIfExist(instance.ProcessData, "timeout"); ok {
+		timeout = int(value.(float64))
 	}
 	time := time.Duration(timeout)
 	container := GetContainer(client, instance, false)
@@ -956,9 +959,168 @@ func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress)
 	if !isStopped(client, container) {
 		return fmt.Errorf("Filed to stop container %v", instance.UUID)
 	}
+	logrus.Infof("container id %v deactivated", container.ID)
 	return nil
 }
 
 func isStopped(client *client.Client, container *types.Container) bool {
 	return !isRunning(client, container)
+}
+
+func IsInstanceInactive(instance *model.Instance) bool {
+	if isNoOp(instance.Data) {
+		return true
+	}
+
+	client := dockerClient.GetClient(DefaultVersion)
+	container := GetContainer(client, instance, false)
+	return isStopped(client, container)
+}
+
+func DoInstanceForceStop(request *model.InstanceForceStop) error {
+	client := dockerClient.GetClient(DefaultVersion)
+	time := time.Duration(0)
+	stopErr := client.ContainerStop(context.Background(), request.ID, &time)
+	if stopErr != nil {
+		logrus.Error(stopErr)
+		return stopErr
+	}
+	logrus.Infof("container id %v is forced to be stopped", request.ID)
+	return nil
+}
+
+func DoInstanceInspect(inspect *model.InstanceInspect) (types.ContainerJSON, error) {
+	client := dockerClient.GetClient(DefaultVersion)
+	containerID := inspect.ID
+	if containerID == "" {
+		return types.ContainerJSON{}, fmt.Errorf("container with id [%v] not found", containerID)
+	}
+	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	result := findFirst(&containerList, func(c *types.Container) bool {
+		return idFilter(containerID, c)
+	})
+	if result == nil {
+		name := fmt.Sprintf("/%s", inspect.Name)
+		result = findFirst(&containerList, func(c *types.Container) bool {
+			return nameFilter(name, c)
+		})
+	}
+	if result != nil {
+		logrus.Infof("start inspecting container with id [%s]", result.ID)
+		inspectResp, err := client.ContainerInspect(context.Background(), result.ID)
+		if err != nil {
+			logrus.Error(err)
+			return types.ContainerJSON{}, err
+		}
+		logrus.Infof("container with id [%s] inspected", result.ID)
+		return inspectResp, nil
+	}
+	return types.ContainerJSON{}, fmt.Errorf("container with id [%v] not found", containerID)
+}
+
+func nameFilter(name string, container *types.Container) bool {
+	names := container.Names
+	if names == nil || len(names) == 0 {
+		return false
+	}
+	found := false
+	for _, n := range names {
+		if strings.HasSuffix(n, name) {
+			found = true
+			break
+		}
+	}
+	return found
+}
+
+func IsInstanceRemoved(instance *model.Instance) bool {
+	client := dockerClient.GetClient(DefaultVersion)
+	container := GetContainer(client, instance, false)
+	return container == nil
+}
+
+func DoInstanceRemove(instance *model.Instance, progress *progress.Progress) error {
+	client := dockerClient.GetClient(DefaultVersion)
+	container := GetContainer(client, instance, false)
+	if container == nil {
+		return errors.New("container not found")
+	}
+	return removeContainer(client, container.ID)
+}
+
+func PurgeState(instance *model.Instance) {
+	client := dockerClient.GetClient(DefaultVersion)
+	container := GetContainer(client, instance, false)
+	if container == nil {
+		return
+	}
+	dockerID := container.ID
+	contDir := containerStateDir()
+	files := []string{path.Join(contDir, "tmp-"+dockerID), path.Join(contDir, dockerID)}
+	for _, f := range files {
+		if _, err := os.Stat(f); err == nil {
+			os.Remove(f)
+		}
+	}
+}
+
+func getInstanceHostMapData(event *revents.Event) map[string]interface{} {
+	instance, _ := GetInstanceAndHost(event)
+	client := dockerClient.GetClient(DefaultVersion)
+	var inspect types.ContainerJSON
+	container := GetContainer(client, instance, false)
+	logrus.Infof("container structure %v", container)
+	dockerPorts := []string{}
+	dockerIP := ""
+	dockerMounts := []types.MountPoint{}
+	if container != nil {
+		logrus.Info(container.ID)
+		inspect, _ = client.ContainerInspect(context.Background(), container.ID)
+		dockerMounts = getMountData(container.ID)
+		dockerIP = inspect.NetworkSettings.IPAddress
+		if container.Ports != nil && len(container.Ports) > 0 {
+			for _, port := range container.Ports {
+				privatePort := fmt.Sprintf("%v/%v", port.PrivatePort, port.Type)
+				portSpec := privatePort
+				bindAddr := ""
+				if port.IP != "" {
+					bindAddr = fmt.Sprintf("%s:", port.IP)
+				}
+				publicPort := ""
+				if port.PublicPort > 0 {
+					publicPort = fmt.Sprintf("%v:", port.PublicPort)
+				} else if port.IP != "" {
+					publicPort = ":"
+				}
+				portSpec = bindAddr + publicPort + portSpec
+				dockerPorts = append(dockerPorts, portSpec)
+			}
+		}
+	}
+	update := map[string]interface{}{
+		"instance": map[string]interface{}{
+			"+data": map[string]interface{}{
+				"dockerContainer": container,
+				"dockerInspect":   inspect,
+				"+fields": map[string]interface{}{
+					"dockerHostIp": DockerHostIP(),
+					"dockerPorts":  dockerPorts,
+					"dockerIp":     dockerIP,
+				},
+			},
+		},
+	}
+	if container != nil {
+		update["instance"].(map[string]interface{})["externalId"] = container.ID
+	}
+	if dockerMounts != nil {
+		update["instance"].(map[string]interface{})["+data"].(map[string]interface{})["dockerMounts"] = dockerMounts
+	}
+	return update
+}
+
+func getMountData(containerID string) []types.MountPoint {
+	client := dockerClient.GetClient(DefaultVersion)
+	inspect, _ := client.ContainerInspect(context.Background(), containerID)
+	return inspect.Mounts
 }
