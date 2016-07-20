@@ -12,7 +12,7 @@ type Volume struct {
 	ID              int         `json:"id"`
 	Image           Image       `json:"image"`
 	ImageID         interface{} `json:"imageId"`
-	Instance        Instance    `json:"instance"`
+	Instance        *Instance   `json:"instance"`
 	InstanceID      interface{} `json:"instanceId"`
 	Kind            string      `json:"kind"`
 	Name            string      `json:"name"`

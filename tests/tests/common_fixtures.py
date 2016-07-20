@@ -1,10 +1,13 @@
 import os
 import random
-import sys
-import tests
 import shutil
+import sys
+
 import pytest
+
+import tests
 from cattle import CONFIG_OVERRIDE
+
 CONFIG_OVERRIDE['DOCKER_REQUIRED'] = 'false'  # NOQA
 
 from os.path import dirname
@@ -12,8 +15,7 @@ from os.path import dirname
 _file = os.path.abspath(__file__)  # NOQA
 sys.path.insert(0, dirname(dirname(_file)))  # NOQA
 
-from cattle import plugins
-
+from tests.cattle import plugins
 
 plugins.load()
 

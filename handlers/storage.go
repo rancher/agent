@@ -108,7 +108,7 @@ func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	volumeWithLock.mu.Lock()
 	defer volumeWithLock.mu.Unlock()
 	if volume.DeviceNumber == 0 {
-		utils.PurgeState(&volume.Instance)
+		utils.PurgeState(volume.Instance)
 	}
 	if !utils.IsVolumeRemoved(&volume, &storagePool) {
 		utils.DoVolumeRemove(&volume, &storagePool, &progress)

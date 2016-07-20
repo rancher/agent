@@ -2,8 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/handlers/marshaller"
+	"github.com/docker/go-connections/nat"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/go-machine-service/events"
 	"io"
@@ -44,9 +43,6 @@ func addLabel(config map[string]interface{}, newLabels map[string]string) {
 	for key, value := range newLabels {
 		config["labels"].(map[string]string)[key] = value
 	}
-	//for debug
-	d, _ := marshaller.ToString(config["labels"])
-	logrus.Info(string(d))
 }
 
 func searchInList(slice []string, target string) bool {
@@ -73,41 +69,23 @@ func isNonrancherContainer(instance *model.Instance) bool {
 }
 
 func addToEnv(config map[string]interface{}, result map[string]string, args ...string) {
-	if env, ok := config["enviroment"]; !ok {
-		env = make(map[string]string)
-		config["enviroment"] = env
-	} else {
-		env := env.(map[string]interface{})
-		for i := 0; i < len(args); i += 2 {
-			if _, ok := env[args[i]]; !ok {
-				env[args[i]] = args[i+1]
-			}
-		}
-		for key, value := range result {
-			if _, ok := env[key]; !ok {
-				env[key] = value
-			}
-		}
+	if envs, ok := config["env"]; !ok {
+		envs = []string{}
+		config["env"] = envs
 	}
-
+	envs := config["env"].([]string)
+	for key, value := range result {
+		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+	}
+	config["env"] = envs
 }
 
-func getOrCreatePortList(config map[string]interface{}, key string) []model.Port {
-	list, ok := config[key]
+func getOrCreateBindingMap(config map[string]interface{}, key string) nat.PortMap {
+	_, ok := config[key]
 	if !ok {
-		config[key] = list
+		config[key] = nat.PortMap{}
 	}
-
-	return config[key].([]model.Port)
-}
-
-func getOrCreateBindingMap(config map[string]interface{}, key string) map[string][]string {
-	m, ok := config[key]
-	if !ok {
-		m = make(map[string]string)
-		config[key] = m
-	}
-	return config[key].(map[string][]string)
+	return config[key].(nat.PortMap)
 }
 
 func hasKey(m interface{}, key string) bool {
@@ -191,4 +169,12 @@ func convertPortToString(port int) string {
 		return ""
 	}
 	return strconv.Itoa(port)
+}
+
+func InterfaceToString(v interface{}) string {
+	value, ok := v.(string)
+	if ok {
+		return value
+	}
+	return ""
 }

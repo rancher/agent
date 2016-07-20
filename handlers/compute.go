@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/dockerClient"
+	"github.com/rancher/agent/handlers/docker"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
 	"github.com/rancher/agent/model"
@@ -27,7 +27,7 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	if utils.IsInstanceActive(instance, host) {
 		logrus.Info("instance is activated")
-		utils.RecordState(dockerClient.GetClient(utils.DefaultVersion), instance, "")
+		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
 		return reply(utils.GetResponseData(event, event.Data), event, cli)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	nat1 "github.com/docker/go-connections/nat"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/model"
 	"regexp"
@@ -129,15 +130,39 @@ func setupIpsec(instance *model.Instance, host *model.Host, createConfig map[str
 	}
 	hostID := strconv.Itoa(host.ID)
 	if info, ok := instance.Data["ipsec"].(map[string]interface{})[hostID].(map[string]interface{}); ok {
-		nat := info["nat"].(string)
-		isakmp := info["isakmp"].(string)
-		ports := getOrCreatePortList(createConfig, "ports")
-		binding := getOrCreateBindingMap(startConfig, "port_bindings")
+		nat := info["nat"].(float64)
+		isakmp := info["isakmp"].(float64)
 
-		// private port or public ?
-		ports = append(ports, model.Port{PrivatePort: 500, Protocol: "udp"}, model.Port{PrivatePort: 4500, Protocol: "udp"})
-		binding["500/udp"] = []string{"0.0.0.0", isakmp}
-		binding["4500/udp"] = []string{"0.0.0.0", nat}
+		binding := getOrCreateBindingMap(startConfig, "portbindings")
+
+		port1 := nat1.Port(fmt.Sprintf("%v/%v", 500, "udp"))
+		port2 := nat1.Port(fmt.Sprintf("%v/%v", 4500, "udp"))
+		bind1 := nat1.PortBinding{HostIP: "0.0.0.0", HostPort: strconv.Itoa(int(isakmp))}
+		bind2 := nat1.PortBinding{HostIP: "0.0.0.0", HostPort: strconv.Itoa(int(nat))}
+		exposedPorts := map[nat1.Port]struct{}{
+			port1: struct{}{},
+			port2: struct{}{},
+		}
+		if _, ok := binding[port1]; ok {
+			binding[port1] = append(binding[port1], bind1)
+		} else {
+			binding[port1] = []nat1.PortBinding{bind1}
+		}
+		if _, ok := binding[port2]; ok {
+			binding[port2] = append(binding[port2], bind1)
+		} else {
+			binding[port2] = []nat1.PortBinding{bind2}
+		}
+		if _, ok := createConfig["exposedPorts"]; ok {
+			existingMap := createConfig["exposedPorts"].(map[nat1.Port]struct{})
+			for port := range exposedPorts {
+				existingMap[port] = struct{}{}
+			}
+			createConfig["exposedPorts"] = existingMap
+		} else {
+			createConfig["exposedPorts"] = exposedPorts
+		}
+
 	}
 }
 
