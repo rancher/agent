@@ -49,7 +49,7 @@ func builds() string {
 }
 
 func stateDir() string {
-	return defaultValue("stateDir", home())
+	return defaultValue("STATE_DIR", home())
 }
 
 func physicalHostUUIDFile() string {

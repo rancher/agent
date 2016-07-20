@@ -1,3 +1,5 @@
+from urlparse import urlparse
+
 
 def memoize(function):
     memo = {}
@@ -59,3 +61,20 @@ class JsonObject:
             return ret
 
         return json_object
+
+
+def get_url_port(url):
+    parsed = urlparse(url)
+
+    port = parsed.port
+
+    if port is None:
+        if parsed.scheme == 'http':
+            port = 80
+        elif parsed.scheme == 'https':
+            port = 443
+
+    if port is None:
+        raise Exception('Failed to find port for {0}'.format(url))
+
+    return port

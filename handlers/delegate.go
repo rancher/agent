@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/dockerClient"
+	"github.com/rancher/agent/handlers/docker"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
 	"github.com/rancher/agent/model"
@@ -21,7 +21,7 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 	if !ok2 || kind != "container" || !ok1 {
 		return errors.New("delegate operation failed")
 	}
-	client := dockerClient.GetClient(utils.DefaultVersion)
+	client := docker.GetClient(utils.DefaultVersion)
 	var instance model.Instance
 	mapstructure.Decode(instanceData, &instance)
 	container := utils.GetContainer(client, &instance, true)

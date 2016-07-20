@@ -4,11 +4,15 @@ from docker.utils import kwargs_from_env
 import inspect
 import json
 import logging
-import os.path
+import os
+from os import path
 from os.path import dirname
 import requests
 import tests
 import time
+from docker.utils import compare_version
+import re
+from tests.cattle import Config
 
 TEST_DIR = os.path.join(dirname(tests.__file__))
 CONFIG_OVERRIDE = {}
@@ -29,6 +33,7 @@ def _to_json_object(v):
 
 
 class JsonObject:
+
     def __init__(self, data):
         for k, v in data.items():
             self.__dict__[k] = _to_json_object(v)
@@ -66,6 +71,7 @@ class JsonObject:
 
 
 class Marshaller:
+
     def __init__(self):
         pass
 
@@ -81,6 +87,7 @@ marshaller = Marshaller()
 
 
 class Agent():
+
     def __init__(self):
         pass
 
@@ -185,6 +192,7 @@ def docker_client(version=None, base_url_override=None, tls_config=None,
 
 
 class DockerConfig:
+
     def __init__(self):
         pass
 
@@ -224,24 +232,120 @@ def default_value(name, default):
 
 
 def state_file_exists(docker_id):
-    pass
-    # TODO Implement
-    # try:
-    #     cont_dir = Config.container_state_dir()
-    #     file_path = path.join(cont_dir, docker_id)
-    #     return os.path.exists(file_path)
-    # except:
-    #     return False
+    try:
+        cont_dir = Config.container_state_dir()
+        file_path = path.join(cont_dir, docker_id)
+        return os.path.exists(file_path)
+    except:
+        return False
 
 
 def remove_state_file(container):
-    pass
-    # TODO Implement
-    # if container:
-    #     try:
-    #         cont_dir = Config.container_state_dir()
-    #         file_path = path.join(cont_dir, container['Id'])
-    #         if os.path.exists(file_path):
-    #             os.remove(file_path)
-    #     except:
-    #         pass
+    if container:
+        try:
+            cont_dir = Config.container_state_dir()
+            file_path = os.path.join(cont_dir, container['Id'])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except:
+            pass
+
+
+def instance_activate_common_validation(resp):
+    docker_container = resp['data']['instanceHostMap']['instance']
+    docker_container = docker_container['+data']['dockerContainer']
+    docker_id = docker_container['Id']
+    container_field_test_boiler_plate(resp)
+    fields = resp['data']['instanceHostMap']['instance']['+data']['+fields']
+    try:
+        del docker_container['Ports'][0]['PublicPort']
+        del docker_container['Ports'][1]['PublicPort']
+    except KeyError:
+        pass
+    fields['dockerPorts'].sort()
+    for idx, p in enumerate(fields['dockerPorts']):
+        if '8080' in p or '12201' in p:
+            fields['dockerPorts'][idx] = re.sub(r':.*:', ':1234:', p)
+    assert state_file_exists(docker_id)
+    instance_activate_assert_host_config(resp)
+    instance_activate_assert_image_id(resp)
+    del docker_container["State"]
+    del docker_container["Mounts"]
+    fields["dockerHostIp"] = '1.2.3.4'
+    del resp['links']
+    del resp['actions']
+
+
+def newer_than(version):
+    client = docker_client()
+    ver = client.version()['ApiVersion']
+    return compare_version(version, ver) >= 0
+
+
+def instance_activate_assert_image_id(resp):
+    docker_container = resp['data']['instanceHostMap']['instance']
+    docker_container = docker_container['+data']['dockerContainer']
+    if newer_than('1.20'):
+        if 'ImageID' in docker_container:
+            del docker_container['ImageID']
+
+
+def instance_activate_assert_host_config(resp):
+    docker_container = resp['data']['instanceHostMap']['instance']
+    docker_container = docker_container['+data']['dockerContainer']
+    if newer_than('1.20'):
+        if 'HostConfig' in docker_container:
+            assert docker_container['HostConfig'] == {
+                'NetworkMode': 'default'
+            } or docker_container['HostConfig'] == {}
+            del docker_container['HostConfig']
+
+
+def container_field_test_boiler_plate(resp):
+    instance_data = resp['data']['instanceHostMap']['instance']['+data']
+    docker_container = instance_data['dockerContainer']
+    assert resp['data']['instanceHostMap']['instance']['externalId'] == \
+        instance_data['dockerInspect']['Id']
+    del resp['data']['instanceHostMap']['instance']['externalId']
+    del instance_data['dockerInspect']
+    try:
+        del instance_data['dockerMounts']
+    except KeyError:
+        pass
+    fields = instance_data['+fields']
+    del docker_container['Created']
+    del docker_container['Id']
+    del docker_container['Status']
+    docker_container.pop('NetworkSettings', None)
+    del fields['dockerIp']
+    _sort_ports(docker_container)
+
+    if 'Labels' in docker_container and docker_container['Labels'] is None:
+        docker_container['Labels'] = {}
+
+    instance_activate_assert_host_config(resp)
+    instance_activate_assert_image_id(resp)
+
+
+def _sort_ports(docker_container):
+    docker_container['Ports'] = sorted(docker_container['Ports'],
+                                       key=lambda x: 1 - x['PrivatePort'])
+    return docker_container
+
+
+def get_container(name):
+    client = docker_client()
+    for c in client.containers(all=True):
+        for container_name in c['Names']:
+            if name == container_name:
+                return c
+    return None
+
+
+def trim(docker_container, fields, resp, valid_resp):
+    del docker_container["State"]
+    del docker_container["Mounts"]
+    fields["dockerHostIp"] = '1.2.3.4'
+    del resp['links']
+    del resp['actions']
+    del valid_resp['previousNames']

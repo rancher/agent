@@ -5,7 +5,7 @@ from os import path
 from uuid import uuid4
 
 
-from cattle.utils import memoize
+from utils import memoize
 
 CONFIG_OVERRIDE = {}
 

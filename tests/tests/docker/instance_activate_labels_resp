@@ -11,7 +11,7 @@
                         ]
                     },
                     "dockerContainer": {
-                        "Command": "/sleep.sh",
+                        "Command": "sleep 5",
                         "Labels": {},
                         "Image": "ibuildthecloud/helloworld:latest",
                         "Names": [
@@ -32,7 +32,8 @@
                         "Labels": {
                             "io.rancher.container.uuid": "c861f990-4472-4fa1-960f-65171b544c28",
                             "io.rancher.container.name": "test",
-                            "io.rancher.container.ip": "10.10.10.10/24"
+                            "constraint" : "label_key==bar",
+                            "affinity" : "container==foo"
                         }
                     }
                 }
@@ -40,7 +41,6 @@
         }
     },
     "previousIds": ["fe8fe34c-1b13-4287-a094-a2c5f902722b"],
-    "previousNames": ["compute.instance.activate"],
     "name": "reply.6533363327570546786",
     "resourceId": "211",
     "resourceType": "instanceHostMap"

@@ -1,7 +1,7 @@
 import logging
 
 from docker.utils import kwargs_from_env
-from cattle import default_value, Config
+from tests.cattle import default_value, Config
 
 log = logging.getLogger('docker')
 

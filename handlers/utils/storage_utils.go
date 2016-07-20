@@ -7,7 +7,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/dockerClient"
+	"github.com/rancher/agent/handlers/docker"
 	"github.com/rancher/agent/handlers/marshaller"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/model"
@@ -22,7 +22,7 @@ func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
 		return true
 	}
 	version := storageAPIVersion()
-	vol, err := dockerClient.GetClient(version).VolumeInspect(context.Background(), volume.Name)
+	vol, err := docker.GetClient(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		return false
 	}
@@ -33,7 +33,7 @@ func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
 }
 
 func isManagedVolume(volume *model.Volume) bool {
-	if driver := volume.Data["field"].(map[string]string)["driver"]; driver == "" {
+	if driver, ok := GetFieldsIfExist(volume.Data, "fields", "driver"); !ok || driver == "" {
 		return false
 	}
 	if volume.Name == "" {
@@ -57,7 +57,7 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 	driverOpts := make(map[string]string)
 	driverOpts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
 	v := storageAPIVersion()
-	client := dockerClient.GetClient(v)
+	client := docker.GetClient(v)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -121,7 +121,7 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 		logrus.Debug("No Registry credential found. Pulling non-authed")
 	}
 
-	client := dockerClient.GetClient(DefaultVersion)
+	client := docker.GetClient(DefaultVersion)
 	var data model.DockerImage
 	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
 		panic(err)
@@ -186,7 +186,7 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 }
 
 func imageBuild(image *model.Image, progress *progress.Progress) {
-	client := dockerClient.GetClient(DefaultVersion)
+	client := docker.GetClient(DefaultVersion)
 	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
 
 	if isStrSet(opts, "context") {
@@ -257,7 +257,7 @@ func IsImageActive(image *model.Image, storagePool *model.StoragePool) bool {
 		return true
 	}
 	parsedTag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
-	_, _, err := dockerClient.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), parsedTag["uuid"], false)
+	_, _, err := docker.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), parsedTag["uuid"], false)
 	if err == nil {
 		return true
 	}
@@ -304,15 +304,15 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 		return nil
 	}
 	if volume.DeviceNumber == 0 {
-		client := dockerClient.GetClient(DefaultVersion)
-		container := GetContainer(client, &volume.Instance, false)
+		client := docker.GetClient(DefaultVersion)
+		container := GetContainer(client, volume.Instance, false)
 		if container == nil {
 			return nil
 		}
 		removeContainer(client, container.ID)
 	} else if isManagedVolume(volume) {
 		version := storageAPIVersion()
-		err := dockerClient.GetClient(version).VolumeRemove(context.Background(), strconv.Itoa(volume.ID))
+		err := docker.GetClient(version).VolumeRemove(context.Background(), strconv.Itoa(volume.ID))
 		if err != nil {
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
@@ -338,8 +338,8 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 
 func IsVolumeRemoved(volume *model.Volume, storagePool *model.StoragePool) bool {
 	if volume.DeviceNumber == 0 {
-		client := dockerClient.GetClient(DefaultVersion)
-		container := GetContainer(client, &volume.Instance, false)
+		client := docker.GetClient(DefaultVersion)
+		container := GetContainer(client, volume.Instance, false)
 		return container == nil
 	} else if isManagedVolume(volume) {
 		return IsVolumeActive(volume, storagePool)
