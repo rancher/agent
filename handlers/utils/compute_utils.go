@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io/ioutil"
 )
 
 var CreateConfigFields = []model.Tuple{
@@ -217,7 +218,7 @@ func agentIDFilter(id string, container *types.Container) bool {
 }
 
 func RecordState(client *client.Client, instance *model.Instance, dockerID string) {
-	if len(dockerID) > 0 {
+	if len(dockerID) == 0 {
 		container := GetContainer(client, instance, false)
 		if container != nil {
 			dockerID = container.ID
@@ -229,21 +230,21 @@ func RecordState(client *client.Client, instance *model.Instance, dockerID strin
 	}
 	contDir := containerStateDir()
 	temFilePath := path.Join(contDir, fmt.Sprintf("tmp-%s", dockerID))
-	if _, err := os.Stat(temFilePath); err != nil {
+	if _, err := os.Stat(temFilePath); err == nil {
 		os.Remove(temFilePath)
 	}
 	filePath := path.Join(contDir, dockerID)
-	if _, err := os.Stat(filePath); err != nil {
+	if _, err := os.Stat(filePath); err == nil {
 		os.Remove(filePath)
 	}
 	if _, err := os.Stat(contDir); err != nil {
 		os.Mkdir(contDir, 777)
 	}
-	file, _ := os.Open(temFilePath)
 	data, _ := marshaller.ToString(instance)
-	defer file.Close()
-	file.Write(data)
-
+	err := ioutil.WriteFile(temFilePath, data, 0777)
+	if err != nil {
+		logrus.Error(err)
+	}
 	os.Rename(temFilePath, filePath)
 }
 
@@ -251,7 +252,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	if isNoOp(instance.Data) {
 		return nil
 	}
-
 	client := dockerClient.GetClient(DefaultVersion)
 
 	imageTag, err := getImageTag(instance)
@@ -709,17 +709,19 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 }
 
 func setupLinks(startConfig map[string]interface{}, instance *model.Instance) {
-	links := make(map[string]interface{})
+	links := []string{}
 
 	if instance.InstanceLinks == nil {
 		return
 	}
-
 	for _, link := range instance.InstanceLinks {
-		if link.TargetInstanceID != "" {
-			links[link.TargetInstance.UUID] = link.LinkName
+		if link.TargetInstance.UUID != "" {
+			logrus.Info("hello")
+			linkStr := fmt.Sprintf("%s:%s", link.TargetInstance.UUID, link.LinkName)
+			links = append(links, linkStr)
 		}
 	}
+	logrus.Infof("links info %v", links)
 	startConfig["links"] = links
 
 }
