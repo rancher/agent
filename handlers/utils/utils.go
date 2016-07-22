@@ -118,7 +118,14 @@ func ReadBuffer(reader io.ReadCloser) string {
 }
 
 func isStrSet(m map[string]interface{}, key string) bool {
-	return m[key] != nil && len(m[key].([]string)) > 0
+	ok := false
+	switch m[key].(type) {
+	case string:
+		ok = len(m[key].(string)) > 0
+	case []string:
+		ok = len(m[key].([]string)) > 0
+	}
+	return m[key] != nil && ok
 }
 
 func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
@@ -145,7 +152,7 @@ func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, 
 func tempFileInWorkDir(destination string) string {
 	dstPath := path.Join(destination, TempName)
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		os.Mkdir(dstPath, 0777)
+		os.MkdirAll(dstPath, 0777)
 	}
 	return tempFile(dstPath)
 }
@@ -158,10 +165,29 @@ func tempFile(destination string) string {
 	return ""
 }
 
-func GetResponseData(event *events.Event, eventData map[string]interface{}) map[string]interface{} {
-	// TODO not implemented
+func GetResponseData(event *events.Event) map[string]interface{} {
 	resourceType := event.ResourceType
-	return map[string]interface{}{resourceType: getInstanceHostMapData(event)}
+	switch resourceType {
+	case "instanceHostMap":
+		return map[string]interface{}{resourceType: getInstanceHostMapData(event)}
+	case "volumeStoragePoolMap":
+		return map[string]interface{}{
+			resourceType: map[string]interface{}{
+				"volume": map[string]interface{}{
+					"format": "docker",
+				},
+			},
+		}
+	case "instancePull":
+		return map[string]interface{}{
+			"fields": map[string]interface{}{
+				"dockerImage": getInstancePullData(event),
+			},
+		}
+	default:
+		return map[string]interface{}{resourceType: map[string]interface{}{}}
+	}
+
 }
 
 func convertPortToString(port int) string {

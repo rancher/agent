@@ -1,0 +1,23 @@
+{
+  "id": "d3de8aa6-6ed7-4b79-964c-9c6a4a3dadfd",
+  "name": "compute.instance.force.stop",
+  "replyTo": "reply.402719472243191890",
+  "resourceId": null,
+  "resourceType": null,
+  "publisher": null,
+  "transitioning": null,
+  "transitioningMessage": null,
+  "transitioningInternalMessage": null,
+  "previousIds": null,
+  "previousNames": null,
+  "data": {
+    "instanceForceStop": {
+      "id": "9b41268d3c00c1b8d8ed665b1975688a2049687bf566c07acad02bf2409cf032",
+      "kind": "docker"
+    }
+  },
+  "time": 1431116165921,
+  "timeoutMillis": 15000,
+  "transitioningProgress": null,
+  "context": null
+}

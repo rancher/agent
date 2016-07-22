@@ -23,7 +23,7 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 		image.ProcessData = event.Data["processData"].(map[string]interface{})
 	}
 	if utils.IsImageActive(&image, &storagePool) {
-		return reply(event.Data, &revents.Event{}, cli)
+		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	imageWithLock := ObjWithLock{obj: image, mu: sync.Mutex{}}
@@ -31,7 +31,7 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	defer imageWithLock.mu.Unlock()
 	im := imageWithLock.obj.(model.Image)
 	if utils.IsImageActive(&im, &storagePool) {
-		return reply(event.Data, &revents.Event{}, cli)
+		return reply(event.Data, event, cli)
 	}
 
 	err := utils.DoImageActivate(&im, &storagePool, &progress)
@@ -43,7 +43,7 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 		logrus.Error("operation failed")
 	}
 
-	return reply(event.Data, &revents.Event{}, cli)
+	return reply(event.Data, event, cli)
 }
 
 func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -54,7 +54,7 @@ func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	progress := progress.Progress{}
 
 	if utils.IsVolumeActive(&volume, &storagePool) {
-		return reply(utils.GetResponseData(event, event.Data), event, cli)
+		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	volumeWithLock := ObjWithLock{obj: volume, mu: sync.Mutex{}}
@@ -68,7 +68,7 @@ func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	if !utils.IsVolumeActive(&volume, &storagePool) {
 		logrus.Error("operation failed")
 	}
-	return reply(utils.GetResponseData(event, event.Data), event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
@@ -79,7 +79,7 @@ func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	progress := progress.Progress{}
 
 	if utils.IsVolumeInactive(&volume, &storagePool) {
-		return reply(utils.GetResponseData(event, event.Data), event, cli)
+		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	volumeWithLock := ObjWithLock{obj: volume, mu: sync.Mutex{}}
@@ -94,7 +94,7 @@ func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	if !utils.IsVolumeInactive(&volume, &storagePool) {
 		logrus.Error("operation failed")
 	}
-	return reply(utils.GetResponseData(event, event.Data), event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
@@ -113,5 +113,5 @@ func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	if !utils.IsVolumeRemoved(&volume, &storagePool) {
 		utils.DoVolumeRemove(&volume, &storagePool, &progress)
 	}
-	return reply(utils.GetResponseData(event, event.Data), event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }

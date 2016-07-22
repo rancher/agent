@@ -1,5 +1,8 @@
 {
     "data": {
+        "processData" : {
+            "timeout" : 0
+        },
         "instanceHostMap": {
             "host": {
                 "agentId": 91,
@@ -27,27 +30,9 @@
                 "data": {
                     "fields": {
                         "imageUuid": "docker:ibuildthecloud/helloworld",
-                        "publishAllPorts": true,
-                        "command": ["sleep", "5"],
-                        "startOnCreate": true,
-                        "labels": {
-                            "constraint" : "label_key==bar",
-                            "affinity" : "container==foo"
-                        }
+                        "startOnCreate": true
                     }
                 },
-                "ports" : [
-                    {
-                        "protocol": "tcp",
-                        "privatePort": 8080,
-                        "publicPort": null
-                    },
-                    {
-                        "protocol": "udp",
-                        "privatePort": 12201,
-                        "publicPort": null
-                    }
-                ],
                 "description": null,
                 "hostname": null,
                 "id": 211,
@@ -130,8 +115,9 @@
         }
     },
     "id": "fe8fe34c-1b13-4287-a094-a2c5f902722b",
-    "name": "compute.instance.activate",
+    "name": "compute.instance.deactivate",
     "previousIds": null,
+    "previousNames": null,
     "publisher": null,
     "replyTo": "reply.6533363327570546786",
     "resourceId": "211",

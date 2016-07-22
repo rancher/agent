@@ -13,6 +13,7 @@ import time
 from docker.utils import compare_version
 import re
 from tests.cattle import Config
+import random
 
 TEST_DIR = os.path.join(dirname(tests.__file__))
 CONFIG_OVERRIDE = {}
@@ -262,6 +263,8 @@ def instance_activate_common_validation(resp):
         del docker_container['Ports'][1]['PublicPort']
     except KeyError:
         pass
+    except IndexError:
+        pass
     fields['dockerPorts'].sort()
     for idx, p in enumerate(fields['dockerPorts']):
         if '8080' in p or '12201' in p:
@@ -343,9 +346,53 @@ def get_container(name):
 
 
 def trim(docker_container, fields, resp, valid_resp):
-    del docker_container["State"]
-    del docker_container["Mounts"]
-    fields["dockerHostIp"] = '1.2.3.4'
-    del resp['links']
-    del resp['actions']
-    del valid_resp['previousNames']
+    try:
+        del docker_container["State"]
+        del docker_container["Mounts"]
+        fields["dockerHostIp"] = '1.2.3.4'
+        del resp['links']
+        del resp['actions']
+        del valid_resp['previousNames']
+    except KeyError:
+        pass
+
+
+def instance_only_activate(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        for nic in instance['nics']:
+            nic['macAddress'] = ''
+
+    def post(req, resp):
+        docker_inspect = resp['data']['instanceHostMap']['instance']['+data'][
+            'dockerInspect']
+        labels = docker_inspect['Config']['Labels']
+        ip = req['data']['instanceHostMap']['instance']['nics'][
+            0]['ipAddresses'][0]
+        expected_ip = "{0}/{1}".format(ip.address, ip.subnet.cidrSize)
+        assert labels['io.rancher.container.ip'] == expected_ip
+        instance_activate_common_validation(resp)
+
+    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
+
+
+def delete_volume(name):
+    client = docker_client(version=DockerConfig.storage_api_version())
+    try:
+        client.remove_volume(name)
+    except:
+        pass
+
+
+def random_str():
+    return 'test-{0}'.format(random_num())
+
+
+def random_num():
+    return random.randint(0, 1000000)
+
+
+class ImageValidationError(Exception):
+    pass

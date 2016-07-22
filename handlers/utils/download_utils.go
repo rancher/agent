@@ -20,6 +20,7 @@ func downloadFile(url string, dest string, reporthook interface{}, checksum stri
 
 func downloadFileUtil(url string, dest string, reporthook interface{}, checksum string) (string, error) {
 	tempName := tempFileInWorkDir(dest)
+	logrus.Info(tempName)
 	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, tempName))
 	err := downloadFromURL(url, tempName)
 	if err == nil {
@@ -73,20 +74,21 @@ func validateChecksum(fileName string, checksumValue string) error {
 }
 
 func downloadFromURL(rawurl string, filepath string) error {
-	file, err := os.Open(filepath)
+	file, err := os.OpenFile(filepath, os.O_WRONLY, 0666)
 	if err == nil {
 		response, err1 := http.Get(rawurl)
 		if err1 != nil {
 			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
 			return err1
 		}
+		defer file.Close()
 		defer response.Body.Close()
-		n, ok := io.Copy(file, response.Body)
-		if ok != nil {
-			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
-			return ok
+		n, err := io.Copy(file, response.Body)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("Error while copy file: %s", err))
+			return err
 		}
-		logrus.Info(fmt.Sprintf("%v bytes downloaded successfully", n))
+		logrus.Infof("%v bytes downloaded successfully", n)
 		return nil
 	}
 	return err
