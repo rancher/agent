@@ -24,11 +24,15 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
+	if utils.IsNoOp(event.Data) {
+		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
+		return reply(utils.GetResponseData(event), event, cli)
+	}
 
 	if utils.IsInstanceActive(instance, host) {
 		logrus.Info("instance is activated")
 		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
-		return reply(utils.GetResponseData(event, event.Data), event, cli)
+		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	insWithLock := ObjWithLock{mu: sync.Mutex{}, obj: instance}
@@ -38,7 +42,7 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	utils.DoInstanceActivate(in, host, &progress)
 	//data := utils.Get_response_data(event, event.Data)
 
-	return reply(utils.GetResponseData(event, event.Data), event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
@@ -50,22 +54,34 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
+	if utils.IsNoOp(event.Data) {
+		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
+		return reply(utils.GetResponseData(event), event, cli)
+	}
 	if utils.IsInstanceInactive(instance) {
-		return reply(utils.GetResponseData(event, event.Data), event, cli)
+		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	insWithLock := ObjWithLock{mu: sync.Mutex{}, obj: instance}
 	insWithLock.mu.Lock()
 	defer insWithLock.mu.Unlock()
 	in := insWithLock.obj.(*model.Instance)
-	err := utils.DoInstanceDeactivate(in, &progress)
+	timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
+	if !ok {
+		timeout = 0
+	}
+	switch timeout.(type) {
+	case float64:
+		timeout = int(timeout.(float64))
+	}
+	err := utils.DoInstanceDeactivate(in, &progress, timeout.(int))
 
 	if err != nil {
 		logrus.Error(err)
 		return err
 	}
 
-	return reply(utils.GetResponseData(event, event.Data), event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func InstanceForceStop(event *revents.Event, cli *client.RancherClient) error {
@@ -115,10 +131,10 @@ func InstancePull(event *revents.Event, cli *client.RancherClient) error {
 		var imagePullJSON map[string]interface{}
 		data, _ := json.Marshal(imagePull)
 		json.Unmarshal(data, &imagePullJSON)
+		result["fields"] = map[string]interface{}{}
 		result["fields"].(map[string]interface{})["dockerImage"] = imagePull
 	}
-
-	return reply(result, event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
@@ -141,6 +157,9 @@ func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 	if utils.IsInstanceRemoved(in) {
 		return reply(map[string]interface{}{}, event, cli)
 	}
-	utils.DoInstanceRemove(in, &progress)
+	err := utils.DoInstanceRemove(in, &progress)
+	if err != nil {
+		logrus.Error(err)
+	}
 	return reply(map[string]interface{}{}, event, cli)
 }

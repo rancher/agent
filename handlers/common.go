@@ -11,7 +11,7 @@ func GetHandlers() map[string]revents.EventHandler {
 	return map[string]revents.EventHandler{
 		"compute.instance.activate":   InstanceActivate,
 		"compute.instance.deactivate": InstanceDeactivate,
-		"compute.force.stop":          InstanceForceStop,
+		"compute.instance.force.stop": InstanceForceStop,
 		"compute.instance.inspect":    InstanceInspect,
 		"compute.instance.pull":       InstancePull,
 		"compute.instance.remove":     InstanceRemove,

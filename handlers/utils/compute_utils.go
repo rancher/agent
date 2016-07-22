@@ -31,6 +31,7 @@ import (
 	"time"
 )
 
+/*
 var CreateConfigFields = []model.Tuple{
 	model.Tuple{Src: "labels", Dest: "labels"},
 	model.Tuple{Src: "environment", Dest: "environment"},
@@ -62,9 +63,10 @@ var StartConfigFields = []model.Tuple{
 	model.Tuple{Src: "pidMode", Dest: "pid_mode"},
 	model.Tuple{Src: "devices", Dest: "devices"},
 }
+*/
 
 func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *progress.Progress) error {
-	if isNoOp(instance.Data) {
+	if IsNoOp(instance.Data) {
 		return nil
 	}
 	client := docker.GetClient(DefaultVersion)
@@ -139,7 +141,10 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	var config container.Config
 	mapstructure.Decode(createConfig, &config)
 	setupConfig(instance.Data["fields"].(map[string]interface{}), &config)
-
+	labels, ok := GetFieldsIfExist(instance.Data, "fields", "labels")
+	if ok {
+		setupLabels(labels.(map[string]interface{}), &config)
+	}
 	//debug
 	logrus.Infof("container configuration %+v\n", config)
 	logrus.Infof("container host configuration %+v\n", hostConfig)
@@ -219,7 +224,7 @@ func GetInstanceAndHost(event *events.Event) (*model.Instance, *model.Host) {
 }
 
 func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
-	if isNoOp(instance.Data) {
+	if IsNoOp(instance.Data) {
 		return true
 	}
 
@@ -228,8 +233,8 @@ func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 	return isRunning(client, container)
 }
 
-func isNoOp(data map[string]interface{}) bool {
-	b, ok := GetFieldsIfExist(data, "containerNoOpEvent")
+func IsNoOp(data map[string]interface{}) bool {
+	b, ok := GetFieldsIfExist(data, "processData", "containerNoOpEvent")
 	if ok {
 		return b.(bool)
 	}
@@ -391,10 +396,6 @@ func createContainer(client *client.Client, config *container.Config, hostConfig
 	logrus.Info(command)
 	config.Image = imageTag
 
-	if vDriver, ok := GetFieldsIfExist(instance.Data, "field", "volumeDriver"); ok {
-		hostConfig.VolumeDriver = vDriver.(string)
-	}
-
 	containerResponse, err := client.ContainerCreate(context.Background(), config, hostConfig, nil, name)
 	logrus.Info(fmt.Sprintf("creating container with name %s", name))
 	// if image doesn't exist
@@ -416,7 +417,11 @@ func createContainer(client *client.Client, config *container.Config, hostConfig
 }
 
 func removeContainer(client *client.Client, containerID string) error {
+	client.ContainerKill(context.Background(), containerID, "KILL")
 	err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{})
+	if err == nil {
+		logrus.Infof("container ID [%v] removed", containerID)
+	}
 	return err
 }
 
@@ -429,28 +434,33 @@ func DoInstancePull(params *model.ImageParams, progress *progress.Progress) (typ
 	}
 	var dockerImage model.DockerImage
 	mapstructure.Decode(imageJSON, &dockerImage)
-	existing, _, err := client.ImageInspectWithRaw(context.Background(), dockerImage.ID, false)
+	// imageName := fmt.Sprintf("%s:%s", dockerImage.FullName)
+	existing, _, err := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName, false)
 	if err != nil {
-		return types.ImageInspect{}, err
+		logrus.Error(err)
 	}
-	if params.Mode == "cached" {
+	if params.Mode == "cached" && err == nil {
 		return existing, nil
 	}
 	if params.Complete {
-		var err1 error
-		_, err1 = client.ImageRemove(context.Background(), dockerImage.ID, types.ImageRemoveOptions{})
-		return types.ImageInspect{}, err1
+		logrus.Info("complete")
+		_, err1 := client.ImageRemove(context.Background(), dockerImage.FullName+params.Tag, types.ImageRemoveOptions{Force: true})
+		if err1 != nil {
+			logrus.Error(err1)
+		}
+		return types.ImageInspect{}, nil
 	}
-
-	imagePull(params, progress)
+	pullImage(&params.Image, progress)
 
 	if len(params.Tag) > 0 {
 		imageInfo := parseRepoTag(dockerImage.FullName)
 		repoTag := fmt.Sprintf("%s:%s", imageInfo["repo"], imageInfo["tag"]+params.Tag)
-		client.ImageTag(context.Background(), dockerImage.ID, repoTag)
+		logrus.Info(repoTag)
+		client.ImageTag(context.Background(), dockerImage.FullName, repoTag)
 	}
 
-	inspect, _, err2 := client.ImageInspectWithRaw(context.Background(), dockerImage.ID, false)
+	inspect, _, err2 := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName, false)
+	logrus.Infof("image inspect %v", inspect)
 	return inspect, err2
 }
 
@@ -682,15 +692,11 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 	}
 
 	if vMounts := instance.VolumesFromDataVolumeMounts; len(vMounts) > 0 {
-		for vMount := range vMounts {
-			var volume model.Volume
-			err := mapstructure.Decode(vMount, &volume)
+		for _, vMount := range vMounts {
 			storagePool := model.StoragePool{}
 			progress := progress.Progress{}
-			if err != nil {
-				if !IsVolumeActive(&volume, &storagePool) {
-					DoVolumeActivate(&volume, &storagePool, &progress)
-				}
+			if !IsVolumeActive(&vMount, &storagePool) {
+				DoVolumeActivate(&vMount, &storagePool, &progress)
 			}
 		}
 	}
@@ -734,10 +740,10 @@ func flagSystemContainer(instance *model.Instance, createConfig map[string]inter
 func setupProxy(instance *model.Instance, createConfig map[string]interface{}) {
 	if len(instance.SystemContainer) > 0 {
 		if !hasKey(createConfig, "environment") {
-			createConfig["environment"] = map[string]interface{}{}
+			createConfig["env"] = map[string]string{}
 		}
 		for _, i := range []string{"http_proxy", "https_proxy", "NO_PROXY"} {
-			createConfig["enviroment"].(map[string]interface{})[i] = os.Getenv(i)
+			createConfig["env"].(map[string]string)[i] = os.Getenv(i)
 		}
 	}
 }
@@ -944,16 +950,12 @@ func removeStateFile(id string) {
 	}
 }
 
-func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress) error {
-	if isNoOp(instance.Data) {
+func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress, timeout int) error {
+	if IsNoOp(instance.Data) {
 		return nil
 	}
 
 	client := docker.GetClient(DefaultVersion)
-	timeout := 10
-	if value, ok := GetFieldsIfExist(instance.ProcessData, "timeout"); ok {
-		timeout = int(value.(float64))
-	}
 	time := time.Duration(timeout)
 	container := GetContainer(client, instance, false)
 	client.ContainerStop(context.Background(), container.ID, &time)
@@ -973,7 +975,7 @@ func isStopped(client *client.Client, container *types.Container) bool {
 }
 
 func IsInstanceInactive(instance *model.Instance) bool {
-	if isNoOp(instance.Data) {
+	if IsNoOp(instance.Data) {
 		return true
 	}
 
@@ -1226,6 +1228,8 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 			if _, ok := value.(float64); ok {
 				hostConfig.CPUShares = int64(value.(float64))
 			}
+		case "volumeDriver":
+			hostConfig.VolumeDriver = value.(string)
 		}
 	}
 }
@@ -1259,5 +1263,18 @@ func setupConfig(fields map[string]interface{}, config *container.Config) {
 			}
 		}
 
+	}
+}
+
+func getInstancePullData(event *revents.Event) types.ImageInspect {
+	imageName, _ := GetFieldsIfExist(event.Data, "instancePull", "image", "data", "dockerImage", "fullName")
+	tag, _ := GetFieldsIfExist(event.Data, "instancePull", "tag")
+	inspect, _, _ := docker.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), imageName.(string)+tag.(string), false)
+	return inspect
+}
+
+func setupLabels(labels map[string]interface{}, config *container.Config) {
+	for k, v := range labels {
+		config.Labels[k] = v.(string)
 	}
 }

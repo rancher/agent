@@ -13,17 +13,17 @@ import (
 	"github.com/rancher/agent/model"
 	"golang.org/x/net/context"
 	"os"
-	"strconv"
 	"strings"
 )
 
 func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
-	if isManagedVolume(volume) {
+	if !isManagedVolume(volume) {
 		return true
 	}
 	version := storageAPIVersion()
 	vol, err := docker.GetClient(version).VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
+		logrus.Error(err)
 		return false
 	}
 	if vol.Mountpoint != "" {
@@ -53,9 +53,17 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 	if !isManagedVolume(volume) {
 		return nil
 	}
-	driver := volume.Data["field"].(map[string]interface{})["driver"].(string)
-	driverOpts := make(map[string]string)
-	driverOpts = volume.Data["field"].(map[string]interface{})["driverOpts"].(map[string]string)
+	driver := volume.Data["fields"].(map[string]interface{})["driver"].(string)
+	driverOpts := volume.Data["fields"].(map[string]interface{})["driverOpts"]
+	opts := map[string]string{}
+	if driverOpts != nil {
+		driverOpts := driverOpts.(map[string]interface{})
+		for k, v := range driverOpts {
+			opts[k] = v.(string)
+		}
+	}
+	logrus.Infof("driver name %s", driver)
+	logrus.Infof("driver opts %v", driverOpts)
 	v := storageAPIVersion()
 	client := docker.GetClient(v)
 
@@ -75,7 +83,7 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 	options := types.VolumeCreateRequest{
 		Name:       volume.Name,
 		Driver:     driver,
-		DriverOpts: driverOpts,
+		DriverOpts: opts,
 	}
 	logrus.Infof("start creating volume name[%v]", options.Name)
 	newVolume, err1 := client.VolumeCreate(context.Background(), options)
@@ -88,13 +96,11 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 }
 
 func pullImage(image *model.Image, progress *progress.Progress) {
-	if !IsImageActive(image, nil) {
-		DoImageActivate(image, nil, progress)
-	}
+	DoImageActivate(image, nil, progress)
 }
 
 func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progress *progress.Progress) error {
-	if isNoOp(image.Data) {
+	if IsNoOp(image.Data) {
 		return nil
 	}
 
@@ -123,9 +129,7 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 
 	client := docker.GetClient(DefaultVersion)
 	var data model.DockerImage
-	if err := mapstructure.Decode(image.Data["dockerImage"], &data); err != nil {
-		panic(err)
-	}
+	mapstructure.Decode(image.Data["dockerImage"], &data)
 	temp := data.QualifiedName
 	if strings.HasPrefix(temp, "docker.io/") {
 		temp = "index." + temp
@@ -136,9 +140,7 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 		        the verification of and connection to the registry.
 	*/
 	var auth types.AuthConfig
-	if err := mapstructure.Decode(authConfig, &auth); err != nil {
-		panic(err)
-	}
+	mapstructure.Decode(authConfig, &auth)
 	tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
 	if authErr != nil {
 		logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
@@ -168,13 +170,15 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 		logrus.Infof("status data from pull image %s", buffer)
 		statusList := strings.Split(buffer, "\r\n")
 		for _, rawStatus := range statusList {
-			status := marshaller.FromString(rawStatus)
-			if hasKey(status, "error") {
-				return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
-			}
-			if hasKey(status, "status") {
-				logrus.Infof("pull image status %s", status["status"].(string))
-				message = status["status"].(string)
+			if rawStatus != "" {
+				status := marshaller.FromString(rawStatus)
+				if hasKey(status, "Error") {
+					return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
+				}
+				if hasKey(status, "status") {
+					logrus.Infof("pull image status %s", status["status"].(string))
+					message = status["status"].(string)
+				}
 			}
 		}
 		if lastMessage != message {
@@ -187,12 +191,13 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 
 func imageBuild(image *model.Image, progress *progress.Progress) {
 	client := docker.GetClient(DefaultVersion)
-	opts := image.Data["fields"].(map[string]interface{})["build"].(map[string]interface{})
+	v, _ := GetFieldsIfExist(image.Data, "fields", "build")
+	opts := v.(map[string]interface{})
 
 	if isStrSet(opts, "context") {
 		file, err := downloadFile(opts["context"].(string), builds(), nil, "")
 		if err == nil {
-			delete(opts, "context")
+			// delete(opts, "context")
 			opts["fileobj"] = file
 			opts["custom_context"] = true
 			doBuild(opts, progress, client)
@@ -205,45 +210,42 @@ func imageBuild(image *model.Image, progress *progress.Progress) {
 		if strings.HasPrefix(remote.(string), "git@github.com:") {
 			remote = strings.Replace(remote.(string), "git@github.com:", "git://github.com/", -1)
 		}
-		delete(opts, "remote")
-		opts["path"] = remote
+		opts["remote"] = remote
 		doBuild(opts, progress, client)
 	}
 }
 
 func doBuild(opts map[string]interface{}, progress *progress.Progress, client *client.Client) {
-	for _, key := range []string{"context", "remote"} {
-		if opts[key] != nil {
-			delete(opts, key)
-		}
+	remote := InterfaceToString(opts["remote"])
+	if remote == "" {
+		remote = opts["context"].(string)
 	}
-	opts["stream"] = true
-	opts["rm"] = true
-	dockerFile := ""
-	//TODO check if this logic is correct
-	if opts["fileobj"] != nil {
-		dockerFile = opts["fileobj"].(string)
-	} else {
-		dockerFile = opts["path"].(string)
-	}
+	logrus.Infof("remote %v, dockerfile %v", remote)
 	imageBuildOptions := types.ImageBuildOptions{
-		Dockerfile: dockerFile,
-		Remove:     true,
+		// Dockerfile: dockerFile,
+		// for test
+		RemoteContext: remote,
+		Remove:        true,
+		Tags:          []string{opts["tag"].(string)},
 	}
 	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
 	if err != nil {
 		logrus.Error(err)
-	}
-	buffer := ReadBuffer(response.Body)
-	statusList := marshaller.FromString(buffer)
-	for _, status := range statusList {
-		status := status.(map[string]interface{})
-		progress.Update(status["stream"].(string))
+	} else {
+		buffer := ReadBuffer(response.Body)
+		statusList := strings.Split(buffer, "\r\n")
+		for _, rawStatus := range statusList {
+			if rawStatus != "" {
+				logrus.Info(rawStatus)
+				status := marshaller.FromString(rawStatus)
+				progress.Update(status["stream"].(string))
+			}
+		}
 	}
 }
 
 func isBuild(image *model.Image) bool {
-	if build, ok := GetFieldsIfExist(image.Data, "field", "build"); ok {
+	if build, ok := GetFieldsIfExist(image.Data, "fields", "build"); ok {
 		if isStrSet(build.(map[string]interface{}), "context") ||
 			isStrSet(build.(map[string]interface{}), "remote") {
 			return true
@@ -253,7 +255,7 @@ func isBuild(image *model.Image) bool {
 }
 
 func IsImageActive(image *model.Image, storagePool *model.StoragePool) bool {
-	if isNoOp(image.Data) {
+	if IsNoOp(image.Data) {
 		return true
 	}
 	parsedTag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
@@ -268,10 +270,10 @@ func parseRepoTag(name string) map[string]string {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}
-	n := strings.LastIndex(name, ":")
+	n := strings.Index(name, ":")
 	if n < 0 {
 		return map[string]string{
-			"repo": name[:n],
+			"repo": name,
 			"tag":  "latest",
 			"uuid": name + ":latest",
 		}
@@ -312,8 +314,9 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 		removeContainer(client, container.ID)
 	} else if isManagedVolume(volume) {
 		version := storageAPIVersion()
-		err := docker.GetClient(version).VolumeRemove(context.Background(), strconv.Itoa(volume.ID))
+		err := docker.GetClient(version).VolumeRemove(context.Background(), volume.Name)
 		if err != nil {
+			logrus.Error(err)
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
 					err.Error()))
@@ -342,7 +345,7 @@ func IsVolumeRemoved(volume *model.Volume, storagePool *model.StoragePool) bool 
 		container := GetContainer(client, volume.Instance, false)
 		return container == nil
 	} else if isManagedVolume(volume) {
-		return IsVolumeActive(volume, storagePool)
+		return !IsVolumeActive(volume, storagePool)
 	}
 	path := pathToVolume(volume)
 	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && value.(bool) {

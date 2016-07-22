@@ -1,4 +1,6 @@
 from urlparse import urlparse
+import binascii
+import os
 
 
 def memoize(function):
@@ -78,3 +80,7 @@ def get_url_port(url):
         raise Exception('Failed to find port for {0}'.format(url))
 
     return port
+
+
+def random_string(length=64):
+    return binascii.hexlify(os.urandom(length/2))

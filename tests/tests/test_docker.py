@@ -4,7 +4,13 @@ from .common import event_test, delete_container, \
     instance_activate_assert_image_id, \
     docker_client, \
     container_field_test_boiler_plate, \
-    trim, CONFIG_OVERRIDE, JsonObject, Config, get_container
+    trim, CONFIG_OVERRIDE, JsonObject, Config, get_container, \
+    instance_only_activate, delete_volume, DockerConfig, \
+    newer_than
+
+import time
+from docker.errors import APIError
+import pytest
 
 
 def test_example(agent):
@@ -45,7 +51,6 @@ def test_instance_activate_no_name(agent):
         docker_con['Names'] = ['/c861f990-4472-4fa1-960f-65171b544c28']
         # TODO Pull over below method
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
     schema = 'docker/instance_activate'
     event_test(agent, schema, pre_func=pre, post_func=post)
@@ -69,7 +74,6 @@ def test_instance_activate_duplicate_name(agent):
         docker_con['Labels']['io.rancher.container.uuid'] = dupe_name_uuid
         docker_con['Names'] = ['/' + dupe_name_uuid]
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
     event_test(agent, schema, pre_func=pre, post_func=post)
 
@@ -90,7 +94,6 @@ def test_instance_activate_no_mac_address(agent):
         # assert mac_received == ''
         assert mac_nic_received is not None
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
 
@@ -106,7 +109,6 @@ def test_instance_activate_mac_address(agent):
         assert mac_nic_received == '02:03:04:05:06:07'
         assert mac_received == '02:03:04:05:06:07'
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/instance_activate', post_func=post)
 
@@ -1281,3 +1283,373 @@ def test_instance_activate_labels(agent):
 
     event_test(agent, 'docker/instance_activate_labels',
                post_func=post)
+
+
+def test_instance_deactivate(agent):
+    instance_only_activate(agent)
+
+    def post(req, resp, valid_resp):
+        container_field_test_boiler_plate(resp)
+
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_container = instance_data['dockerContainer']
+        fields = instance_data['+fields']
+        trim(docker_container, fields, resp, valid_resp)
+
+    start = time.time()
+    event_test(agent, 'docker/instance_deactivate', post_func=post)
+    end = time.time()
+
+    assert end - start < 2
+
+    def pre(req):
+        req['data']['processData']['timeout'] = 1
+
+    instance_only_activate(agent)
+    start = time.time()
+    event_test(agent, 'docker/instance_deactivate', pre_func=pre,
+               post_func=post)
+    end = time.time()
+
+    assert end - start > 0.3
+
+
+def test_instance_activate_ipsec_network_agent(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def post(req, resp, valid_resp):
+        instance_activate_common_validation(resp)
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_container = instance_data['dockerContainer']
+        fields = instance_data['+fields']
+        trim(docker_container, fields, resp, valid_resp)
+
+    event_test(agent, 'docker/instance_activate_ipsec_network_agent',
+               post_func=post)
+
+
+def test_instance_activate_ipsec_lb_agent(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def post(req, resp, valid_resp):
+        instance_activate_common_validation(resp)
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_container = instance_data['dockerContainer']
+        fields = instance_data['+fields']
+        trim(docker_container, fields, resp, valid_resp)
+
+    event_test(agent, 'docker/instance_activate_ipsec_lb_agent',
+               post_func=post)
+
+
+def test_instance_force_stop(agent):
+    delete_container('/force-stop-test')
+
+    client = docker_client()
+    c = client.create_container('ibuildthecloud/helloworld',
+                                name='force-stop-test')
+    client.start(c)
+    inspect = client.inspect_container(c)
+    assert inspect['State']['Running'] is True
+
+    def pre(req):
+        req['data']['instanceForceStop']['id'] = c['Id']
+
+    def post(req, resp):
+        inspect = client.inspect_container(c)
+        assert inspect['State']['Running'] is False
+
+    event_test(agent, 'docker/instance_force_stop',
+               pre_func=pre, post_func=post, diff=False)
+
+    # Assert that you can call on a stop container without issue
+    event_test(agent, 'docker/instance_force_stop',
+               pre_func=pre, post_func=post, diff=False)
+
+    # And a non-existent one
+    client.remove_container(c)
+    event_test(agent, 'docker/instance_force_stop', pre_func=pre, diff=False)
+
+
+def test_instance_remove(agent):
+    instance_only_activate(agent)
+    container = get_container('/r-test')
+    assert container is not None
+
+    def post(req, resp, valid_resp):
+        c = get_container('/r-test')
+        assert c is None
+        del valid_resp['data']
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/instance_remove', post_func=post)
+
+    # Test finding and removing by externalId instead of uuid
+    instance_only_activate(agent)
+    container = get_container('/r-test')
+    assert container is not None
+
+    def pre(req):
+        req['data']['instanceHostMap']['instance']['externalId'] = container[
+            'Id']
+        req['data']['instanceHostMap']['instance']['uuid'] = 'wont be found'
+
+    def post(req, resp, valid_resp):
+        c = get_container('/r-test')
+        assert c is None
+        del valid_resp['data']
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/instance_remove', pre_func=pre, post_func=post)
+
+
+def test_instance_links_net_host(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+    delete_container('/target_redis')
+    delete_container('/target_mysql')
+
+    client = docker_client()
+    c = client.create_container('ibuildthecloud/helloworld',
+                                ports=[(3307, 'udp'), (3306, 'tcp')],
+                                name='target_mysql')
+    client.start(c, port_bindings={
+        '3307/udp': ('127.0.0.2', 12346),
+        '3306/tcp': ('127.0.0.2', 12345)
+    })
+
+    c = client.create_container('ibuildthecloud/helloworld',
+                                name='target_redis')
+    client.start(c)
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        instance['nics'][0]['network']['kind'] = 'dockerHost'
+
+    def post(req, resp, valid_resp):
+        id = resp['data']['instanceHostMap']['instance']
+        id = id['+data']['dockerContainer']['Id']
+        inspect = docker_client().inspect_container(id)
+        assert inspect['HostConfig']['Links'] is None
+
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_container = instance_data['dockerContainer']
+        fields = instance_data['+fields']
+        trim(docker_container, fields, resp, valid_resp)
+
+    event_test(agent, 'docker/instance_activate_links_no_service',
+                      pre_func=pre, post_func=post, diff=False)
+
+
+def test_volume_delete_orphaning(agent):
+    # This test emulates the situatoin we've seen in docker 1.10 where we need
+    # to delete a volume but docker's ref count is off and it won't let us
+    # delete it. In this scenario, we'll now just orphan the volume and return
+    # success
+    delete_container('/orphan_test')
+    vol_name = 'orphan_test_vol'
+    delete_volume(vol_name)
+
+    v = DockerConfig.storage_api_version()
+    docker_client(version=v).create_volume(vol_name, 'local')
+
+    client = docker_client()
+    c = client.create_container('ibuildthecloud/helloworld',
+                                name='orphan_test',
+                                host_config=client.create_host_config(
+                                    binds=['%s:/tmp/1' % vol_name]))
+    client.start(c)
+
+    def pre(req):
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['name'] = vol_name
+        vol['data'] = {'fields': {'driver': 'local'}}
+        vol['uri'] = 'local:///%s' % vol_name
+
+    def post(req, resp, valid_resp):
+        found_vol = docker_client(version=v).inspect_volume(vol_name)
+        assert found_vol is not None
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)
+
+
+def test_volume_from_data_volume_mounts_with_opt(agent, request):
+    driver_opts = JsonObject(
+        {'foo': 'bar'}
+    )
+    volumes_from_data_volume_mounts_test(agent, request,
+                                         driver_opts=driver_opts)
+
+
+def test_volume_from_data_volume_mounts(agent, request):
+    volumes_from_data_volume_mounts_test(agent, request)
+
+
+def test_volume_from_data_volume_mounts_empty_opts(agent, request):
+    volumes_from_data_volume_mounts_test(agent, request,
+                                         driver_opts=JsonObject({}))
+
+
+def volumes_from_data_volume_mounts_test(agent, request,
+                                         driver_opts=None):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+    delete_container('/convoy')
+    client = docker_client(version='1.21')
+    dr = 'convoytest'
+    _launch_convoy_container(client, dr)
+
+    vol_name = 'test-vol1'
+
+    # Doing redundant cleanup as a finalizer because things can get weird if
+    # volume drivers just disappear while volumes for it are still around
+    def remove_vol():
+        delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+        client.remove_volume(vol_name)
+        delete_container('/convoy')
+    request.addfinalizer(remove_vol)
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        instance['data']['fields']['dataVolumes'] = ['%s:/con/path' % vol_name]
+        mounts = [JsonObject(
+            {
+                'name': vol_name,
+                'data': {
+                    'fields': {
+                        'driver': dr,
+                        'driverOpts': driver_opts,
+                    },
+                },
+            })]
+        instance['volumesFromDataVolumeMounts'] = mounts
+
+    def post(req, resp):
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        mounts = instance_data['dockerMounts']
+        assert len(mounts) == 1
+        assert mounts[0]['Name'] == vol_name
+        assert mounts[0]['Driver'] == dr
+
+    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post,
+               diff=False)
+
+
+def _launch_convoy_container(client, dr):
+    client.pull('cjellick/convoy-local', 'v0.4.3-longhorn-2')
+    container = client. \
+        create_container('cjellick/convoy-local:v0.4.3-longhorn-2',
+                         name='/convoy',
+                         environment={
+                             'CONVOY_SOCKET': '/var/run/%s.sock' % dr,
+                             'CONVOY_DATA_DIR': '/tmp/%s' % dr,
+                             'CONVOY_DRIVER_NAME': '%s' % dr},
+                         volumes=['/var/run/',
+                                  '/etc/docker/plugins',
+                                  '/tmp/%s' % dr],
+                         host_config=client.
+                         create_host_config(privileged=True, binds=[
+                             '/var/run:/var/run',
+                             '/etc/docker/plugins/:/etc/docker/plugins',
+                             '/tmp/%s:/tmp/%s' % (dr, dr)])
+                         )
+    client.start(container)
+    return container
+
+
+def test_volume_activate(agent):
+
+    def post(req, resp, valid_resp):
+        del resp['links']
+        del resp['actions']
+        del valid_resp['previousNames']
+
+    event_test(agent, 'docker/volume_activate', post_func=post)
+
+
+def test_volume_activate_driver1(agent):
+    def pre(req):
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': None}}
+        vol['name'] = 'test_vol'
+
+    def post(req, resp, valid_resp):
+        v = DockerConfig.storage_api_version()
+        vol = docker_client(version=v).inspect_volume('test_vol')
+        assert vol['Driver'] == 'local'
+        assert vol['Name'] == 'test_vol'
+        docker_client(version=v).remove_volume('test_vol')
+
+        del resp['links']
+        del resp['actions']
+        del valid_resp['previousNames']
+
+    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
+
+
+def test_volume_activate_driver2(agent):
+    def pre(req):
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': {'size': '10G'}}}
+        vol['name'] = 'test_vol'
+
+    def post(req, resp, valid_resp):
+        v = DockerConfig.storage_api_version()
+        vol = docker_client(version=v).inspect_volume('test_vol')
+        assert vol['Driver'] == 'local'
+        assert vol['Name'] == 'test_vol'
+        docker_client(version=v).remove_volume('test_vol')
+
+        del resp['links']
+        del resp['actions']
+        del valid_resp['previousNames']
+
+    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
+
+
+def test_instance_activate_volume_driver(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        instance['data']['fields']['volumeDriver'] = 'local'
+
+    def post(req, resp):
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_inspect = instance_data['dockerInspect']
+        if newer_than('1.19'):
+            if newer_than('1.21'):
+                assert docker_inspect['HostConfig']['VolumeDriver'] == 'local'
+            else:
+                assert docker_inspect['Config']['VolumeDriver'] == 'local'
+        instance_activate_common_validation(resp)
+
+    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
+
+
+def test_volume_remove_driver(agent):
+    def pre(req):
+        v = DockerConfig.storage_api_version()
+        docker_client(version=v).create_volume('test_vol',
+                                               'local')
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': {'size': '10G'}}}
+        vol['name'] = 'test_vol'
+        vol['uri'] = 'local:///test_vol'
+
+    def post(req, resp, valid_resp):
+        v = DockerConfig.storage_api_version()
+        with pytest.raises(APIError) as e:
+            docker_client(version=v).inspect_volume('test_vol')
+        assert e.value.explanation == 'no such volume' or \
+            e.value.explanation == 'get test_vol: no such volume'
+
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)

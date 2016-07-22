@@ -75,15 +75,17 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 	hostnameSupported := true
 	if len(instance.Nics) > 0 {
 		kind := instance.Nics[0].Network.Kind
-		if kind == "dockermodel.model.Host" {
+		if kind == "dockerHost" {
 			portsSupported = false
 			hostnameSupported = false
-			startConfig["network_mode"] = "host"
-			delete(startConfig, "link")
+			createConfig["networkDisabled"] = false
+			startConfig["networkMode"] = "host"
+			delete(startConfig, "links")
 		} else if kind == "dockerNone" {
 			portsSupported = false
-			createConfig["network_mode"] = "none"
-			delete(startConfig, "link")
+			createConfig["networkDisabled"] = true
+			startConfig["networkMode"] = "none"
+			delete(startConfig, "links")
 		} else if kind == "dockerContainer" {
 			portsSupported = false
 			hostnameSupported = false
@@ -94,8 +96,8 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 			if other != nil {
 				id = other.ID
 			}
-			startConfig["network_mode"] = fmt.Sprintf("container:%s", id)
-			delete(startConfig, "link")
+			startConfig["networkMode"] = fmt.Sprintf("container:%s", id)
+			delete(startConfig, "links")
 		}
 	}
 	return portsSupported, hostnameSupported
@@ -109,9 +111,9 @@ func setupPortsNetwork(instance *model.Instance, createConfig map[string]interfa
 		    support ports (net, none, container:x)
 	*/
 	if !portsSupported {
-		startConfig["publish_all_ports"] = false
-		delete(createConfig, "ports")
-		delete(startConfig, "port_bindings")
+		startConfig["publishAllPorts"] = false
+		delete(createConfig, "exposedPorts")
+		delete(startConfig, "portbindings")
 	}
 }
 
@@ -212,6 +214,9 @@ func setupLinksNetwork(instance *model.Instance, createConfig map[string]interfa
 	if !hasService(instance, "linkService") || isNonrancherContainer(instance) {
 		return
 	}
+
+	logrus.Info("links deleted")
+	delete(startConfig, "links")
 
 	if hasKey(startConfig, "links") {
 		delete(startConfig, "links")

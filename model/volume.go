@@ -28,4 +28,5 @@ type Volume struct {
 	UUID            string      `json:"uuid"`
 	VirtualSizeMb   interface{} `json:"virtualSizeMb"`
 	ZoneID          int         `json:"zoneId"`
+	Driver          string
 }
