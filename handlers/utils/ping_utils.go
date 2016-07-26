@@ -6,7 +6,7 @@ import (
 	"github.com/docker/engine-api/types/filters"
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/handlers/docker"
-	"github.com/rancher/agent/handlers/hostinfo"
+	"github.com/rancher/agent/handlers/hostInfo"
 	revents "github.com/rancher/go-machine-service/events"
 	"golang.org/x/net/context"
 	"net"
