@@ -12,11 +12,11 @@ import (
 )
 
 func storageAPIVersion() string {
-	return defaultValue("DOCKER_storageAPIVersion", "1.21")
+	return defaultValue("DOCKER_STORAGE_API_VERSION", "1.21")
 }
 
 func configURL() string {
-	ret := defaultValue("configUrl", "")
+	ret := defaultValue("CONFIG_URL", "")
 	if len(ret) > 0 {
 		return apiURL("")
 	}
@@ -40,7 +40,7 @@ func apiURL(df string) string {
 }
 
 func apiProxyListenPort() int {
-	ret, _ := strconv.Atoi(defaultValue("apiProxyListenPort", "9342"))
+	ret, _ := strconv.Atoi(defaultValue("API_PROXY_LISTEN_PORT", "9342"))
 	return ret
 }
 
@@ -53,12 +53,12 @@ func stateDir() string {
 }
 
 func physicalHostUUIDFile() string {
-	defValue := fmt.Sprintf("%s/.physicalHostUuid", stateDir())
-	return defaultValue("physicalHostUuidFile", defValue)
+	defValue := fmt.Sprintf("%s/.physical_host_uuid", stateDir())
+	return defaultValue("PHYSICAL_HOST_UUID_FILE", defValue)
 }
 
 func physicalHostUUID(forceWrite bool) string {
-	return GetUUIDFromFile("physicalHostUuid", physicalHostUUIDFile(), forceWrite)
+	return GetUUIDFromFile("PHYSICAL_HOST_UUID", physicalHostUUIDFile(), forceWrite)
 }
 
 func home() string {
@@ -190,8 +190,8 @@ func configSh() string {
 	return defaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/congif.sh", home()))
 }
 
-func physicalHost() map[string]string {
-	return map[string]string{
+func physicalHost() map[string]interface{} {
+	return map[string]interface{}{
 		"uuid": physicalHostUUID(false),
 		"type": "physicalHost",
 		"kind": "physicalHost",
@@ -235,15 +235,6 @@ func maxDroppedPing() int {
 func maxDroppedRequests() int {
 	ret, _ := strconv.Atoi(defaultValue("maxDroppedRequests", "1000"))
 	return ret
-}
-
-func cadvisorPort() int {
-	ret, _ := strconv.Atoi(defaultValue("CADVISOR", "9344"))
-	return ret
-}
-
-func cadvisorIP() string {
-	return defaultValue("CADVISOR", "127.0.0.1")
 }
 
 //TODO
@@ -319,4 +310,13 @@ func DockerEnable() bool {
 
 func DockerHostIP() string {
 	return defaultValue("DOCKER_HOST_IP", agentIP())
+}
+
+func dockerUUID() string {
+	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), false)
+}
+
+func dockerUUIDFile() string {
+	defValue := fmt.Sprintf("%v/.docker_uuid", stateDir())
+	return defaultValue("DOCKER_UUID_FILE", defValue)
 }

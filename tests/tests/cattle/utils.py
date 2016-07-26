@@ -1,6 +1,13 @@
 from urlparse import urlparse
+from contextlib import closing
 import binascii
 import os
+import json
+import urllib2
+import logging
+import arrow
+
+log = logging.getLogger('cattle')
 
 
 def memoize(function):
@@ -84,3 +91,58 @@ def get_url_port(url):
 
 def random_string(length=64):
     return binascii.hexlify(os.urandom(length/2))
+
+
+class CadvisorAPIClient(object):
+    def __init__(self, host, port, version='v1.2', proto='http://'):
+        self.url = '{0}{1}:{2}/api/{3}'.format(proto, host, str(port), version)
+
+    def get_containers(self):
+        return self._get(self.url + '/containers')
+
+    def get_latest_stat(self):
+        containers = self.get_stats()
+        if len(containers) > 1:
+            return containers[-1]
+        return {}
+
+    def get_stats(self):
+        containers = self.get_containers()
+        if containers:
+            return containers['stats']
+        return []
+
+    def get_machine_stats(self):
+        machine_data = self._get(self.url + '/machine')
+        if machine_data:
+            return machine_data
+        return {}
+
+    def timestamp_diff(self, time_current, time_prev):
+        time_current_conv = self._timestamp_convert(time_current)
+        time_prev_conv = self._timestamp_convert(time_prev)
+
+        diff = (time_current_conv - time_prev_conv).total_seconds()
+        return round((diff * 10**9))
+
+    def _timestamp_convert(self, stime):
+        # Cadvisor handles everything in nanoseconds.
+        # Python does not.
+        t_conv = arrow.get(stime[0:26])
+        return t_conv
+
+    def _marshall_to_python(self, data):
+        if isinstance(data, str):
+            return json.loads(data)
+
+    def _get(self, url):
+        try:
+            with closing(urllib2.urlopen(url, timeout=5)) as resp:
+                if resp.code == 200:
+                    data = resp.read()
+                    return self._marshall_to_python(data)
+        except:
+            log.exception(
+                "Could not get stats from cAdvisor at: {0}".format(url))
+
+        return None

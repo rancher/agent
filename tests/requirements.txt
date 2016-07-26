@@ -4,4 +4,5 @@ flake8==2.5.1
 mock==1.1.2
 pytest==2.9.2
 pytest-mock==0.7.0
+arrow
 setuptools

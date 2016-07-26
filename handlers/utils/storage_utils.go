@@ -238,7 +238,9 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 			if rawStatus != "" {
 				logrus.Info(rawStatus)
 				status := marshaller.FromString(rawStatus)
-				progress.Update(status["stream"].(string))
+				if value, ok := GetFieldsIfExist(status, "stream"); ok {
+					progress.Update(value.(string))
+				}
 			}
 		}
 	}

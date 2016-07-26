@@ -20,7 +20,7 @@ func GetHandlers() map[string]revents.EventHandler {
 		"storage.volume.deactivate":   VolumeDeactivate,
 		"storage.volume.remove":       VolumeRemove,
 		"delegate.request":            DelegateRequest,
-		"ping":                        NoOpHandler,
+		"ping":                        Ping,
 	}
 }
 

@@ -1,0 +1,121 @@
+{
+    "resourceType" : "agent",
+    "previousNames" : [ "ping" ],
+    "name" : "ping.reply",
+    "data" : {
+        "resources" : [
+            {
+                "type" : "host",
+                "uuid" : "testuuid",
+                "hostname" : "localhost",
+                "physicalHostUuid" : "hostuuid",
+                "kind" : "docker",
+                "labels" : {
+                    "io.rancher.host.docker_version": "1.6",
+                    "io.rancher.host.linux_kernel_version": "4.1"
+                },
+                "createLabels" : {},
+                "info" : {
+                    "cpuInfo": {
+                        "count": 4,
+                        "cpuCoresPercentages": [
+                            1.385,
+                            0.734,
+                            0.926,
+                            1.043
+                        ],
+                        "loadAvg": [
+                            0.0,
+                            0.01,
+                            0.05
+                        ],
+                        "mhz": 2317.442,
+                        "modelName": "Intel(R) Core(TM) i7-4650U CPU @ 1.70GHz"
+                    },
+                    "diskInfo": {
+                        "mountPoints": {
+                            "/dev/sda1": {
+                                "free": 17185324.0,
+                                "percentUsed": 41.005,
+                                "total": 29130364.0,
+                                "used": 11945040.0
+                            }
+                        }
+                    },
+                    "memoryInfo": {
+                        "active": 777.293,
+                        "buffers": 162.902,
+                        "cached": 1266.613,
+                        "inactive": 797.305,
+                        "memAvailable": 2380.598,
+                        "memFree": 1113.445,
+                        "memTotal": 3037.414,
+                        "swapCached": 0.0,
+                        "swapFree": 1690.957,
+                        "swapTotal": 1690.957
+                    },
+                    "osInfo": {
+                        "distribution": "Ubuntu",
+                        "dockerVersion": "Docker version 1.4.1, build 5bc2ff8",
+                        "kernelVersion": "3.16.7-tinycore64",
+                        "version": "14.04",
+                        "versionDescription": null
+                    }
+                }
+            },
+            {
+                "type" : "storagePool",
+                "uuid" : "testuuid-pool",
+                "hostUuid" : "testuuid",
+                "name" : "localhost Storage Pool",
+                "kind" : "docker"
+            },
+            {
+                "type" : "instance",
+                "uuid" : "uuid-running",
+                "state" : "running",
+                "image": "ibuildthecloud/helloworld:latest",
+                "systemContainer": null,
+                "labels": {"io.rancher.container.uuid": "uuid-running"}
+            },
+            {
+                "type" : "instance",
+                "uuid" : "uuid-stopped",
+                "state" : "stopped",
+                "image": "ibuildthecloud/helloworld:latest",
+                "systemContainer": null,
+                "labels": {"io.rancher.container.uuid": "uuid-stopped"}
+            },
+            {
+                "type" : "instance",
+                "uuid" : "uuid-system",
+                "state" : "stopped",
+                "image": "rancher/agent:v0.7.9",
+                "systemContainer": "rancher-agent",
+                "labels": {"io.rancher.container.uuid": "uuid-system"}
+            },
+            {
+                "type" : "instance",
+                "uuid" : "uuid-sys-nover",
+                "state" : "stopped",
+                "image": "rancher/agent",
+                "systemContainer": "rancher-agent",
+                "labels": {"io.rancher.container.uuid": "uuid-sys-nover"}
+            },
+            {
+                "type" : "instance",
+                "uuid" : "uuid-agent-instance",
+                "state" : "stopped",
+                "image": "ibuildthecloud/helloworld:latest",
+                "systemContainer": "networkAgent",
+                "labels": {"io.rancher.container.uuid": "uuid-agent-instance",
+                           "io.rancher.container.system": "networkAgent"}
+            }
+        ],
+        "options" : {
+            "instances" : true
+        }
+    },
+    "previousIds" : [ "bfc8ada5-e5c3-4ee0-aa0a-c3001ae96c83" ],
+    "resourceId" : "2"
+}
