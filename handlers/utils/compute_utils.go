@@ -956,9 +956,9 @@ func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress,
 	}
 
 	client := docker.GetClient(DefaultVersion)
-	time := time.Duration(timeout)
+	t := time.Duration(timeout) * time.Second
 	container := GetContainer(client, instance, false)
-	client.ContainerStop(context.Background(), container.ID, &time)
+	client.ContainerStop(context.Background(), container.ID, &t)
 	container = GetContainer(client, instance, false)
 	if !isStopped(client, container) {
 		client.ContainerKill(context.Background(), container.ID, "KILL")
