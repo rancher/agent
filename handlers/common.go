@@ -9,18 +9,18 @@ import (
 
 func GetHandlers() map[string]revents.EventHandler {
 	return map[string]revents.EventHandler{
-		"compute.instance.activate":  InstanceActivate,
-		"compute.intance.deactivate": NoOpHandler,
-		"compute.force.stop":         NoOpHandler,
-		"compute.instance.inspect":   NoOpHandler,
-		"compute.instance.pull":      NoOpHandler,
-		"compute.instance.remove":    NoOpHandler,
-		"storage.image.activate":     NoOpHandler,
-		"storage.volume.activate":    NoOpHandler,
-		"storage.volume.deactivate":  NoOpHandler,
-		"storage.volume.remove":      NoOpHandler,
-		"delegate.request":           NoOpHandler,
-		"ping":                       NoOpHandler,
+		"compute.instance.activate":   InstanceActivate,
+		"compute.instance.deactivate": InstanceDeactivate,
+		"compute.instance.force.stop": InstanceForceStop,
+		"compute.instance.inspect":    InstanceInspect,
+		"compute.instance.pull":       InstancePull,
+		"compute.instance.remove":     InstanceRemove,
+		"storage.image.activate":      ImageActivate,
+		"storage.volume.activate":     VolumeActivate,
+		"storage.volume.deactivate":   VolumeDeactivate,
+		"storage.volume.remove":       VolumeRemove,
+		"delegate.request":            DelegateRequest,
+		"ping":                        Ping,
 	}
 }
 

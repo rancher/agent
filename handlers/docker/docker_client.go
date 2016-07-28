@@ -1,4 +1,4 @@
-package dockerClient
+package docker
 
 import (
 	"github.com/Sirupsen/logrus"

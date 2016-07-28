@@ -2,13 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/handlers/marshaller"
+	"github.com/docker/go-connections/nat"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/go-machine-service/events"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -45,9 +43,6 @@ func addLabel(config map[string]interface{}, newLabels map[string]string) {
 	for key, value := range newLabels {
 		config["labels"].(map[string]string)[key] = value
 	}
-	//for debug
-	d, _ := marshaller.ToString(config["labels"])
-	logrus.Info(string(d))
 }
 
 func searchInList(slice []string, target string) bool {
@@ -74,41 +69,23 @@ func isNonrancherContainer(instance *model.Instance) bool {
 }
 
 func addToEnv(config map[string]interface{}, result map[string]string, args ...string) {
-	if env, ok := config["enviroment"]; !ok {
-		env = make(map[string]string)
-		config["enviroment"] = env
-	} else {
-		env := env.(map[string]interface{})
-		for i := 0; i < len(args); i += 2 {
-			if _, ok := env[args[i]]; !ok {
-				env[args[i]] = args[i+1]
-			}
-		}
-		for key, value := range result {
-			if _, ok := env[key]; !ok {
-				env[key] = value
-			}
-		}
+	if envs, ok := config["env"]; !ok {
+		envs = []string{}
+		config["env"] = envs
 	}
-
+	envs := config["env"].([]string)
+	for key, value := range result {
+		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+	}
+	config["env"] = envs
 }
 
-func getOrCreatePortList(config map[string]interface{}, key string) []model.Port {
-	list, ok := config[key]
+func getOrCreateBindingMap(config map[string]interface{}, key string) nat.PortMap {
+	_, ok := config[key]
 	if !ok {
-		config[key] = list
+		config[key] = nat.PortMap{}
 	}
-
-	return config[key].([]model.Port)
-}
-
-func getOrCreateBindingMap(config map[string]interface{}, key string) map[string][]string {
-	m, ok := config[key]
-	if !ok {
-		m = make(map[string]string)
-		config[key] = m
-	}
-	return config[key].(map[string][]string)
+	return config[key].(nat.PortMap)
 }
 
 func hasKey(m interface{}, key string) bool {
@@ -126,7 +103,7 @@ func hasLabel(instance *model.Instance) bool {
 	return ok
 }
 
-func readBuffer(reader io.ReadCloser) string {
+func ReadBuffer(reader io.ReadCloser) string {
 	buffer := make([]byte, 1024)
 	s := ""
 	defer reader.Close()
@@ -141,11 +118,17 @@ func readBuffer(reader io.ReadCloser) string {
 }
 
 func isStrSet(m map[string]interface{}, key string) bool {
-	return m[key] != nil && len(m[key].([]string)) > 0
+	ok := false
+	switch m[key].(type) {
+	case string:
+		ok = len(m[key].(string)) > 0
+	case []string:
+		ok = len(m[key].([]string)) > 0
+	}
+	return m[key] != nil && ok
 }
 
-// this method check if a field exists in a map
-func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
+func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
 	var tempMap map[string]interface{}
 	tempMap = m
 	for i, field := range fields {
@@ -169,7 +152,7 @@ func getFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, 
 func tempFileInWorkDir(destination string) string {
 	dstPath := path.Join(destination, TempName)
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		os.Mkdir(dstPath, 0777)
+		os.MkdirAll(dstPath, 0777)
 	}
 	return tempFile(dstPath)
 }
@@ -182,42 +165,29 @@ func tempFile(destination string) string {
 	return ""
 }
 
-func downloadFromURL(rawurl string, filepath string) error {
-	file, err := os.Open(filepath)
-	if err == nil {
-		response, err1 := http.Get(rawurl)
-		if err1 != nil {
-			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
-			return err1
+func GetResponseData(event *events.Event) map[string]interface{} {
+	resourceType := event.ResourceType
+	switch resourceType {
+	case "instanceHostMap":
+		return map[string]interface{}{resourceType: getInstanceHostMapData(event)}
+	case "volumeStoragePoolMap":
+		return map[string]interface{}{
+			resourceType: map[string]interface{}{
+				"volume": map[string]interface{}{
+					"format": "docker",
+				},
+			},
 		}
-		defer response.Body.Close()
-		n, ok := io.Copy(file, response.Body)
-		if ok != nil {
-			logrus.Error(fmt.Sprintf("Error while copying file: %s", ok))
-			return ok
+	case "instancePull":
+		return map[string]interface{}{
+			"fields": map[string]interface{}{
+				"dockerImage": getInstancePullData(event),
+			},
 		}
-		logrus.Info(fmt.Sprintf("%v bytes downloaded successfully", n))
-		return nil
+	default:
+		return map[string]interface{}{resourceType: map[string]interface{}{}}
 	}
-	return err
-}
 
-func GetResponseData(event *events.Event, eventData map[string]interface{}) *events.Event {
-	// TODO not implemented
-	/*
-		resource_type := event.ResourceType
-		var ihm model.InstanceHostMap
-		mapstructure.Decode(event_data, &ihm)
-		tp := ihm.Type
-		if tp != nil && len(tp) > 0{
-			r := regexp.Compile("([A-Z])")
-			inner_name := strings.Replace(tp, r.FindStringSubmatch(tp)[0], "_\1", -1)
-			method_name := strings.ToLower(fmt.Sprintf("_get_%s_data", inner_name))
-			method := ""
-
-		}
-	*/
-	return &events.Event{}
 }
 
 func convertPortToString(port int) string {
@@ -225,4 +195,12 @@ func convertPortToString(port int) string {
 		return ""
 	}
 	return strconv.Itoa(port)
+}
+
+func InterfaceToString(v interface{}) string {
+	value, ok := v.(string)
+	if ok {
+		return value
+	}
+	return ""
 }

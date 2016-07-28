@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	nat1 "github.com/docker/go-connections/nat"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/model"
 	"regexp"
@@ -35,7 +36,7 @@ func setupMacAndIP(instance *model.Instance, createConfig map[string]interface{}
 			deviceNumber = nic.DeviceNumber
 		}
 	}
-
+	logrus.Infof("macAddress :%v", macAddress)
 	if setMac {
 		createConfig["macAddress"] = macAddress
 	}
@@ -74,15 +75,17 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 	hostnameSupported := true
 	if len(instance.Nics) > 0 {
 		kind := instance.Nics[0].Network.Kind
-		if kind == "dockermodel.model.Host" {
+		if kind == "dockerHost" {
 			portsSupported = false
 			hostnameSupported = false
-			startConfig["network_mode"] = "host"
-			delete(startConfig, "link")
+			createConfig["networkDisabled"] = false
+			startConfig["networkMode"] = "host"
+			delete(startConfig, "links")
 		} else if kind == "dockerNone" {
 			portsSupported = false
-			createConfig["network_mode"] = "none"
-			delete(startConfig, "link")
+			createConfig["networkDisabled"] = true
+			startConfig["networkMode"] = "none"
+			delete(startConfig, "links")
 		} else if kind == "dockerContainer" {
 			portsSupported = false
 			hostnameSupported = false
@@ -93,8 +96,8 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 			if other != nil {
 				id = other.ID
 			}
-			startConfig["network_mode"] = fmt.Sprintf("container:%s", id)
-			delete(startConfig, "link")
+			startConfig["networkMode"] = fmt.Sprintf("container:%s", id)
+			delete(startConfig, "links")
 		}
 	}
 	return portsSupported, hostnameSupported
@@ -108,9 +111,9 @@ func setupPortsNetwork(instance *model.Instance, createConfig map[string]interfa
 		    support ports (net, none, container:x)
 	*/
 	if !portsSupported {
-		startConfig["publish_all_ports"] = false
-		delete(createConfig, "ports")
-		delete(startConfig, "port_bindings")
+		startConfig["publishAllPorts"] = false
+		delete(createConfig, "exposedPorts")
+		delete(startConfig, "portbindings")
 	}
 }
 
@@ -129,15 +132,39 @@ func setupIpsec(instance *model.Instance, host *model.Host, createConfig map[str
 	}
 	hostID := strconv.Itoa(host.ID)
 	if info, ok := instance.Data["ipsec"].(map[string]interface{})[hostID].(map[string]interface{}); ok {
-		nat := info["nat"].(string)
-		isakmp := info["isakmp"].(string)
-		ports := getOrCreatePortList(createConfig, "ports")
-		binding := getOrCreateBindingMap(startConfig, "port_bindings")
+		nat := info["nat"].(float64)
+		isakmp := info["isakmp"].(float64)
 
-		// private port or public ?
-		ports = append(ports, model.Port{PrivatePort: 500, Protocol: "udp"}, model.Port{PrivatePort: 4500, Protocol: "udp"})
-		binding["500/udp"] = []string{"0.0.0.0", isakmp}
-		binding["4500/udp"] = []string{"0.0.0.0", nat}
+		binding := getOrCreateBindingMap(startConfig, "portbindings")
+
+		port1 := nat1.Port(fmt.Sprintf("%v/%v", 500, "udp"))
+		port2 := nat1.Port(fmt.Sprintf("%v/%v", 4500, "udp"))
+		bind1 := nat1.PortBinding{HostIP: "0.0.0.0", HostPort: strconv.Itoa(int(isakmp))}
+		bind2 := nat1.PortBinding{HostIP: "0.0.0.0", HostPort: strconv.Itoa(int(nat))}
+		exposedPorts := map[nat1.Port]struct{}{
+			port1: struct{}{},
+			port2: struct{}{},
+		}
+		if _, ok := binding[port1]; ok {
+			binding[port1] = append(binding[port1], bind1)
+		} else {
+			binding[port1] = []nat1.PortBinding{bind1}
+		}
+		if _, ok := binding[port2]; ok {
+			binding[port2] = append(binding[port2], bind1)
+		} else {
+			binding[port2] = []nat1.PortBinding{bind2}
+		}
+		if _, ok := createConfig["exposedPorts"]; ok {
+			existingMap := createConfig["exposedPorts"].(map[nat1.Port]struct{})
+			for port := range exposedPorts {
+				existingMap[port] = struct{}{}
+			}
+			createConfig["exposedPorts"] = existingMap
+		} else {
+			createConfig["exposedPorts"] = exposedPorts
+		}
+
 	}
 }
 
@@ -188,26 +215,30 @@ func setupLinksNetwork(instance *model.Instance, createConfig map[string]interfa
 		return
 	}
 
+	logrus.Info("links deleted")
+	delete(startConfig, "links")
+
 	if hasKey(startConfig, "links") {
 		delete(startConfig, "links")
 	}
-	result := make(map[string]string)
+	result := map[string]string{}
 	if instance.InstanceLinks != nil {
 		for _, link := range instance.InstanceLinks {
 			linkName := link.LinkName
 			addLinkEnv(linkName, link, result, "")
 			copyLinkEnv(linkName, link, result)
-			if names, ok := link.Data["field"].(map[string]interface{})["instanceName"].([]string); ok {
-				for _, name := range names {
+			if names, ok := GetFieldsIfExist(link.Data, "fields", "instanceNames"); ok {
+				for _, name := range names.([]interface{}) {
+					name := name.(string)
 					addLinkEnv(name, link, result, linkName)
 					copyLinkEnv(name, link, result)
 					// This does assume the format {env}_{name}
-					parts := strings.SplitAfterN(name, "_", 1)
+					parts := strings.SplitN(name, "_", 2)
 					if len(parts) == 1 {
 						continue
 					}
-					addLinkEnv(name, link, result, linkName)
-					copyLinkEnv(name, link, result)
+					addLinkEnv(parts[1], link, result, linkName)
+					copyLinkEnv(parts[1], link, result)
 				}
 
 			}
@@ -241,33 +272,29 @@ func hasService(instance *model.Instance, kind string) bool {
 func addLinkEnv(name string, link model.Link, result map[string]string, inIP string) {
 	result[strings.ToUpper(fmt.Sprintf("%s_NAME", toEnvName(name)))] = fmt.Sprintf("/cattle/%s", name)
 
-	if ports, ok := link.Data["field"].(map[string]interface{})["link"]; ok {
-		for _, value := range ports.([]interface{}) {
-			var port model.Port
-			err := mapstructure.Decode(value, &port)
-			if err != nil {
-				panic(err)
-			}
-			protocol := port.Protocol
+	if ports, ok := GetFieldsIfExist(link.Data, "fields", "ports"); ok {
+		for _, port := range ports.([]interface{}) {
+			port := port.(map[string]interface{})
+			protocol := port["protocol"]
 			ip := strings.ToLower(name)
 			if inIP != "" {
 				ip = inIP
 			}
 			// different with python agent
-			dst := port.PublicPort
-			src := port.PrivatePort
+			dst := port["privatePort"]
+			src := port["privatePort"]
 
-			fullPort := fmt.Sprintf("%s://%s:%s", protocol, ip, dst)
+			fullPort := fmt.Sprintf("%v://%v:%v", protocol, ip, dst)
 			data := make(map[string]string)
-			data["NAME"] = fmt.Sprintf("/cattle/%s", name)
+			data["NAME"] = fmt.Sprintf("/cattle/%v", name)
 			data["PORT"] = fullPort
-			data[fmt.Sprintf("PORT_%s_%s", src, protocol)] = fullPort
-			data[fmt.Sprintf("PORT_%s_%s_ADDR", src, protocol)] = ip
-			data[fmt.Sprintf("PORT_%s_%s_PORT", src, protocol)] = string(dst)
-			data[fmt.Sprintf("PORT_%s_%s_PROTO", src, protocol)] = protocol
-
+			data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
+			data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
+			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = dst.(string)
+			data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = protocol.(string)
+			logrus.Infof("data map %v", data)
 			for key, value := range data {
-				result[strings.ToUpper(fmt.Sprintf("%s_%s", toEnvName(name), key))] = value
+				result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
 			}
 		}
 	}
@@ -275,11 +302,12 @@ func addLinkEnv(name string, link model.Link, result map[string]string, inIP str
 
 func copyLinkEnv(name string, link model.Link, result map[string]string) {
 	targetInstance := link.TargetInstance
-	if envs, ok := getFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
+	if envs, ok := GetFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
 		ignores := make(map[string]bool)
-		envs := envs.([]string)
-		for _, env := range envs {
-			parts := strings.SplitAfterN(env, "=", 1)
+		for _, env := range envs.([]interface{}) {
+			env := env.(string)
+			logrus.Info(env)
+			parts := strings.SplitN(env, "=", 2)
 			if len(parts) == 1 {
 				continue
 			}
@@ -290,8 +318,8 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 				ignores[envName+"_ENV"] = true
 			}
 		}
-
-		for _, env := range envs {
+		for _, env := range envs.([]interface{}) {
+			env := env.(string)
 			shouldIgnore := false
 			for ignore := range ignores {
 				if strings.HasPrefix(env, ignore) {
@@ -302,7 +330,7 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 			if shouldIgnore {
 				continue
 			}
-			parts := strings.SplitAfterN(env, "=", 1)
+			parts := strings.SplitN(env, "=", 2)
 			if len(parts) == 1 {
 				continue
 			}
@@ -316,12 +344,11 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 }
 
 func toEnvName(name string) string {
-	r, err := regexp.Compile("[^a-zA-Z0-9_]")
-	if err != nil {
-		panic(err)
-	} else {
-		return strings.Replace(name, r.FindStringSubmatch(name)[0], "_", -1)
+	r, _ := regexp.Compile("[^a-zA-Z0-9_]")
+	if r.FindStringSubmatch(name) != nil {
+		name = strings.Replace(name, r.FindStringSubmatch(name)[0], "_", -1)
 	}
+	return strings.ToUpper(name)
 }
 
 func findIPAndMac(instance *model.Instance) (string, string, string) {

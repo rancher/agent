@@ -20,6 +20,7 @@ type Image struct {
 	UUID               string      `json:"uuid"`
 	VirtualSizeBytes   interface{} `json:"virtualSizeBytes"`
 	RegistryCredential map[string]interface{}
+	ProcessData        map[string]interface{}
 }
 
 type DockerImage struct {

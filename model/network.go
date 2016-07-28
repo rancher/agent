@@ -5,6 +5,7 @@ type Port struct {
 	PrivatePort int    `json:"privatePort"`
 	PublicPort  int    `json:"publicPort"`
 	Data        map[string]interface{}
+	IPAddress   string
 }
 
 type Nic struct {
@@ -34,7 +35,8 @@ type Service struct {
 }
 
 type Link struct {
-	TargetInstanceID string
+	Type             string
+	TargetInstanceID int
 	LinkName         string
 	TargetInstance   Instance
 	Data             map[string]interface{}
