@@ -177,20 +177,21 @@ func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]EventHandler, 
 		return
 	}
 
-	if event.Name != "ping" {
-		log.WithFields(log.Fields{
-			"event": string(rawEvent[:]),
-		}).Debug("Processing event.")
-	}
 
-	unlocker := locks.Lock(event.ResourceID)
-	if unlocker == nil {
-		log.WithFields(log.Fields{
-			"resourceId": event.ResourceID,
-		}).Debug("Resource locked. Dropping event")
-		return
+	log.WithFields(log.Fields{
+		"event": string(rawEvent[:]),
+	}).Info("Processing event.")
+
+	if event.ResourceID != "" {
+		unlocker := locks.Lock(event.ResourceID)
+		if unlocker == nil {
+			log.WithFields(log.Fields{
+				"resourceId": event.ResourceID,
+			}).Info("Resource locked. Dropping event")
+			return
+		}
+		defer unlocker.Unlock()
 	}
-	defer unlocker.Unlock()
 
 	if fn, ok := eventHandlers[event.Name]; ok {
 		err = fn(event, apiClient)
