@@ -6,6 +6,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"golang.org/x/net/context"
 	"runtime"
+	"github.com/Sirupsen/logrus"
 )
 
 type OSCollector struct {
@@ -24,11 +25,12 @@ func (o OSCollector) getDockerVersion(verbose bool) map[string]interface{} {
 	data := map[string]interface{}{}
 	if runtime.GOOS == "linux" {
 		verResp := o.dockerVersionRequest()
+		logrus.Infof("%+v", verResp)
 		version := "unknown"
 		if verbose && verResp.Version != "" {
 			version = fmt.Sprintf("Docker version %v, build %v", verResp.Version, verResp.GitCommit)
 		} else if verResp.Version != "" {
-			version = semverTrunk(verResp.Version, 0)
+			version = semverTrunk(verResp.Version, 2)
 		}
 		data["dockerVersion"] = version
 	}

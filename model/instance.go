@@ -38,4 +38,5 @@ type Instance struct {
 	Labels                      map[string]interface{}
 	ProcessData                 map[string]interface{}
 	VolumesFromDataVolumeMounts []Volume
+	Token			    string
 }

@@ -56,8 +56,9 @@ func addResource(ping, pong *revents.Event) {
 		"hostname":     hostname(),
 		"createLabels": labels(),
 		"labels":       getHostLabels(),
-		"uuid":         dockerUUID(),
+		"uuid":         DockerUUID(),
 		"info":         stats,
+		"physicalHostUuid": physicalHost["uuid"],
 	}
 
 	pool := map[string]interface{}{
@@ -81,7 +82,7 @@ func addResource(ping, pong *revents.Event) {
 	}
 	proxy := hostProxy()
 	if proxy != "" {
-		compute["apiPorxy"] = proxy
+		compute["apiProxy"] = proxy
 	}
 	pingAddResource(pong, physicalHost, compute, pool, ip)
 }
@@ -91,16 +92,14 @@ func addInstance(ping, pong *revents.Event) {
 		return
 	}
 	if _, ok := GetFieldsIfExist(pong.Data, "resources"); !ok {
-		pong.Data["resource"] = []map[string]interface{}{}
+		pong.Data["resources"] = []map[string]interface{}{}
 	}
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), map[string]interface{}{
 		"type": "hostUuid",
-		"uuid": dockerUUID(),
+		"uuid": DockerUUID(),
 	})
 	containers := []map[string]interface{}{}
 	running, nonrunning := getAllContainerByState()
-	logrus.Infof("running containers %v", running)
-	logrus.Infof("nonruning containers %v", nonrunning)
 	for _, container := range running {
 		containers = addContainer("running", &container, containers)
 	}
@@ -110,7 +109,6 @@ func addInstance(ping, pong *revents.Event) {
 	if _, ok := GetFieldsIfExist(pong.Data, "resources"); !ok {
 		pong.Data["resources"] = []map[string]interface{}{}
 	}
-	logrus.Infof("containers %v", containers)
 	for _, container := range containers {
 		pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), container)
 	}
@@ -154,6 +152,7 @@ func pingAddResource(pong *revents.Event, physcialHost map[string]interface{},
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), compute)
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), pool)
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), ip)
+	logrus.Infof("debug pong %v", physcialHost)
 }
 
 func getAllContainerByState() (map[string]types.Container, map[string]types.Container) {

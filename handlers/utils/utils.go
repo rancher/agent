@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -69,13 +70,12 @@ func isNonrancherContainer(instance *model.Instance) bool {
 }
 
 func addToEnv(config map[string]interface{}, result map[string]string, args ...string) {
-	if envs, ok := config["env"]; !ok {
-		envs = []string{}
-		config["env"] = envs
+	if _, ok := config["env"]; !ok {
+		config["env"] = map[string]interface{}{}
 	}
-	envs := config["env"].([]string)
+	envs := config["env"].(map[string]interface{})
 	for key, value := range result {
-		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+		envs[key] = value
 	}
 	config["env"] = envs
 }
@@ -203,4 +203,65 @@ func InterfaceToString(v interface{}) string {
 		return value
 	}
 	return ""
+}
+
+func InterfaceToBool(v interface{}) bool {
+	value, ok := v.(bool)
+	if ok {
+		return value
+	}
+	return false
+}
+
+func InterfaceToFloat(v interface{}) float64 {
+	value, ok := v.(float64)
+	if ok {
+		return value
+	}
+	return 0.0
+}
+
+func InterfaceToArray(v interface{}) []interface{} {
+	value, ok := v.([]interface{})
+	if ok {
+		return value
+	}
+	return []interface{}{}
+}
+
+func InterfaceToMap(v interface{}) map[string]interface{} {
+	value, ok := v.(map[string]interface{})
+	if ok {
+		return value
+	}
+	return map[string]interface{}{}
+}
+
+func SafeSplit(s string) []string {
+	split := strings.Split(s, " ")
+
+	var result []string
+	var inquote string
+	var block string
+	for _, i := range split {
+		if inquote == "" {
+			if strings.HasPrefix(i, "'") || strings.HasPrefix(i, "\"") {
+				inquote = string(i[0])
+				block = strings.TrimPrefix(i, inquote) + " "
+			} else {
+				result = append(result, i)
+			}
+		} else {
+			if !strings.HasSuffix(i, inquote) {
+				block += i + " "
+			} else {
+				block += strings.TrimSuffix(i, inquote)
+				inquote = ""
+				result = append(result, block)
+				block = ""
+			}
+		}
+	}
+
+	return result
 }

@@ -15,6 +15,19 @@ import platform
 from cattle.plugins.host_info.main import HostInfo
 
 
+@pytest.fixture(scope='module')
+def pull_images():
+    client = docker_client()
+    images = [('ibuildthecloud/helloworld', 'latest'),
+              ('rancher/agent', 'v0.7.9'),
+              ('rancher/agent', 'latest')]
+    for i in images:
+        try:
+            client.inspect_image(':'.join(i))
+        except APIError:
+            client.pull(i[0], i[1])
+
+
 def test_example(agent):
     """
     This test is the same as test_instance_activate_no_name except that it
@@ -1656,7 +1669,7 @@ def test_volume_remove_driver(agent):
     event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)
 
 
-def test_ping(agent, mocker):
+def test_ping(agent, pull_images, mocker):
     mocker.patch.object(HostInfo, 'collect_data',
                         return_value=json_data('docker/host_info_resp'))
 
@@ -1845,3 +1858,24 @@ def assert_ping_stat_resources(resp):
 #     del valid_resp['previousNames']
 #     del resp['links']
 #     del resp['actions']
+
+
+# new added test case for go agent
+def test_env_variable(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        fields = instance['data']['fields']
+        fields['environment'] = {'foo': 'bar'}
+
+    def post(req, resp, valid_resp):
+        instance_activate_assert_host_config(resp)
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_inspect = instance_data['dockerInspect']
+        assert 'foo=bar' in docker_inspect['Config']['Env']
+        instance_activate_common_validation(resp)
+
+    schema = 'docker/instance_activate'
+    event_test(agent, schema, pre_func=pre, post_func=post)
+

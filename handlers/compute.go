@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"crypto/md5"
 	"encoding/json"
-	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/handlers/docker"
@@ -12,14 +10,13 @@ import (
 	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
-	"sync"
 )
 
 func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, host := utils.GetInstanceAndHost(event)
 
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
@@ -35,13 +32,7 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	insWithLock := ObjWithLock{mu: sync.Mutex{}, obj: instance}
-	insWithLock.mu.Lock()
-	defer insWithLock.mu.Unlock()
-	in := insWithLock.obj.(*model.Instance)
-	utils.DoInstanceActivate(in, host, &progress)
-	//data := utils.Get_response_data(event, event.Data)
-
+	utils.DoInstanceActivate(instance, host, &progress)
 	return reply(utils.GetResponseData(event), event, cli)
 }
 
@@ -49,7 +40,7 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, _ := utils.GetInstanceAndHost(event)
 
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
@@ -62,10 +53,6 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	insWithLock := ObjWithLock{mu: sync.Mutex{}, obj: instance}
-	insWithLock.mu.Lock()
-	defer insWithLock.mu.Unlock()
-	in := insWithLock.obj.(*model.Instance)
 	timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
 	if !ok {
 		timeout = 0
@@ -74,7 +61,7 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	case float64:
 		timeout = int(timeout.(float64))
 	}
-	err := utils.DoInstanceDeactivate(in, &progress, timeout.(int))
+	err := utils.DoInstanceDeactivate(instance, &progress, timeout.(int))
 
 	if err != nil {
 		logrus.Error(err)
@@ -112,17 +99,12 @@ func InstanceInspect(event *revents.Event, cli *client.RancherClient) error {
 }
 
 func InstancePull(event *revents.Event, cli *client.RancherClient) error {
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 	var instancePull model.InstancePull
 	mapstructure.Decode(event.Data["instancePull"], &instancePull)
-	fullname := instancePull.Image.Data["dockerImage"].(map[string]interface{})["fullName"].(string)
-	hash := fmt.Sprintf("%x", md5.New().Sum([]byte(fullname)))
-	imageLock := ObjWithLock{mu: sync.Mutex{}, obj: hash}
-	imageLock.mu.Lock()
 	imageParams := model.ImageParams{Image: instancePull.Image,
 		Mode: instancePull.Mode, Complete: instancePull.Complete, Tag: instancePull.Tag}
 	imagePull, pullErr := utils.DoInstancePull(&imageParams, &progress)
-	imageLock.mu.Unlock()
 	if pullErr != nil {
 		logrus.Error(pullErr)
 	}
@@ -140,7 +122,7 @@ func InstancePull(event *revents.Event, cli *client.RancherClient) error {
 func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 	instance, _ := utils.GetInstanceAndHost(event)
 
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
 	if instance != nil && event.Data["processData"] != nil {
 		instance.ProcessData = event.Data["processData"].(map[string]interface{})
@@ -150,14 +132,10 @@ func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 		return reply(map[string]interface{}{}, event, cli)
 	}
 
-	instanceWithLock := ObjWithLock{obj: instance, mu: sync.Mutex{}}
-	instanceWithLock.mu.Lock()
-	defer instanceWithLock.mu.Unlock()
-	in := instanceWithLock.obj.(*model.Instance)
-	if utils.IsInstanceRemoved(in) {
+	if utils.IsInstanceRemoved(instance) {
 		return reply(map[string]interface{}{}, event, cli)
 	}
-	err := utils.DoInstanceRemove(in, &progress)
+	err := utils.DoInstanceRemove(instance, &progress)
 	if err != nil {
 		logrus.Error(err)
 	}

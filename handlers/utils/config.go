@@ -9,16 +9,18 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"github.com/rancher/agent/handlers/docker"
+	"golang.org/x/net/context"
 )
 
 func storageAPIVersion() string {
 	return defaultValue("DOCKER_STORAGE_API_VERSION", "1.21")
 }
 
-func configURL() string {
+func ConfigURL() string {
 	ret := defaultValue("CONFIG_URL", "")
-	if len(ret) > 0 {
-		return apiURL("")
+	if len(ret) == 0 {
+		return ApiURL("")
 	}
 	return ret
 }
@@ -35,7 +37,7 @@ func stripSchemas(url string) string {
 	return url
 }
 
-func apiURL(df string) string {
+func ApiURL(df string) string {
 	return stripSchemas(defaultValue("URL", df))
 }
 
@@ -45,11 +47,11 @@ func apiProxyListenPort() int {
 }
 
 func builds() string {
-	return defaultValue("BUILD_DIR", path.Join(home(), "builds"))
+	return defaultValue("BUILD_DIR", path.Join(Home(), "builds"))
 }
 
 func stateDir() string {
-	return defaultValue("STATE_DIR", home())
+	return defaultValue("STATE_DIR", Home())
 }
 
 func physicalHostUUIDFile() string {
@@ -61,7 +63,7 @@ func physicalHostUUID(forceWrite bool) string {
 	return GetUUIDFromFile("PHYSICAL_HOST_UUID", physicalHostUUIDFile(), forceWrite)
 }
 
-func home() string {
+func Home() string {
 	return defaultValue("HOME", "/var/lib/cattle")
 }
 
@@ -81,7 +83,8 @@ func getUUIDFromFile(uuidFilePath string) string {
 		} else {
 			uuid = newUUID.String()
 		}
-		fileReader.WriteString(uuid)
+		file, _ := os.Create(uuidFilePath)
+		file.WriteString(uuid)
 	}
 	return uuid
 }
@@ -122,16 +125,16 @@ func setSecretKey(value string) {
 	ConfigOverride["SECRET_KEY"] = value
 }
 
-func secretKey() string {
+func SecretKey() string {
 	return defaultValue("SECRET_KEY", "adminpass")
 }
 
 func setAccessKey(value string) {
-	ConfigOverride["accessKey"] = value
+	ConfigOverride["ACCESS_KEY"] = value
 }
 
-func accessKey() string {
-	return defaultValue("accessKey", "admin")
+func AccessKey() string {
+	return defaultValue("ACCESS_KEY", "admin")
 }
 
 func setAPIURL(value string) {
@@ -139,7 +142,7 @@ func setAPIURL(value string) {
 }
 
 func apiAuth() (string, string) {
-	return accessKey(), secretKey()
+	return AccessKey(), SecretKey()
 }
 
 func isMultiProc() bool {
@@ -179,15 +182,15 @@ func debug() bool {
 }
 
 func agentIP() string {
-	return defaultValue("agentIp", "")
+	return defaultValue("AGENT_IP", "")
 }
 
 func agentPort() string {
 	return defaultValue("agentPort", "")
 }
 
-func configSh() string {
-	return defaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/congif.sh", home()))
+func ConfigSh() string {
+	return defaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/config.sh", Home()))
 }
 
 func physicalHost() map[string]interface{} {
@@ -207,24 +210,24 @@ func agentInstanceCattleHome() string {
 	return defaultValue("agentInstanceCattleHome", "/var/lib/cattle")
 }
 
-func containerStateDir() string {
+func ContainerStateDir() string {
 	return path.Join(stateDir(), "containers")
 }
 
 func lockDir() string {
-	return defaultValue("lockDir", path.Join(home(), "locks"))
+	return defaultValue("lockDir", path.Join(Home(), "locks"))
 }
 
 func clientCertsDir() string {
-	return defaultValue("CLIENT_CERTS_DIR", path.Join(home(), "client_certs"))
+	return defaultValue("CLIENT_CERTS_DIR", path.Join(Home(), "client_certs"))
 }
 
 func stamp() string {
-	return defaultValue("STAMP_FILE", path.Join(home(), ".pyagent-stamp"))
+	return defaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
 }
 
-func configUpdatePyagent() bool {
-	return defaultValue("configUpdatePyagent", "true") == "true"
+func ConfigUpdatePyagent() bool {
+	return defaultValue("CONFIG_UPDATE_PYAGENT", "true") == "true"
 }
 
 func maxDroppedPing() int {
@@ -237,37 +240,36 @@ func maxDroppedRequests() int {
 	return ret
 }
 
-//TODO
-func cadvisorDockerRoot() string {
-	return ""
+func CadvisorDockerRoot() string {
+	info, _ := docker.GetClient(DefaultVersion).Info(context.Background())
+	return info.DockerRootDir
 }
 
-func cadvisorOpts() string {
-	return defaultValue("cadvisorOpts", "")
+func CadvisorOpts() string {
+	return defaultValue("CADVISOR_OPTS", "")
 }
 
-func hostAPIIP() string {
-	return defaultValue("hostApiIp", "0.0.0.0")
+func HostAPIIP() string {
+	return defaultValue("HOST_API_IP", "0.0.0.0")
 }
 
-func hostAPIPort() int {
-	ret, _ := strconv.Atoi(defaultValue("hostApiPort", "9345"))
-	return ret
+func HostAPIPort() string {
+	return defaultValue("HOST_API_PORT", "9345")
 }
 
 func consoleAgentPort() int {
-	ret, _ := strconv.Atoi(defaultValue("consoleAgentPort", "9346"))
+	ret, _ := strconv.Atoi(defaultValue("CONSOLE_AGENT_PORT", "9346"))
 	return ret
 }
 
-func jwtPublicKeyFile() string {
-	path := path.Join(home(), "etc", "cattle", "api.crt")
+func JwtPublicKeyFile() string {
+	path := path.Join(Home(), "etc", "cattle", "api.crt")
 	return defaultValue("CONSOLE_HOST_API_PUBLIC_KEY", path)
 }
 
-func hostAPIConfigFile() string {
-	path := path.Join(home(), "etc", "cattle", "host-api.conf")
-	return defaultValue("hostApiConfigFile", path)
+func HostAPIConfigFile() string {
+	path := path.Join(Home(), "etc", "cattle", "host-api.conf")
+	return defaultValue("HOST_API_CONFIG_FILE", path)
 }
 
 func hostProxy() string {
@@ -275,7 +277,7 @@ func hostProxy() string {
 }
 
 func eventReadTimeout() string {
-	return defaultValue("eventReadTimeout", "60")
+	return defaultValue("EVENT_READ_TIMEOUT", "60")
 }
 
 func eventletBackdoor() int {
@@ -287,8 +289,8 @@ func eventletBackdoor() int {
 	return 0
 }
 
-func cadvisorWrapper() string {
-	return defaultValue("cadvisorWrapper", "")
+func CadvisorWrapper() string {
+	return defaultValue("CADVISOR_WRAPPER", "")
 }
 
 func labels() map[string][]string {
@@ -312,11 +314,23 @@ func DockerHostIP() string {
 	return defaultValue("DOCKER_HOST_IP", agentIP())
 }
 
-func dockerUUID() string {
+func DockerUUID() string {
 	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), false)
 }
 
 func dockerUUIDFile() string {
 	defValue := fmt.Sprintf("%v/.docker_uuid", stateDir())
 	return defaultValue("DOCKER_UUID_FILE", defValue)
+}
+
+func CadvisorIP() string {
+	return defaultValue("CADVISOR_IP", "127.0.0.1")
+}
+
+func CadvisorPort() string {
+	return defaultValue("CADVISOR_PORT", "9344")
+}
+
+func CadvisorInterval() string {
+	return defaultValue("CADVISOR_INTERVAL", "1s")
 }

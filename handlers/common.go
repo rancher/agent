@@ -5,6 +5,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
+	goUUID "github.com/nu7hatch/gouuid"
+	"time"
 )
 
 func GetHandlers() map[string]revents.EventHandler {
@@ -21,6 +23,7 @@ func GetHandlers() map[string]revents.EventHandler {
 		"storage.volume.remove":       VolumeRemove,
 		"delegate.request":            DelegateRequest,
 		"ping":                        Ping,
+		"config.update":	       ConfigUpdate,
 	}
 }
 
@@ -45,7 +48,54 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	return nil
 }
 
+func replyWithParent(replyData map[string]interface{}, event *revents.Event, parent *revents.Event, cli *client.RancherClient) error {
+	child := map[string]interface{}{
+		"resourceId":   event.ResourceID,
+		"previousIds":  []string{event.ID},
+		"resourceType": event.ResourceType,
+		"name":         event.ReplyTo,
+		"data":         replyData,
+		"id":		getUUID(),
+		"time":		time.Now().UnixNano() / int64(time.Millisecond),
+		"previousNames":[]string{event.Name},
+	}
+	reply := &client.Publish{
+		ResourceId:   parent.ResourceID,
+		PreviousIds:  []string{parent.ID},
+		ResourceType: parent.ResourceType,
+		Name:         parent.ReplyTo,
+		Data:         child,
+		Time:	      time.Now().UnixNano() / int64(time.Millisecond),
+		Resource:     client.Resource{Id: getUUID()},
+		PreviousNames:[]string{parent.Name},
+	}
+	if parent.ReplyTo == "" {
+		return nil
+	}
+	logrus.Infof("Reply: %+v", reply)
+	err := publishReply(reply, cli)
+	if err != nil {
+		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
+	}
+	return nil
+}
+
+func getUUID() string {
+	uuid := ""
+	newUUID, err1 := goUUID.NewV4()
+	if err1 != nil {
+		logrus.Error(err1)
+	} else {
+		uuid = newUUID.String()
+	}
+	return uuid
+}
+
 func publishReply(reply *client.Publish, apiClient *client.RancherClient) error {
-	_, err := apiClient.Publish.Create(reply)
+	resp, err := apiClient.Publish.Create(reply)
+	logrus.Infof("response data %+v", resp)
+	if err != nil {
+		logrus.Error(err)
+	}
 	return err
 }

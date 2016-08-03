@@ -36,7 +36,6 @@ func setupMacAndIP(instance *model.Instance, createConfig map[string]interface{}
 			deviceNumber = nic.DeviceNumber
 		}
 	}
-	logrus.Infof("macAddress :%v", macAddress)
 	if setMac {
 		createConfig["macAddress"] = macAddress
 	}
@@ -48,16 +47,13 @@ func setupMacAndIP(instance *model.Instance, createConfig map[string]interface{}
 	if instance.Nics != nil && len(instance.Nics) > 0 && instance.Nics[0].IPAddresses != nil {
 		// Assume one nic
 		nic := instance.Nics[0]
-		logrus.Info("nic info %v", nic)
 		ipAddress := ""
 		for _, ip := range nic.IPAddresses {
-			logrus.Info("ip info %v", ip)
 			if ip.Role == "primary" {
 				ipAddress = fmt.Sprintf("%s/%s", ip.Address, strconv.Itoa(ip.Subnet.CidrSize))
 				break
 			}
 		}
-		logrus.Info("ip info %s", ipAddress)
 		if ipAddress != "" {
 			addLabel(createConfig, map[string]string{"io.rancher.container.ip": ipAddress})
 		}
@@ -96,7 +92,7 @@ func setupNetworkMode(instance *model.Instance, client *client.Client,
 			if other != nil {
 				id = other.ID
 			}
-			startConfig["networkMode"] = fmt.Sprintf("container:%s", id)
+			startConfig["networkMode"] = fmt.Sprintf("container:%v", id)
 			delete(startConfig, "links")
 		}
 	}
@@ -131,9 +127,10 @@ func setupIpsec(instance *model.Instance, host *model.Host, createConfig map[str
 		return
 	}
 	hostID := strconv.Itoa(host.ID)
-	if info, ok := instance.Data["ipsec"].(map[string]interface{})[hostID].(map[string]interface{}); ok {
-		nat := info["nat"].(float64)
-		isakmp := info["isakmp"].(float64)
+	if data, ok := GetFieldsIfExist(instance.Data, "ipsec", hostID); ok {
+		info := InterfaceToMap(data)
+		nat := InterfaceToFloat(info["nat"])
+		isakmp := InterfaceToFloat(info["isakmp"])
 
 		binding := getOrCreateBindingMap(startConfig, "portbindings")
 
@@ -215,7 +212,6 @@ func setupLinksNetwork(instance *model.Instance, createConfig map[string]interfa
 		return
 	}
 
-	logrus.Info("links deleted")
 	delete(startConfig, "links")
 
 	if hasKey(startConfig, "links") {

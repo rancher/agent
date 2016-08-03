@@ -3,12 +3,16 @@ set -e
 
 source $(dirname $0)/version
 
-cd $(dirname $0)/../package
+cd $(dirname $0)/..
 
-TAG=${TAG:-${VERSION}}
-REPO=${REPO:-rancher}
+mkdir -p build
+cd build
 
-cp ../bin/agent .
-docker build -t ${REPO}/agent:${TAG} .
+mkdir -p bin
+cp ../bin/agent bin/
+cp ../apply.sh .
 
-echo Built ${REPO}/agent:${TAG}
+mkdir -p ../dist/artifacts
+tar cvJf ../dist/artifacts/go-agent.tar.xz .
+
+echo Created ../dist/artifacts/go-agent.tar.xz

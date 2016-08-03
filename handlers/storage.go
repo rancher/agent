@@ -8,7 +8,6 @@ import (
 	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
-	"sync"
 )
 
 func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -17,7 +16,7 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	image := imageStoragePoolMap.Image
 	storagePool := imageStoragePoolMap.StoragePool
 
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
 	if image.ID >= 0 && event.Data["processData"] != nil {
 		image.ProcessData = event.Data["processData"].(map[string]interface{})
@@ -26,20 +25,16 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	imageWithLock := ObjWithLock{obj: image, mu: sync.Mutex{}}
-	imageWithLock.mu.Lock()
-	defer imageWithLock.mu.Unlock()
-	im := imageWithLock.obj.(model.Image)
-	if utils.IsImageActive(&im, &storagePool) {
+	if utils.IsImageActive(&image, &storagePool) {
 		return reply(event.Data, event, cli)
 	}
 
-	err := utils.DoImageActivate(&im, &storagePool, &progress)
+	err := utils.DoImageActivate(&image, &storagePool, &progress)
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	if !utils.IsImageActive(&im, &storagePool) {
+	if !utils.IsImageActive(&image, &storagePool) {
 		logrus.Error("operation failed")
 	}
 
@@ -51,17 +46,13 @@ func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
 	if utils.IsVolumeActive(&volume, &storagePool) {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	volumeWithLock := ObjWithLock{obj: volume, mu: sync.Mutex{}}
-	volumeWithLock.mu.Lock()
-	defer volumeWithLock.mu.Unlock()
-	vol := volumeWithLock.obj.(model.Volume)
-	err := utils.DoVolumeActivate(&vol, &storagePool, &progress)
+	err := utils.DoVolumeActivate(&volume, &storagePool, &progress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -82,12 +73,7 @@ func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	volumeWithLock := ObjWithLock{obj: volume, mu: sync.Mutex{}}
-	volumeWithLock.mu.Lock()
-	defer volumeWithLock.mu.Unlock()
-
-	vol := volumeWithLock.obj.(model.Volume)
-	err := utils.DoVolumeDeactivate(&vol, &storagePool, &progress)
+	err := utils.DoVolumeDeactivate(&volume, &storagePool, &progress)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -102,11 +88,8 @@ func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
-	progress := progress.Progress{}
+	progress := progress.Progress{Request: event, Client: cli}
 
-	volumeWithLock := ObjWithLock{obj: volume, mu: sync.Mutex{}}
-	volumeWithLock.mu.Lock()
-	defer volumeWithLock.mu.Unlock()
 	if volume.DeviceNumber == 0 {
 		utils.PurgeState(volume.Instance)
 	}

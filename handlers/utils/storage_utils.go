@@ -62,8 +62,6 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 			opts[k] = v.(string)
 		}
 	}
-	logrus.Infof("driver name %s", driver)
-	logrus.Infof("driver opts %v", driverOpts)
 	v := storageAPIVersion()
 	client := docker.GetClient(v)
 

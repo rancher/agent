@@ -31,40 +31,6 @@ import (
 	"time"
 )
 
-/*
-var CreateConfigFields = []model.Tuple{
-	model.Tuple{Src: "labels", Dest: "labels"},
-	model.Tuple{Src: "environment", Dest: "environment"},
-	model.Tuple{Src: "directory'", Dest: "workingDir"},
-	model.Tuple{Src: "domainName", Dest: "domainname"},
-	model.Tuple{Src: "memory", Dest: "mem_limit"},
-	model.Tuple{Src: "memorySwap", Dest: "memswap_limit"},
-	model.Tuple{Src: "cpuSet", Dest: "cpuset"},
-	model.Tuple{Src: "cpuShares", Dest: "cpu_shares"},
-	model.Tuple{Src: "tty", Dest: "tty"},
-	model.Tuple{Src: "stdinOpen", Dest: "stdin_open"},
-	model.Tuple{Src: "detach", Dest: "detach"},
-	model.Tuple{Src: "workingDir", Dest: "working_dir"},
-	model.Tuple{Src: "labels", Dest: "labels"},
-	model.Tuple{Src: "entryPoint", Dest: "entrypoint"},
-}
-
-var StartConfigFields = []model.Tuple{
-	model.Tuple{Src: "capAdd", Dest: "cap_add"},
-	model.Tuple{Src: "capDrop", Dest: "cap_drop"},
-	model.Tuple{Src: "dnsSearch", Dest: "dnsSearch"},
-	model.Tuple{Src: "dns", Dest: "dns"},
-	model.Tuple{Src: "extraHosts", Dest: "extra_hosts"},
-	model.Tuple{Src: "publishAllPorts", Dest: "publish_all_ports"},
-	model.Tuple{Src: "lxcConf", Dest: "lxc_conf"},
-	model.Tuple{Src: "logConfig", Dest: "logConfig"},
-	model.Tuple{Src: "securityOpt", Dest: "security_opt"},
-	model.Tuple{Src: "restartPolicy", Dest: "restart_policy"},
-	model.Tuple{Src: "pidMode", Dest: "pid_mode"},
-	model.Tuple{Src: "devices", Dest: "devices"},
-}
-*/
-
 func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *progress.Progress) error {
 	if IsNoOp(instance.Data) {
 		return nil
@@ -87,7 +53,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 			}
 		}
 	}
-	logrus.Info(name)
 	var createConfig = map[string]interface{}{
 		"name":   name,
 		"detach": true,
@@ -133,7 +98,7 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	setupProxy(instance, createConfig)
 
 	setupCattleConfigURL(instance, createConfig)
-
+	logrus.Infof("envs %v", createConfig["env"])
 	hostConfig := createHostConfig(startConfig)
 	setupResource(instance.Data["fields"].(map[string]interface{}), &hostConfig)
 	setupDeviceOptions(&hostConfig, instance)
@@ -141,20 +106,18 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	var config container.Config
 	mapstructure.Decode(createConfig, &config)
 	setupConfig(instance.Data["fields"].(map[string]interface{}), &config)
+	setupEnvs(createConfig, &config)
+	logrus.Infof("enviroment variable %v", config.Env)
 	labels, ok := GetFieldsIfExist(instance.Data, "fields", "labels")
 	if ok {
 		setupLabels(labels.(map[string]interface{}), &config)
 	}
-	//debug
-	logrus.Infof("container configuration %+v\n", config)
-	logrus.Infof("container host configuration %+v\n", hostConfig)
 
 	container := GetContainer(client, instance, false)
 	containerID := ""
 	if container != nil {
 		containerID = container.ID
 	}
-	logrus.Info("containerID " + containerID)
 	created := false
 	if len(containerID) == 0 {
 		newID, createErr := createContainer(client, &config, &hostConfig, imageTag, instance, name, progress)
@@ -282,9 +245,13 @@ func GetContainer(client *client.Client, instance *model.Instance, byAgent bool)
 	}
 
 	if agentID := instance.AgentID; byAgent {
+		logrus.Infof("debug agentID %v", agentID)
 		container = findFirst(&containerList, func(c *types.Container) bool {
 			return agentIDFilter(string(agentID), c)
 		})
+		if container != nil {
+			logrus.Info("find")
+		}
 	}
 
 	return container
@@ -351,7 +318,7 @@ func RecordState(client *client.Client, instance *model.Instance, dockerID strin
 	if len(dockerID) == 0 {
 		return
 	}
-	contDir := containerStateDir()
+	contDir := ContainerStateDir()
 	temFilePath := path.Join(contDir, fmt.Sprintf("tmp-%s", dockerID))
 	if _, err := os.Stat(temFilePath); err == nil {
 		os.Remove(temFilePath)
@@ -373,7 +340,6 @@ func RecordState(client *client.Client, instance *model.Instance, dockerID strin
 	if err1 != nil {
 		logrus.Error(err1)
 	}
-	logrus.Infof("fileinfo %v", filePath)
 }
 
 func createContainer(client *client.Client, config *container.Config, hostConfig *container.HostConfig,
@@ -601,12 +567,21 @@ func setupCommand(createConfig map[string]interface{}, instance *model.Instance)
 	if !ok {
 		return
 	}
+	logrus.Infof("command info %v", command)
 	commands, ok := command.([]interface{})
 	if !ok {
 		setupLegacyCommand(createConfig, instance, command.(string))
 	} else {
 		createConfig["cmd"] = commands
 	}
+}
+
+func setupEnvs(createConfig map[string]interface{}, config *container.Config) {
+	envs := []string{}
+	for key, value := range InterfaceToMap(createConfig["env"]) {
+		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+	}
+	config.Env = append(config.Env, envs...)
 }
 
 func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
@@ -685,7 +660,6 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 				containers = append(containers, container.ID)
 			}
 		}
-		logrus.Infof("volumes From %v", containers)
 		if containers != nil && len(containers) > 0 {
 			startConfig["volumesFrom"] = containers
 		}
@@ -710,12 +684,10 @@ func setupLinks(startConfig map[string]interface{}, instance *model.Instance) {
 	}
 	for _, link := range instance.InstanceLinks {
 		if link.TargetInstance.UUID != "" {
-			logrus.Info("hello")
 			linkStr := fmt.Sprintf("%s:%s", link.TargetInstance.UUID, link.LinkName)
 			links = append(links, linkStr)
 		}
 	}
-	logrus.Infof("links info %v", links)
 	startConfig["links"] = links
 
 }
@@ -739,11 +711,11 @@ func flagSystemContainer(instance *model.Instance, createConfig map[string]inter
 
 func setupProxy(instance *model.Instance, createConfig map[string]interface{}) {
 	if len(instance.SystemContainer) > 0 {
-		if !hasKey(createConfig, "environment") {
-			createConfig["env"] = map[string]string{}
+		if !hasKey(createConfig, "env") {
+			createConfig["env"] = map[string]interface{}{}
 		}
 		for _, i := range []string{"http_proxy", "https_proxy", "NO_PROXY"} {
-			createConfig["env"].(map[string]string)[i] = os.Getenv(i)
+			createConfig["env"].(map[string]interface{})[i] = os.Getenv(i)
 		}
 	}
 }
@@ -758,14 +730,13 @@ func setupCattleConfigURL(instance *model.Instance, createConfig map[string]inte
 	}
 	addLabel(createConfig, map[string]string{"io.rancher.container.agent_id": strconv.Itoa(instance.AgentID)})
 
-	url := configURL()
-
+	url := ConfigURL()
+	logrus.Info("url info " + url)
 	if len(url) > 0 {
 		parsed, err := urls.Parse(url)
 
 		if err != nil {
 			logrus.Error(err)
-			panic(err)
 		} else {
 			if parsed.Host == "localhost" {
 				port := apiProxyListenPort()
@@ -872,19 +843,15 @@ func setupLegacyCommand(createConfig map[string]interface{}, instance *model.Ins
 			commandArgs = append(commandArgs, v.(string))
 		}
 	}
-	commands := []string{}
-	parts := strings.Split(command, " ")
-	for _, part := range parts {
-		commands = append(commands, part)
-	}
+	commands := command
 	if len(commandArgs) > 0 {
 		for _, value := range commandArgs {
-			commands = append(commands, value)
+			commands = commands + " " + value
 		}
 	}
 
 	if len(commands) > 0 {
-		createConfig["cmd"] = commands
+		createConfig["cmd"] = []string{commands}
 	}
 }
 
@@ -942,7 +909,7 @@ func DeleteContainer(name string) {
 
 func removeStateFile(id string) {
 	if len(id) > 0 {
-		contDir := containerStateDir()
+		contDir := ContainerStateDir()
 		filePath := path.Join(contDir, id)
 		if _, err := os.Stat(filePath); err == nil {
 			os.Remove(filePath)
@@ -1062,7 +1029,7 @@ func PurgeState(instance *model.Instance) {
 		return
 	}
 	dockerID := container.ID
-	contDir := containerStateDir()
+	contDir := ContainerStateDir()
 	files := []string{path.Join(contDir, "tmp-"+dockerID), path.Join(contDir, dockerID)}
 	for _, f := range files {
 		if _, err := os.Stat(f); err == nil {
@@ -1076,12 +1043,10 @@ func getInstanceHostMapData(event *revents.Event) map[string]interface{} {
 	client := docker.GetClient(DefaultVersion)
 	var inspect types.ContainerJSON
 	container := GetContainer(client, instance, false)
-	logrus.Infof("container structure %v", container)
 	dockerPorts := []string{}
 	dockerIP := ""
 	dockerMounts := []types.MountPoint{}
 	if container != nil {
-		logrus.Info(container.ID)
 		inspect, _ = client.ContainerInspect(context.Background(), container.ID)
 		dockerMounts = getMountData(container.ID)
 		dockerIP = inspect.NetworkSettings.IPAddress
@@ -1143,7 +1108,7 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 	for key, value := range fields {
 		switch key {
 		case "extraHosts":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.ExtraHosts = append(hostConfig.ExtraHosts, str)
 				}
@@ -1153,20 +1118,17 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 			hostConfig.PidMode = container.PidMode(InterfaceToString(value))
 			break
 		case "logConfig":
-			value, ok := value.(map[string]interface{})
-			if !ok {
-				return
-			}
-			hostConfig.LogConfig.Type = InterfaceToString(value["driver"])
+			vmap := InterfaceToMap(value)
+			hostConfig.LogConfig.Type = InterfaceToString(vmap["driver"])
 			hostConfig.LogConfig.Config = map[string]string{}
-			if value["config"] != nil {
-				for key1, value1 := range value["config"].(map[string]interface{}) {
+			if vmap["config"] != nil {
+				for key1, value1 := range InterfaceToMap(vmap["config"]) {
 					hostConfig.LogConfig.Config[key1] = InterfaceToString(value1)
 				}
 			}
 			break
 		case "securityOpt":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.SecurityOpt = append(hostConfig.SecurityOpt, str)
 				}
@@ -1174,7 +1136,7 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 			break
 		case "devices":
 			hostConfig.Devices = []container.DeviceMapping{}
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				str := InterfaceToString(singleValue)
 				parts := strings.Split(str, ":")
 				permission := "rwm"
@@ -1190,46 +1152,47 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 			}
 			break
 		case "dns":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.DNS = append(hostConfig.DNS, str)
 				}
 			}
 			break
 		case "dnsSearch":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.DNSSearch = append(hostConfig.DNSSearch, str)
 				}
 			}
 			break
 		case "capAdd":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.CapAdd = append(hostConfig.CapAdd, str)
 				}
 			}
 			break
 		case "capDrop":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					hostConfig.CapDrop = append(hostConfig.CapDrop, str)
 				}
 			}
 			break
 		case "restartPolicy":
-			value := value.(map[string]interface{})
-			hostConfig.RestartPolicy.Name = InterfaceToString(value["name"])
-			if _, ok := value["maximumRetryCount"].(float64); ok {
-				hostConfig.RestartPolicy.MaximumRetryCount = int(value["maximumRetryCount"].(float64))
-			}
+			vmap := InterfaceToMap(value)
+			hostConfig.RestartPolicy.Name = InterfaceToString(vmap["name"])
+			hostConfig.RestartPolicy.MaximumRetryCount = int(InterfaceToFloat(vmap["maximumRetryCount"]))
 			break
 		case "cpuShares":
-			if _, ok := value.(float64); ok {
-				hostConfig.CPUShares = int64(value.(float64))
-			}
+			hostConfig.CPUShares = int64(InterfaceToFloat(value))
+
 		case "volumeDriver":
-			hostConfig.VolumeDriver = value.(string)
+			hostConfig.VolumeDriver = InterfaceToString(value)
+		case "publishAllPorts":
+			hostConfig.PublishAllPorts = InterfaceToBool(value)
+		case "cpuSet":
+			hostConfig.CpusetCpus = InterfaceToString(value)
 		}
 	}
 }
@@ -1237,27 +1200,31 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 func setupConfig(fields map[string]interface{}, config *container.Config) {
 	for key, value := range fields {
 		switch key {
+		case "environment":
+			for k, v := range InterfaceToMap(value) {
+				config.Env = append(config.Env, fmt.Sprintf("%v=%v", k, InterfaceToString(v)))
+			}
 		case "workingDir":
 			config.WorkingDir = InterfaceToString(value)
 			break
 		case "entryPoint":
-			for _, singleValue := range value.([]interface{}) {
+			for _, singleValue := range InterfaceToArray(value) {
 				if str := InterfaceToString(singleValue); str != "" {
 					config.Entrypoint = append(config.Entrypoint, str)
 				}
 			}
 			break
 		case "tty":
-			config.Tty = value.(bool)
+			config.Tty = InterfaceToBool(value)
 			break
 		case "stdinOpen":
-			config.OpenStdin = value.(bool)
+			config.OpenStdin = InterfaceToBool(value)
 			break
 		case "domainName":
-			config.Domainname = value.(string)
+			config.Domainname = InterfaceToString(value)
 			break
 		case "labels":
-			for k, v := range value.(map[string]interface{}) {
+			for k, v := range InterfaceToMap(value) {
 				str := InterfaceToString(v)
 				config.Labels[k] = str
 			}
@@ -1275,6 +1242,6 @@ func getInstancePullData(event *revents.Event) types.ImageInspect {
 
 func setupLabels(labels map[string]interface{}, config *container.Config) {
 	for k, v := range labels {
-		config.Labels[k] = v.(string)
+		config.Labels[k] = InterfaceToString(v)
 	}
 }
