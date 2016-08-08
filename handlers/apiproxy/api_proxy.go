@@ -5,17 +5,17 @@ import (
 	"strings"
 )
 
-func APIProxyStartUp() {
+func StartUp() {
 	url := utils.ConfigURL()
 
-	if !strings.Contains(url, "localhost"){
+	if !strings.Contains(url, "localhost") {
 		return
 	}
 	/*
-	parsed, _ := urls.Parse(url)
+		parsed, _ := urls.Parse(url)
 
-	fromHost := utils.ApiProxyListenHost()
-	fromPort := utils.ApiProxyListenPort()
-	toHostIp :=
+		fromHost := utils.ApiProxyListenHost()
+		fromPort := utils.ApiProxyListenPort()
+		toHostIp :=
 	*/
 }

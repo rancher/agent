@@ -213,7 +213,6 @@ def test_native_container_remove(agent):
         assert not state_file_exists(c['Id'])
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/native_container_volume_remove',
                pre_func=pre, post_func=post)

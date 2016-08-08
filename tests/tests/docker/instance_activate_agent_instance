@@ -22,17 +22,16 @@
             "id": 50,
             "instance": {
                 "accountId": 1,
+                "agentId": 5,
                 "allocationState": "active",
                 "created": 1389396144000,
                 "data": {
                     "fields": {
                         "imageUuid": "docker:ibuildthecloud/helloworld",
-                        "publishAllPorts": true,
-                        "command": ["sleep", "5"],
                         "startOnCreate": true,
-                        "labels": {
-                            "constraint" : "label_key==bar",
-                            "affinity" : "container==foo"
+                        "publishAllPorts": true,
+                        "environment": {
+                            "ENV1": "value1"
                         }
                     }
                 },

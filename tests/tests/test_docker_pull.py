@@ -16,7 +16,6 @@ def test_pull(agent):
         resp['data']['fields']['dockerImage'] = {}
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
         del valid_resp['resourceId']
 
     event_test(agent, 'docker/instance_pull', post_func=post, diff=True)
@@ -31,7 +30,6 @@ def test_pull(agent):
         assert resp['data']['fields']['dockerImage']['Id'] == ''
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
         del valid_resp['resourceId']
 
     event_test(agent, 'docker/instance_pull', pre_func=pre2,  post_func=post2,
@@ -55,8 +53,6 @@ def test_pull_mode_update(agent):
         assert resp['data']['fields']['dockerImage']['Id'] == ''
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
-        del valid_resp['resourceId']
 
     event_test(agent, 'docker/instance_pull', pre_func=pre,  post_func=post,
                diff=False)

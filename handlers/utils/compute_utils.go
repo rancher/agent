@@ -76,6 +76,8 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		addLabel(createConfig, map[string]string{"io.rancher.container.name": instanceName})
 	}
 
+	setupPublishPorts(startConfig, instance)
+
 	setupDNSSearch(startConfig, instance)
 
 	setupLogging(startConfig, instance)
@@ -572,10 +574,10 @@ func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 				}
 				if _, ok := bindings[bind]; !ok {
 					bindings[bind] = []nat.PortBinding{nat.PortBinding{HostIP: bindAddr,
-						HostPort: convertPortToString(port.PublicPort)}}
+						HostPort: ConvertPortToString(port.PublicPort)}}
 				} else {
 					bindings[bind] = append(bindings[bind], nat.PortBinding{HostIP: bindAddr,
-						HostPort: convertPortToString(port.PublicPort)})
+						HostPort: ConvertPortToString(port.PublicPort)})
 				}
 				exposedPorts[bind] = struct{}{}
 			}
@@ -709,7 +711,7 @@ func setupCattleConfigURL(instance *model.Instance, createConfig map[string]inte
 			logrus.Error(err)
 		} else {
 			if parsed.Host == "localhost" {
-				port := ApiProxyListenPort()
+				port := APIProxyListenPort()
 				addToEnv(createConfig, map[string]string{
 					"CATTLE_AGENT_INSTANCE":    "true",
 					"CATTLE_CONFIG_URL_SCHEME": parsed.Scheme,
@@ -813,15 +815,19 @@ func setupLegacyCommand(createConfig map[string]interface{}, instance *model.Ins
 			commandArgs = append(commandArgs, InterfaceToString(v))
 		}
 	}
-	commands := command
+	commands := []string{}
+	parts := strings.Split(command, " ")
+	for _, part := range parts {
+		commands = append(commands, part)
+	}
 	if len(commandArgs) > 0 {
 		for _, value := range commandArgs {
-			commands = commands + " " + value
+			commands = append(commands, value)
 		}
 	}
 
 	if len(commands) > 0 {
-		createConfig["cmd"] = []string{commands}
+		createConfig["cmd"] = commands
 	}
 }
 
@@ -1116,8 +1122,6 @@ func setupHostConfig(fields map[string]interface{}, hostConfig *container.HostCo
 
 		case "volumeDriver":
 			hostConfig.VolumeDriver = InterfaceToString(value)
-		case "publishAllPorts":
-			hostConfig.PublishAllPorts = InterfaceToBool(value)
 		case "cpuSet":
 			hostConfig.CpusetCpus = InterfaceToString(value)
 		}
@@ -1171,5 +1175,12 @@ func getInstancePullData(event *revents.Event) types.ImageInspect {
 func setupLabels(labels map[string]interface{}, config *container.Config) {
 	for k, v := range labels {
 		config.Labels[k] = InterfaceToString(v)
+	}
+}
+
+func setupPublishPorts(startConfig map[string]interface{}, instance *model.Instance) {
+	portsPub, ok := GetFieldsIfExist(instance.Data, "fields", "publishAllPorts")
+	if ok {
+		startConfig["publishAllPorts"] = InterfaceToBool(portsPub)
 	}
 }

@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
 	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
-	"errors"
 )
 
 func ImageActivate(event *revents.Event, cli *client.RancherClient) error {

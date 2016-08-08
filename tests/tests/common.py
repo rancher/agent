@@ -134,8 +134,8 @@ def event_test(agent, name, pre_func=None, post_func=None, diff=True):
             post_func(req, resp)
 
     if diff:
-        # del resp["id"]
-        # del resp["time"]
+        del resp["id"]
+        del resp["time"]
 
         diff_dict(valid_resp, JsonObject.unwrap(resp))
         assert_equals(valid_resp, JsonObject.unwrap(resp))
@@ -352,7 +352,6 @@ def trim(docker_container, fields, resp, valid_resp):
         fields["dockerHostIp"] = '1.2.3.4'
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
     except KeyError:
         pass
 

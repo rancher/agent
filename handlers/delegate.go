@@ -3,14 +3,14 @@ package handlers
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/handlers/docker"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
+	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
-	"github.com/rancher/agent/model"
-	"github.com/mitchellh/mapstructure"
 )
 
 func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
@@ -25,8 +25,8 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 	}
 	client := docker.GetClient(utils.DefaultVersion)
 	instance := model.Instance{
-		UUID: instanceData.UUID,
-		AgentID: instanceData.AgentID,
+		UUID:       instanceData.UUID,
+		AgentID:    instanceData.AgentID,
 		ExternalID: instanceData.ExternalID,
 	}
 	container := utils.GetContainer(client, &instance, true)

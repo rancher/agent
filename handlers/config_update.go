@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"github.com/rancher/go-rancher/client"
-	revents "github.com/rancher/go-machine-service/events"
-	"github.com/rancher/agent/handlers/utils"
-	"os"
-	"os/exec"
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers/progress"
-	"fmt"
+	"github.com/rancher/agent/handlers/utils"
+	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/go-rancher/client"
+	"os"
+	"os/exec"
 )
 
 func ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
@@ -49,11 +49,10 @@ func ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
 	if retcode == 0 {
 		return reply(map[string]interface{}{
 			"exitCode": retcode,
-			"output": string(output),
+			"output":   string(output),
 		}, event, cli)
-	} else {
-		pro := &progress.Progress{Request:event, Client:cli}
-		pro.Update("config update failed")
-		return nil
 	}
+	pro := &progress.Progress{Request: event, Client: cli}
+	pro.Update("config update failed")
+	return nil
 }

@@ -173,7 +173,6 @@ def test_instance_activate_ports(agent):
                 fields['dockerPorts'][i] = fields[
                     'dockerPorts'][i].split(':')[-1]
 
-        del valid_resp['previousNames']
         fields['dockerPorts'].sort()
         instance_activate_assert_host_config(resp)
         instance_activate_assert_image_id(resp)
@@ -201,7 +200,6 @@ def test_instance_activate_links_null_ports(agent):
         id = resp['data']['instanceHostMap']['instance']
         id = id['+data']['dockerContainer']['Id']
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/instance_activate_links', pre_func=pre,
                post_func=post)
@@ -215,7 +213,6 @@ def test_instance_activate_double_links(agent):
         id = id['+data']['dockerContainer']['Id']
         inspect = docker_client().inspect_container(id)
         instance_activate_common_validation(resp)
-        del valid_resp['previousNames']
 
         env = inspect['Config']['Env']
 
@@ -320,8 +317,6 @@ def test_instance_activate_links(agent):
         assert 'ENV_REDIS_1_PORT_26_UDP_PORT=26' in env
         assert 'ENV_REDIS_1_PORT_26_UDP_PROTO=udp' in env
 
-        del valid_resp['previousNames']
-
     event_test(agent, 'docker/instance_activate_links', post_func=post)
 
 
@@ -352,7 +347,6 @@ def test_instance_activate_links_no_service(agent):
         assert {'/target_mysql:/r-test/mysql',
                 '/target_redis:/r-test/redis'} == \
             set(inspect['HostConfig']['Links'])
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/instance_activate_links_no_service',
                post_func=post)
@@ -1141,8 +1135,6 @@ def test_instance_activate_ipsec(agent):
     def post(req, resp, valid_resp):
         instance_activate_common_validation(resp)
 
-        del valid_resp['previousNames']
-
     event_test(agent, 'docker/instance_activate_ipsec', post_func=post)
 
 
@@ -1578,7 +1570,6 @@ def test_volume_activate(agent):
     def post(req, resp, valid_resp):
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/volume_activate', post_func=post)
 
@@ -1599,7 +1590,6 @@ def test_volume_activate_driver1(agent):
 
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
 
@@ -1620,7 +1610,6 @@ def test_volume_activate_driver2(agent):
 
         del resp['links']
         del resp['actions']
-        del valid_resp['previousNames']
 
     event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
 
@@ -1791,7 +1780,6 @@ def ping_post_process(req, resp, valid_resp):
     resources += instances
     resp['data']['resources'] = resources
     assert_ping_stat_resources(resp)
-    del valid_resp['previousNames']
     del resp['links']
     del resp['actions']
 
@@ -1878,4 +1866,3 @@ def test_env_variable(agent):
 
     schema = 'docker/instance_activate'
     event_test(agent, schema, pre_func=pre, post_func=post)
-

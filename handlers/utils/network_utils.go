@@ -286,7 +286,7 @@ func addLinkEnv(name string, link model.Link, result map[string]string, inIP str
 			data["PORT"] = fullPort
 			data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
 			data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
-			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = strconv.Itoa(int(InterfaceToFloat(dst)))
+			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = InterfaceToString(dst)
 			data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = InterfaceToString(protocol)
 			for key, value := range data {
 				result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value

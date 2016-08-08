@@ -320,7 +320,7 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
 					err.Error()))
-			}else {
+			} else {
 				return err
 			}
 		}

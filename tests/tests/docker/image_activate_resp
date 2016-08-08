@@ -4,6 +4,7 @@
     },
     "name": "reply.5184769160415462658",
     "previousIds": ["db12852d-b97f-4178-9896-0f2f03f7e306"],
+    "previousNames": ["storage.image.activate"],
     "resourceId": "14",
     "resourceType": "imageStoragePoolMap"
 }

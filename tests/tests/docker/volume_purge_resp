@@ -1,0 +1,19 @@
+{
+    "data": {
+        "volumeStoragePoolMap": {
+           "volume": {
+               "format": "docker"
+           }
+        }
+    },
+    "name": "reply.2609396891612625057",
+    "previousIds": [
+        "68fcddb5-a8a8-4b19-b1b3-00b60f83b5d1"
+    ],
+    "previousNames": [
+        "storage.volume.remove"
+    ],
+    "resourceId": "9",
+    "resourceType": "volumeStoragePoolMap"
+}
+

@@ -190,7 +190,7 @@ func GetResponseData(event *events.Event) map[string]interface{} {
 
 }
 
-func convertPortToString(port int) string {
+func ConvertPortToString(port int) string {
 	if port == 0 {
 		return ""
 	}
@@ -203,6 +203,14 @@ func InterfaceToString(v interface{}) string {
 		return value
 	}
 	return ""
+}
+
+func InterfaceToInt(v interface{}) int {
+	value, ok := v.(int)
+	if ok {
+		return value
+	}
+	return 0
 }
 
 func InterfaceToBool(v interface{}) bool {

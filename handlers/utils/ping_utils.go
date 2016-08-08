@@ -51,13 +51,13 @@ func addResource(ping, pong *revents.Event) {
 	physicalHost := physicalHost()
 
 	compute := map[string]interface{}{
-		"type":         "host",
-		"kind":         "docker",
-		"hostname":     hostname(),
-		"createLabels": labels(),
-		"labels":       getHostLabels(),
-		"uuid":         DockerUUID(),
-		"info":         stats,
+		"type":             "host",
+		"kind":             "docker",
+		"hostname":         hostname(),
+		"createLabels":     labels(),
+		"labels":           getHostLabels(),
+		"uuid":             DockerUUID(),
+		"info":             stats,
 		"physicalHostUuid": physicalHost["uuid"],
 	}
 

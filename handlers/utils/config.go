@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/rancher/agent/handlers/docker"
+	"golang.org/x/net/context"
 	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
-	"github.com/rancher/agent/handlers/docker"
-	"golang.org/x/net/context"
 )
 
 func storageAPIVersion() string {
@@ -20,7 +20,7 @@ func storageAPIVersion() string {
 func ConfigURL() string {
 	ret := defaultValue("CONFIG_URL", "")
 	if len(ret) == 0 {
-		return ApiURL("")
+		return APIURL("")
 	}
 	return ret
 }
@@ -37,11 +37,11 @@ func stripSchemas(url string) string {
 	return url
 }
 
-func ApiURL(df string) string {
+func APIURL(df string) string {
 	return stripSchemas(defaultValue("URL", df))
 }
 
-func ApiProxyListenPort() int {
+func APIProxyListenPort() int {
 	ret, _ := strconv.Atoi(defaultValue("API_PROXY_LISTEN_PORT", "9342"))
 	return ret
 }
@@ -203,7 +203,7 @@ func physicalHost() map[string]interface{} {
 	}
 }
 
-func ApiProxyListenHost() string {
+func APIProxyListenHost() string {
 	return defaultValue("API_PROXY_LISTEN_HOST", "0.0.0.0")
 }
 

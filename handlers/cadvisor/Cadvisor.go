@@ -1,13 +1,13 @@
 package cadvisor
 
 import (
+	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers/utils"
 	"os"
 	"os/exec"
-	"github.com/Sirupsen/logrus"
 )
 
-func CadvisorStartUp() error {
+func StartUp() error {
 	args := []string{
 		"cadvisor",
 		"-logtostderr=true",

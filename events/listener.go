@@ -3,10 +3,10 @@ package events
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
-	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/agent/handlers/cadvisor"
 	"github.com/rancher/agent/handlers/hostapi"
 	"github.com/rancher/agent/handlers/utils"
+	revents "github.com/rancher/go-machine-service/events"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -19,10 +19,10 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	utils.PhysicalHostUUID(true)
 
 	logrus.Info("launching hostapi")
-	go hostapi.HostAPIStartUp()
+	go hostapi.StartUp()
 
 	logrus.Info("launching cadvisor")
-	go cadvisor.CadvisorStartUp()
+	go cadvisor.StartUp()
 
 	eventHandlers := handlers.GetHandlers()
 	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount)

@@ -90,7 +90,7 @@ func (d DiskCollector) getMachineFilesystemsCadvisor() map[string]interface{} {
 
 func (d DiskCollector) GetData() map[string]interface{} {
 	data := map[string]interface{}{
-		"filesystems":                map[string]interface{}{},
+		"filesystems":               map[string]interface{}{},
 		"mountPoints":               map[string]interface{}{},
 		"dockerStorageDriverStatus": map[string]interface{}{},
 		"dockerStorageDriver":       d.dockerStorageDriver,
