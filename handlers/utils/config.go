@@ -26,7 +26,7 @@ func ConfigURL() string {
 }
 
 func stripSchemas(url string) string {
-	if len(url) > 0 {
+	if len(url) == 0 {
 		return ""
 	}
 
@@ -41,7 +41,7 @@ func ApiURL(df string) string {
 	return stripSchemas(defaultValue("URL", df))
 }
 
-func apiProxyListenPort() int {
+func ApiProxyListenPort() int {
 	ret, _ := strconv.Atoi(defaultValue("API_PROXY_LISTEN_PORT", "9342"))
 	return ret
 }
@@ -59,7 +59,7 @@ func physicalHostUUIDFile() string {
 	return defaultValue("PHYSICAL_HOST_UUID_FILE", defValue)
 }
 
-func physicalHostUUID(forceWrite bool) string {
+func PhysicalHostUUID(forceWrite bool) string {
 	return GetUUIDFromFile("PHYSICAL_HOST_UUID", physicalHostUUIDFile(), forceWrite)
 }
 
@@ -93,10 +93,11 @@ func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) strin
 	uuid := defaultValue(envName, "")
 	if uuid != "" {
 		if forceWrite {
-			file, err := os.Open(uuidFilePath)
+			_, err := os.Open(uuidFilePath)
 			if err == nil {
 				os.Remove(uuidFilePath)
 			}
+			file, _ := os.Create(uuidFilePath)
 			file.WriteString(uuid)
 		}
 		return uuid
@@ -121,7 +122,7 @@ func workers() string {
 	return defaultValue("WORKERS", "50")
 }
 
-func setSecretKey(value string) {
+func SetSecretKey(value string) {
 	ConfigOverride["SECRET_KEY"] = value
 }
 
@@ -129,7 +130,7 @@ func SecretKey() string {
 	return defaultValue("SECRET_KEY", "adminpass")
 }
 
-func setAccessKey(value string) {
+func SetAccessKey(value string) {
 	ConfigOverride["ACCESS_KEY"] = value
 }
 
@@ -137,7 +138,7 @@ func AccessKey() string {
 	return defaultValue("ACCESS_KEY", "admin")
 }
 
-func setAPIURL(value string) {
+func SetAPIURL(value string) {
 	ConfigOverride["URL"] = value
 }
 
@@ -195,15 +196,15 @@ func ConfigSh() string {
 
 func physicalHost() map[string]interface{} {
 	return map[string]interface{}{
-		"uuid": physicalHostUUID(false),
+		"uuid": PhysicalHostUUID(false),
 		"type": "physicalHost",
 		"kind": "physicalHost",
 		"name": hostname(),
 	}
 }
 
-func apiProxyListenHost() string {
-	return defaultValue("apiProxyListenHost", "0.0.0.0")
+func ApiProxyListenHost() string {
+	return defaultValue("API_PROXY_LISTEN_HOST", "0.0.0.0")
 }
 
 func agentInstanceCattleHome() string {

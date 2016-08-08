@@ -41,7 +41,7 @@ func (c CadvisorAPIClient) get(url string) (map[string]interface{}, error) {
 		defer resp.Body.Close()
 		data, _ := ioutil.ReadAll(resp.Body)
 		var result map[string]interface{}
-		err1 := json.Unmarshal(data, result)
+		err1 := json.Unmarshal(data, &result)
 		if err1 != nil {
 			logrus.Error(err1)
 		}

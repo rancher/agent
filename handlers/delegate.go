@@ -32,14 +32,14 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 	container := utils.GetContainer(client, &instance, true)
 
 	if container == nil {
-		logrus.Infof("Can not call [%v}, container not exist", instance.UUID)
+		logrus.Infof("Can not call [%v], container not exist", instance.UUID)
 		return nil
 	}
 
 	inspect, _ := client.ContainerInspect(context.Background(), container.ID)
 	running := inspect.State.Running
 	if !running {
-		logrus.Error(fmt.Errorf("Can not call [%v}, container not running", container.ID))
+		logrus.Error(fmt.Errorf("Can not call [%v], container not running", container.ID))
 		return nil
 	}
 	progress := progress.Progress{Request: delegateEvent, Client: cli}

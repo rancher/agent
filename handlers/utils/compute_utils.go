@@ -39,7 +39,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 
 	imageTag, err := getImageTag(instance)
 	if err != nil {
-		logrus.Debug(err)
 		return err
 	}
 	name := instance.UUID
@@ -98,7 +97,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	setupProxy(instance, createConfig)
 
 	setupCattleConfigURL(instance, createConfig)
-	logrus.Infof("envs %v", createConfig["env"])
 	hostConfig := createHostConfig(startConfig)
 	setupResource(instance.Data["fields"].(map[string]interface{}), &hostConfig)
 	setupDeviceOptions(&hostConfig, instance)
@@ -107,7 +105,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	mapstructure.Decode(createConfig, &config)
 	setupConfig(instance.Data["fields"].(map[string]interface{}), &config)
 	setupEnvs(createConfig, &config)
-	logrus.Infof("enviroment variable %v", config.Env)
 	labels, ok := GetFieldsIfExist(instance.Data, "fields", "labels")
 	if ok {
 		setupLabels(labels.(map[string]interface{}), &config)
@@ -128,9 +125,6 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 			created = true
 		}
 	}
-	if len(containerID) == 0 {
-		logrus.Error("no container id!")
-	}
 	logrus.Info(fmt.Sprintf("Starting docker container [%s] docker id [%s] %v", name, containerID, startConfig))
 
 	startErr := client.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{})
@@ -142,6 +136,7 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 			}
 		}
 		logrus.Error(startErr)
+		return startErr
 	}
 
 	RecordState(client, instance, containerID)
@@ -155,31 +150,25 @@ func GetInstanceAndHost(event *events.Event) (*model.Instance, *model.Host) {
 	mapstructure.Decode(data["instanceHostMap"], &ihm)
 
 	var instance model.Instance
-	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
-		panic(err)
-	}
+	mapstructure.Decode(ihm.Instance, &instance)
 	var host model.Host
-	if err := mapstructure.Decode(ihm.Host, &host); err != nil {
-		panic(err)
-	}
+	mapstructure.Decode(ihm.Host, &host)
 
 	clusterConnection, ok := GetFieldsIfExist(data, "field", "clusterConnection")
 	if ok {
-		host.Data["clusterConnection"] = clusterConnection.(string)
-		if strings.HasPrefix(clusterConnection.(string), "http") {
+		host.Data["clusterConnection"] = InterfaceToString(clusterConnection)
+		if strings.HasPrefix(InterfaceToString(clusterConnection), "http") {
 			caCrt, ok1 := GetFieldsIfExist(event.Data, "field", "caCrt")
 			clientCrt, ok2 := GetFieldsIfExist(event.Data, "field", "clientCrt")
 			clientKey, ok3 := GetFieldsIfExist(event.Data, "field", "clientKey")
 			// what if we miss certs/key? do we have to panic or ignore it?
 			if ok1 && ok2 && ok3 {
-				host.Data["caCrt"] = caCrt.(string)
-				host.Data["clientCrt"] = clientCrt.(string)
-				host.Data["clientKey"] = clientKey.(string)
+				host.Data["caCrt"] = InterfaceToString(caCrt)
+				host.Data["clientCrt"] = InterfaceToString(clientCrt)
+				host.Data["clientKey"] = InterfaceToString(clientKey)
 			} else {
-				logrus.Error("Missing certs/key for clusterConnection for connection " +
-					clusterConnection.(string))
-				panic(errors.New("Missing certs/key for clusterConnection for connection " +
-					clusterConnection.(string)))
+				logrus.Infof("Missing certs/key [%v]for clusterConnection for connection ",
+					clusterConnection)
 			}
 		}
 	}
@@ -199,7 +188,7 @@ func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 func IsNoOp(data map[string]interface{}) bool {
 	b, ok := GetFieldsIfExist(data, "processData", "containerNoOpEvent")
 	if ok {
-		return b.(bool)
+		return InterfaceToBool(b)
 	}
 	return false
 }
@@ -224,7 +213,7 @@ func GetContainer(client *client.Client, instance *model.Instance, byAgent bool)
 	if err != nil {
 		return nil
 	}
-	container := findFirst(&containerList, func(c *types.Container) bool {
+	container := findFirst(containerList, func(c *types.Container) bool {
 		if getUUID(c) == instance.UUID {
 			return true
 		}
@@ -235,7 +224,7 @@ func GetContainer(client *client.Client, instance *model.Instance, byAgent bool)
 		return container
 	}
 	if externalID := instance.ExternalID; externalID != "" {
-		container = findFirst(&containerList, func(c *types.Container) bool {
+		container = findFirst(containerList, func(c *types.Container) bool {
 			return idFilter(externalID, c)
 		})
 	}
@@ -245,13 +234,9 @@ func GetContainer(client *client.Client, instance *model.Instance, byAgent bool)
 	}
 
 	if agentID := instance.AgentID; byAgent {
-		logrus.Infof("debug agentID %v", agentID)
-		container = findFirst(&containerList, func(c *types.Container) bool {
-			return agentIDFilter(string(agentID), c)
+		container = findFirst(containerList, func(c *types.Container) bool {
+			return agentIDFilter(strconv.Itoa(agentID), c)
 		})
-		if container != nil {
-			logrus.Info("find")
-		}
 	}
 
 	return container
@@ -286,8 +271,8 @@ func getUUID(container *types.Container) string {
 	return names[0]
 }
 
-func findFirst(containers *[]types.Container, f func(*types.Container) bool) *types.Container {
-	for _, c := range *containers {
+func findFirst(containers []types.Container, f func(*types.Container) bool) *types.Container {
+	for _, c := range containers {
 		if f(&c) {
 			return &c
 		}
@@ -437,7 +422,7 @@ func createContainerConfig(imageTag string, command strslice.StrSlice, createCon
 	res, _ := json.Marshal(config)
 	logrus.Infof("config created %v", string(res))
 	if err != nil {
-		panic(err)
+		logrus.Error(err)
 	}
 	return &config
 }
@@ -455,21 +440,9 @@ func getImageTag(instance *model.Instance) (string, error) {
 func isTrue(instance *model.Instance, field string) bool {
 	value, ok := GetFieldsIfExist(instance.Data, "fields", field)
 	if ok {
-		return value.(bool)
+		return InterfaceToBool(value)
 	}
 	return false
-}
-
-func setupSimpleConfigFields(config map[string]interface{}, instance *model.Instance, fields []model.Tuple) {
-	for _, tuple := range fields {
-		src := tuple.Src
-		dest := tuple.Dest
-		srcObj, ok := GetFieldsIfExist(instance.Data, "field", src)
-		if !ok {
-			break
-		}
-		config[dest] = unwrap(&srcObj)
-	}
 }
 
 func setupDNSSearch(startConfig map[string]interface{}, instance *model.Instance) {
@@ -534,9 +507,8 @@ func setupLogging(startConfig map[string]interface{}, instance *model.Instance) 
 	if !ok {
 		return
 	}
-	driver, ok := logConfig.(map[string]interface{})["driver"].(string)
-
-	if ok {
+	driver := InterfaceToString(logConfig.(map[string]interface{})["driver"])
+	if len(driver) > 0 {
 		delete(startConfig["logConfig"].(map[string]interface{}), "driver")
 		startConfig["logConfig"].(map[string]interface{})["type"] = driver
 	}
@@ -570,7 +542,7 @@ func setupCommand(createConfig map[string]interface{}, instance *model.Instance)
 	logrus.Infof("command info %v", command)
 	commands, ok := command.([]interface{})
 	if !ok {
-		setupLegacyCommand(createConfig, instance, command.(string))
+		setupLegacyCommand(createConfig, instance, InterfaceToString(command))
 	} else {
 		createConfig["cmd"] = commands
 	}
@@ -594,10 +566,9 @@ func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 			ports = append(ports, model.Port{PrivatePort: port.PrivatePort, Protocol: port.Protocol})
 			if port.PrivatePort != 0 {
 				bind := nat.Port(fmt.Sprintf("%v/%v", port.PrivatePort, port.Protocol))
-				logrus.Info(bind)
 				bindAddr := ""
 				if bindAddress, ok := GetFieldsIfExist(port.Data, "fields", "bindAddress"); ok {
-					bindAddr = bindAddress.(string)
+					bindAddr = InterfaceToString(bindAddress)
 				}
 				if _, ok := bindings[bind]; !ok {
 					bindings[bind] = []nat.PortBinding{nat.PortBinding{HostIP: bindAddr,
@@ -616,7 +587,6 @@ func setupPorts(createConfig map[string]interface{}, instance *model.Instance,
 
 	if len(bindings) > 0 {
 		startConfig["portbindings"] = bindings
-		logrus.Infof("binding map %v", bindings)
 	}
 
 }
@@ -629,7 +599,7 @@ func setupVolumes(createConfig map[string]interface{}, instance *model.Instance,
 		binds := []string{}
 		if len(volumes) > 0 {
 			for _, volume := range volumes {
-				volume := volume.(string)
+				volume := InterfaceToString(volume)
 				parts := strings.SplitN(volume, ":", 3)
 				if len(parts) == 1 {
 					volumesMap[parts[0]] = struct{}{}
@@ -739,12 +709,12 @@ func setupCattleConfigURL(instance *model.Instance, createConfig map[string]inte
 			logrus.Error(err)
 		} else {
 			if parsed.Host == "localhost" {
-				port := apiProxyListenPort()
+				port := ApiProxyListenPort()
 				addToEnv(createConfig, map[string]string{
 					"CATTLE_AGENT_INSTANCE":    "true",
 					"CATTLE_CONFIG_URL_SCHEME": parsed.Scheme,
 					"CATTLE_CONFIG_URL_PATH":   parsed.Path,
-					"CATTLE_CONFIG_URL_PORT":   string(port),
+					"CATTLE_CONFIG_URL_PORT":   strconv.Itoa(port),
 				})
 			} else {
 				addToEnv(createConfig, map[string]string{
@@ -777,7 +747,7 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance *model.Instan
 			}
 			options := options.(map[string]interface{})
 			for key, value := range options {
-				value := value.(float64)
+				value := InterfaceToFloat(value)
 				switch key {
 				case "weight":
 					blkioWeightDevice = append(blkioWeightDevice, &blkiodev.WeightDevice{
@@ -840,7 +810,7 @@ func setupLegacyCommand(createConfig map[string]interface{}, instance *model.Ins
 	commandArgs := []string{}
 	if value, ok := GetFieldsIfExist(instance.Data, "fields", "commandArgs"); ok {
 		for _, v := range value.([]interface{}) {
-			commandArgs = append(commandArgs, v.(string))
+			commandArgs = append(commandArgs, InterfaceToString(v))
 		}
 	}
 	commands := command
@@ -862,49 +832,6 @@ func createHostConfig(startConfig map[string]interface{}) container.HostConfig {
 		return hostConfig
 	}
 	return container.HostConfig{}
-}
-
-func DeleteContainer(name string) {
-	client := docker.GetClient(DefaultVersion)
-	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
-	for _, container := range containerList {
-		found := false
-		labels := container.Labels
-		if labels["io.rancher.container.uuid"] == name[1:] {
-			found = true
-		}
-		for _, containerName := range container.Names {
-			if name == containerName {
-				found = true
-				break
-			}
-		}
-		if found {
-			logrus.Infof("killing the container %v", container.ID)
-			killErr := client.ContainerKill(context.Background(), container.ID, "KILL")
-			if killErr == nil {
-				logrus.Infof("container %v killed", container.ID)
-			} else {
-				logrus.Error(killErr)
-			}
-			logrus.Infof("removing container %v", container.ID)
-			rmErr := client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{})
-			if rmErr == nil {
-				logrus.Infof("container %v removed", container.ID)
-			} else {
-				logrus.Error(rmErr)
-			}
-			removeStateFile(container.ID)
-			/*
-				for i := 0; i < 10; i++ {
-					inspect, err := client.ContainerInspect(context.Background(), container.ID)
-					if err == nil && inspect.State.Pid == 0 {
-						break
-					}
-				}
-			*/
-		}
-	}
 }
 
 func removeStateFile(id string) {
@@ -931,7 +858,7 @@ func DoInstanceDeactivate(instance *model.Instance, progress *progress.Progress,
 		client.ContainerKill(context.Background(), container.ID, "KILL")
 	}
 	if !isStopped(client, container) {
-		return fmt.Errorf("Filed to stop container %v", instance.UUID)
+		return fmt.Errorf("Failed to stop container %v", instance.UUID)
 	}
 	logrus.Infof("container id %v deactivated", container.ID)
 	return nil
@@ -970,12 +897,12 @@ func DoInstanceInspect(inspect *model.InstanceInspect) (types.ContainerJSON, err
 		return types.ContainerJSON{}, fmt.Errorf("container with id [%v] not found", containerID)
 	}
 	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
-	result := findFirst(&containerList, func(c *types.Container) bool {
+	result := findFirst(containerList, func(c *types.Container) bool {
 		return idFilter(containerID, c)
 	})
 	if result == nil {
 		name := fmt.Sprintf("/%s", inspect.Name)
-		result = findFirst(&containerList, func(c *types.Container) bool {
+		result = findFirst(containerList, func(c *types.Container) bool {
 			return nameFilter(name, c)
 		})
 	}
@@ -1236,7 +1163,8 @@ func setupConfig(fields map[string]interface{}, config *container.Config) {
 func getInstancePullData(event *revents.Event) types.ImageInspect {
 	imageName, _ := GetFieldsIfExist(event.Data, "instancePull", "image", "data", "dockerImage", "fullName")
 	tag, _ := GetFieldsIfExist(event.Data, "instancePull", "tag")
-	inspect, _, _ := docker.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), imageName.(string)+tag.(string), false)
+	inspect, _, _ := docker.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(),
+		fmt.Sprintf("%v%v", imageName, tag), false)
 	return inspect
 }
 

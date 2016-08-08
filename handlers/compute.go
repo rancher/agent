@@ -64,7 +64,6 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	err := utils.DoInstanceDeactivate(instance, &progress, timeout.(int))
 
 	if err != nil {
-		logrus.Error(err)
 		return err
 	}
 

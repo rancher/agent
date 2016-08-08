@@ -119,3 +119,43 @@ func defaultValue(name string, df string) string {
 	}
 	return df
 }
+
+func InterfaceToString(v interface{}) string {
+	value, ok := v.(string)
+	if ok {
+		return value
+	}
+	return ""
+}
+
+func InterfaceToArray(v interface{}) []interface{} {
+	value, ok := v.([]interface{})
+	if ok {
+		return value
+	}
+	return []interface{}{}
+}
+
+func InterfaceToMap(v interface{}) map[string]interface{} {
+	value, ok := v.(map[string]interface{})
+	if ok {
+		return value
+	}
+	return map[string]interface{}{}
+}
+
+func InterfaceToBool(v interface{}) bool {
+	value, ok := v.(bool)
+	if ok {
+		return value
+	}
+	return false
+}
+
+func InterfaceToFloat(v interface{}) float64 {
+	value, ok := v.(float64)
+	if ok {
+		return value
+	}
+	return 0.0
+}

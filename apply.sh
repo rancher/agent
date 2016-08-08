@@ -89,9 +89,9 @@ start(){
     fi
 
     info Executing $MAIN
-    #cleanup
+    cleanup
 
-   #$CATTLE_HOME/config.sh host-config
+   $CATTLE_HOME/config.sh host-config
 
    if [ "$CATTLE_RUN_FIO" == "true" ]; then
        run_fio

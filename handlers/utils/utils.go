@@ -121,7 +121,7 @@ func isStrSet(m map[string]interface{}, key string) bool {
 	ok := false
 	switch m[key].(type) {
 	case string:
-		ok = len(m[key].(string)) > 0
+		ok = len(InterfaceToString(m[key])) > 0
 	case []string:
 		ok = len(m[key].([]string)) > 0
 	}

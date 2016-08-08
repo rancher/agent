@@ -53,13 +53,13 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 	if !isManagedVolume(volume) {
 		return nil
 	}
-	driver := volume.Data["fields"].(map[string]interface{})["driver"].(string)
+	driver := InterfaceToString(volume.Data["fields"].(map[string]interface{})["driver"])
 	driverOpts := volume.Data["fields"].(map[string]interface{})["driverOpts"]
 	opts := map[string]string{}
 	if driverOpts != nil {
 		driverOpts := driverOpts.(map[string]interface{})
 		for k, v := range driverOpts {
-			opts[k] = v.(string)
+			opts[k] = InterfaceToString(v)
 		}
 	}
 	v := storageAPIVersion()
@@ -110,13 +110,13 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 	authConfig := map[string]string{}
 	rc := image.RegistryCredential
 	if rc != nil {
-		authConfig["username"] = rc["publicValue"].(string)
+		authConfig["username"] = InterfaceToString(rc["publicValue"])
 		if value, ok := GetFieldsIfExist(rc, "data", "fields", "email"); ok {
-			authConfig["email"] = value.(string)
+			authConfig["email"] = InterfaceToString(value)
 		}
-		authConfig["password"] = rc["secretValue"].(string)
+		authConfig["password"] = InterfaceToString(rc["secretValue"])
 		if value, ok := GetFieldsIfExist(rc, "data", "fields", "serverAddress"); ok {
-			authConfig["serverAddress"] = value.(string)
+			authConfig["serverAddress"] = InterfaceToString(value)
 		}
 		if authConfig["serveraddress"] == "https://docker.io" {
 			authConfig["serveraddress"] = "https://index.docker.io"
@@ -174,8 +174,8 @@ func DoImageActivate(image *model.Image, storagePool *model.StoragePool, progres
 					return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
 				}
 				if hasKey(status, "status") {
-					logrus.Infof("pull image status %s", status["status"].(string))
-					message = status["status"].(string)
+					logrus.Infof("pull image status %s", InterfaceToString(status["status"]))
+					message = InterfaceToString(status["status"])
 				}
 			}
 		}
@@ -193,7 +193,7 @@ func imageBuild(image *model.Image, progress *progress.Progress) {
 	opts := v.(map[string]interface{})
 
 	if isStrSet(opts, "context") {
-		file, err := downloadFile(opts["context"].(string), builds(), nil, "")
+		file, err := downloadFile(InterfaceToString(opts["context"]), builds(), nil, "")
 		if err == nil {
 			// delete(opts, "context")
 			opts["fileobj"] = file
@@ -205,8 +205,8 @@ func imageBuild(image *model.Image, progress *progress.Progress) {
 		}
 	} else {
 		remote := opts["remote"]
-		if strings.HasPrefix(remote.(string), "git@github.com:") {
-			remote = strings.Replace(remote.(string), "git@github.com:", "git://github.com/", -1)
+		if strings.HasPrefix(InterfaceToString(remote), "git@github.com:") {
+			remote = strings.Replace(InterfaceToString(remote), "git@github.com:", "git://github.com/", -1)
 		}
 		opts["remote"] = remote
 		doBuild(opts, progress, client)
@@ -216,7 +216,7 @@ func imageBuild(image *model.Image, progress *progress.Progress) {
 func doBuild(opts map[string]interface{}, progress *progress.Progress, client *client.Client) {
 	remote := InterfaceToString(opts["remote"])
 	if remote == "" {
-		remote = opts["context"].(string)
+		remote = InterfaceToString(opts["context"])
 	}
 	logrus.Infof("remote %v, dockerfile %v", remote)
 	imageBuildOptions := types.ImageBuildOptions{
@@ -224,7 +224,7 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 		// for test
 		RemoteContext: remote,
 		Remove:        true,
-		Tags:          []string{opts["tag"].(string)},
+		Tags:          []string{InterfaceToString(opts["tag"])},
 	}
 	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
 	if err != nil {
@@ -237,7 +237,7 @@ func doBuild(opts map[string]interface{}, progress *progress.Progress, client *c
 				logrus.Info(rawStatus)
 				status := marshaller.FromString(rawStatus)
 				if value, ok := GetFieldsIfExist(status, "stream"); ok {
-					progress.Update(value.(string))
+					progress.Update(InterfaceToString(value))
 				}
 			}
 		}
@@ -258,7 +258,7 @@ func IsImageActive(image *model.Image, storagePool *model.StoragePool) bool {
 	if IsNoOp(image.Data) {
 		return true
 	}
-	parsedTag := parseRepoTag(image.Data["dockerImage"].(map[string]interface{})["fullName"].(string))
+	parsedTag := parseRepoTag(InterfaceToString(image.Data["dockerImage"].(map[string]interface{})["fullName"]))
 	_, _, err := docker.GetClient(DefaultVersion).ImageInspectWithRaw(context.Background(), parsedTag["uuid"], false)
 	if err == nil {
 		return true
@@ -320,23 +320,24 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
 					err.Error()))
+			}else {
+				return err
 			}
-			return err
 		}
 		return nil
 	}
 	path := pathToVolume(volume)
-	var err error
-	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && !value.(bool) {
+	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && !InterfaceToBool(value) {
 		_, existErr := os.Stat(path)
 		if existErr == nil {
-			err = os.RemoveAll(path)
+			err := os.RemoveAll(path)
 			if err != nil {
-				logrus.Error(err)
+				return err
 			}
 		}
+		return existErr
 	}
-	return err
+	return nil
 }
 
 func IsVolumeRemoved(volume *model.Volume, storagePool *model.StoragePool) bool {
@@ -348,7 +349,7 @@ func IsVolumeRemoved(volume *model.Volume, storagePool *model.StoragePool) bool 
 		return !IsVolumeActive(volume, storagePool)
 	}
 	path := pathToVolume(volume)
-	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && value.(bool) {
+	if value, ok := GetFieldsIfExist(volume.Data, "fields", "isHostPath"); ok && InterfaceToBool(value) {
 		return true
 	}
 	_, exist := os.Stat(path)

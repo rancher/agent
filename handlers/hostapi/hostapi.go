@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/rancher/agent/handlers/utils"
 	"os/exec"
+	"github.com/Sirupsen/logrus"
 )
 
 func HostAPIStartUp() error {
@@ -25,6 +26,9 @@ func HostAPIStartUp() error {
 	}
 	command := exec.Command("host-api", args...)
 	command.Env = env
+	logrus.Infof("check command structure %+v", command)
+	command.Stderr = os.Stderr
+	command.Stdout = os.Stdout
 	command.Start()
 	err := command.Wait()
 	return err

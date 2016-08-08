@@ -64,9 +64,9 @@ func addResource(ping, pong *revents.Event) {
 	pool := map[string]interface{}{
 		"type":     "storagePool",
 		"kind":     "docker",
-		"name":     compute["hostname"].(string) + " Storage Pool",
-		"hostUuid": compute["uuid"].(string),
-		"uuid":     compute["uuid"].(string) + "-pool",
+		"name":     InterfaceToString(compute["hostname"]) + " Storage Pool",
+		"hostUuid": InterfaceToString(compute["uuid"]),
+		"uuid":     InterfaceToString(compute["uuid"]) + "-pool",
 	}
 
 	resolvedIP, err := net.LookupIP(DockerHostIP())
@@ -120,7 +120,7 @@ func pingIncludeResource(ping *revents.Event) bool {
 	if !ok {
 		return false
 	}
-	return value.(bool)
+	return InterfaceToBool(value)
 }
 
 func pingIncludeStats(ping *revents.Event) bool {
@@ -128,7 +128,7 @@ func pingIncludeStats(ping *revents.Event) bool {
 	if !ok {
 		return false
 	}
-	return value.(bool)
+	return InterfaceToBool(value)
 }
 
 func pingIncludeInstance(ping *revents.Event) bool {
@@ -136,7 +136,7 @@ func pingIncludeInstance(ping *revents.Event) bool {
 	if !ok {
 		return false
 	}
-	return value.(bool)
+	return InterfaceToBool(value)
 }
 
 func getHostLabels() map[string]string {
@@ -193,7 +193,7 @@ func getSysContainer(container *types.Container) string {
 	image := container.Image
 	systemImages := getAgentImage()
 	if hasKey(systemImages, image) {
-		return systemImages[image].(string)
+		return InterfaceToString(systemImages[image])
 	}
 	label, ok := container.Labels["io.rancher.container.system"]
 	if ok {

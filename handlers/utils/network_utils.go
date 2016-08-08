@@ -225,7 +225,7 @@ func setupLinksNetwork(instance *model.Instance, createConfig map[string]interfa
 			copyLinkEnv(linkName, link, result)
 			if names, ok := GetFieldsIfExist(link.Data, "fields", "instanceNames"); ok {
 				for _, name := range names.([]interface{}) {
-					name := name.(string)
+					name := InterfaceToString(name)
 					addLinkEnv(name, link, result, linkName)
 					copyLinkEnv(name, link, result)
 					// This does assume the format {env}_{name}
@@ -286,9 +286,8 @@ func addLinkEnv(name string, link model.Link, result map[string]string, inIP str
 			data["PORT"] = fullPort
 			data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
 			data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
-			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = dst.(string)
-			data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = protocol.(string)
-			logrus.Infof("data map %v", data)
+			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = strconv.Itoa(int(InterfaceToFloat(dst)))
+			data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = InterfaceToString(protocol)
 			for key, value := range data {
 				result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
 			}
@@ -301,7 +300,7 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 	if envs, ok := GetFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
 		ignores := make(map[string]bool)
 		for _, env := range envs.([]interface{}) {
-			env := env.(string)
+			env := InterfaceToString(env)
 			logrus.Info(env)
 			parts := strings.SplitN(env, "=", 2)
 			if len(parts) == 1 {
@@ -315,7 +314,7 @@ func copyLinkEnv(name string, link model.Link, result map[string]string) {
 			}
 		}
 		for _, env := range envs.([]interface{}) {
-			env := env.(string)
+			env := InterfaceToString(env)
 			shouldIgnore := false
 			for ignore := range ignores {
 				if strings.HasPrefix(env, ignore) {

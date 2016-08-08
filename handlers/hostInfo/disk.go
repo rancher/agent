@@ -40,11 +40,11 @@ func (d DiskCollector) includeInFilesystem(device string) bool {
 		if !ok {
 			poolName = "/dev/mapper/docker-"
 		}
-		if strings.HasSuffix(poolName.(string), "-pool") {
-			poolName := poolName.(string)
+		if strings.HasSuffix(InterfaceToString(poolName), "-pool") {
+			poolName := InterfaceToString(poolName)
 			poolName = poolName[len(poolName)-5 : len(poolName)]
 		}
-		if strings.Contains(device, poolName.(string)) {
+		if strings.Contains(device, InterfaceToString(poolName)) {
 			include = false
 		}
 	}
@@ -56,13 +56,14 @@ func (d DiskCollector) getMountpointsCadvisor() map[string]interface{} {
 	stat := d.cadvisor.GetLatestStat()
 
 	if _, ok := stat["filesystem"]; ok {
-		for _, fs := range stat["filesystem"].([]map[string]interface{}) {
-			device := fs["device"].(string)
-			percentUsed := fs["usage"].(float64) / fs["capacity"].(float64) * 100
+		for _, fs := range InterfaceToArray(stat["filesystem"]) {
+			fs := InterfaceToMap(fs)
+			device := InterfaceToString(fs["device"])
+			percentUsed := InterfaceToFloat(fs["usage"]) / InterfaceToFloat(fs["capacity"]) * 100
 			data[device] = map[string]interface{}{
-				"free":       d.convertUnits(fs["capacity"].(float64) - fs["usage"].(float64)),
-				"total":      d.convertUnits(fs["uasge"].(float64)),
-				"used":       d.convertUnits(fs["usage"].(float64)),
+				"free":       d.convertUnits(InterfaceToFloat(fs["capacity"]) - InterfaceToFloat(fs["usage"])),
+				"total":      d.convertUnits(InterfaceToFloat(fs["usage"])),
+				"used":       d.convertUnits(InterfaceToFloat(fs["usage"])),
 				"percentage": math.Floor(percentUsed*100) / 100,
 			}
 		}
@@ -75,10 +76,11 @@ func (d DiskCollector) getMachineFilesystemsCadvisor() map[string]interface{} {
 	machineInfo := d.cadvisor.GetMachineStats()
 
 	if _, ok := machineInfo["filesystems"]; ok {
-		for _, filesystem := range machineInfo["filesystems"].([]map[string]interface{}) {
-			if d.includeInFilesystem(filesystem["device"].(string)) {
-				data[filesystem["device"].(string)] = map[string]interface{}{
-					"capacity": d.convertUnits(filesystem["capacity"].(float64)),
+		for _, fs := range InterfaceToArray(machineInfo["filesystems"]) {
+			filesystem := InterfaceToMap(fs)
+			if d.includeInFilesystem(InterfaceToString(filesystem["device"])) {
+				data[InterfaceToString(filesystem["device"])] = map[string]interface{}{
+					"capacity": d.convertUnits(InterfaceToFloat(filesystem["capacity"])),
 				}
 			}
 		}
@@ -88,7 +90,7 @@ func (d DiskCollector) getMachineFilesystemsCadvisor() map[string]interface{} {
 
 func (d DiskCollector) GetData() map[string]interface{} {
 	data := map[string]interface{}{
-		"fileSystem":                map[string]interface{}{},
+		"filesystems":                map[string]interface{}{},
 		"mountPoints":               map[string]interface{}{},
 		"dockerStorageDriverStatus": map[string]interface{}{},
 		"dockerStorageDriver":       d.dockerStorageDriver,
@@ -96,7 +98,7 @@ func (d DiskCollector) GetData() map[string]interface{} {
 
 	if runtime.GOOS == "linux" {
 		for key, value := range d.getMachineFilesystemsCadvisor() {
-			data["fileSystems"].(map[string]interface{})[key] = value
+			data["filesystems"].(map[string]interface{})[key] = value
 		}
 		for key, value := range d.getMountpointsCadvisor() {
 			data["mountPoints"].(map[string]interface{})[key] = value

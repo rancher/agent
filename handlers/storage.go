@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/agent/handlers/progress"
 	"github.com/rancher/agent/handlers/utils"
 	"github.com/rancher/agent/model"
 	revents "github.com/rancher/go-machine-service/events"
 	"github.com/rancher/go-rancher/client"
+	"errors"
 )
 
 func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -31,11 +31,11 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	err := utils.DoImageActivate(&image, &storagePool, &progress)
 	if err != nil {
-		logrus.Error(err)
+		return err
 	}
 
 	if !utils.IsImageActive(&image, &storagePool) {
-		logrus.Error("operation failed")
+		return errors.New("operation failed")
 	}
 
 	return reply(event.Data, event, cli)
@@ -54,10 +54,10 @@ func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 
 	err := utils.DoVolumeActivate(&volume, &storagePool, &progress)
 	if err != nil {
-		logrus.Error(err)
+		return err
 	}
 	if !utils.IsVolumeActive(&volume, &storagePool) {
-		logrus.Error("operation failed")
+		return errors.New("operation failed")
 	}
 	return reply(utils.GetResponseData(event), event, cli)
 }
@@ -75,10 +75,10 @@ func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 
 	err := utils.DoVolumeDeactivate(&volume, &storagePool, &progress)
 	if err != nil {
-		logrus.Error(err)
+		return err
 	}
 	if !utils.IsVolumeInactive(&volume, &storagePool) {
-		logrus.Error("operation failed")
+		return errors.New("operation failed")
 	}
 	return reply(utils.GetResponseData(event), event, cli)
 }

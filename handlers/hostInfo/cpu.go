@@ -30,7 +30,6 @@ func (c CPUCollector) getCPUInfoData() []string {
 				data = append(data, scanner.Text())
 			}
 		}
-		logrus.Infof("cpu info %v", data)
 		return data
 	}
 	return []string{}
@@ -72,7 +71,7 @@ func (c CPUCollector) getLinuxCPUInfo() map[string]interface{} {
 
 func (c CPUCollector) getCPUPercentage() map[string]interface{} {
 	data := map[string]interface{}{}
-	data["cpuCoresPercentages"] = []float64{}
+	cpuCoresPercentages := []string{}
 
 	stats := c.cadvisor.GetStats()
 
@@ -80,22 +79,25 @@ func (c CPUCollector) getCPUPercentage() map[string]interface{} {
 		statLatest := stats[len(stats)-1].(map[string]interface{})
 		statPrev := stats[len(stats)-2].(map[string]interface{})
 
-		timeDiff := c.cadvisor.TimestampDiff(statLatest["timestamp"].(string), statPrev["timestamp"].(string))
-		lastestUsage, _ := getFieldsIfExist(statLatest, "cpu", "usage", "per_cpu_usage")
+		timeDiff := c.cadvisor.TimestampDiff(InterfaceToString(statLatest["timestamp"]), InterfaceToString(statPrev["timestamp"].(string)))
+		latestUsage, _ := getFieldsIfExist(statLatest, "cpu", "usage", "per_cpu_usage")
 		prevUsage, _ := getFieldsIfExist(statPrev, "cpu", "usage", "per_cpu_usage")
-		for i, coreUsage := range lastestUsage.([]string) {
+		for i, cu := range InterfaceToArray(latestUsage) {
+			coreUsage := InterfaceToString(cu)
 			core, _ := strconv.ParseFloat(coreUsage, 64)
-			prev, _ := strconv.ParseFloat(prevUsage.([]string)[i], 64)
+			pu := InterfaceToString(InterfaceToArray(prevUsage)[i])
+			prev, _ := strconv.ParseFloat(pu, 64)
 			cpuUsage := core - prev
 			percentage := (cpuUsage / float64(timeDiff)) * 100
 			percentage = percentage * 1000 // round to 3
 			if percentage > 100000 {
-				percentage = math.Floor(percentage) / 1000
+				percentage = 100
 			} else {
-				percentage = percentage / 1000
+				percentage = math.Floor(percentage) / 1000
 			}
-			data["cpuCoresPercentages"] = append(data["cpuCoresPercentages"].([]float64), percentage)
+			cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(percentage, 'f', -1, 64))
 		}
+		data["cpuCoresPercentages"] = cpuCoresPercentages
 	}
 	return data
 }
