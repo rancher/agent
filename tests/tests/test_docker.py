@@ -1,4 +1,4 @@
-from .common import event_test, delete_container, \
+from tests.common import event_test, delete_container, \
     instance_activate_common_validation, \
     instance_activate_assert_host_config, \
     instance_activate_assert_image_id, \
@@ -6,7 +6,7 @@ from .common import event_test, delete_container, \
     container_field_test_boiler_plate, \
     trim, CONFIG_OVERRIDE, JsonObject, Config, get_container, \
     instance_only_activate, delete_volume, DockerConfig, \
-    newer_than, json_data
+    newer_than, json_data, if_docker, remove_container
 
 import time
 from docker.errors import APIError
@@ -28,29 +28,131 @@ def pull_images():
             client.pull(i[0], i[1])
 
 
-def test_example(agent):
-    """
-    This test is the same as test_instance_activate_no_name except that it
-    passes diff=False to event_test
-    :param agent:
-    :return:
-    """
+@if_docker
+def test_volume_activate(agent):
+
+    def post(req, resp):
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_activate', post_func=post)
+
+
+@if_docker
+def test_volume_activate_driver1(agent):
+    def pre(req):
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': None}}
+        vol['name'] = 'test_vol'
+
+    def post(req, resp):
+        v = DockerConfig.storage_api_version()
+        vol = docker_client(version=v).inspect_volume('test_vol')
+        assert vol['Driver'] == 'local'
+        assert vol['Name'] == 'test_vol'
+        docker_client(version=v).remove_volume('test_vol')
+
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
+
+
+@if_docker
+def test_volume_activate_driver2(agent):
+    def pre(req):
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': {'size': '10G'}}}
+        vol['name'] = 'test_vol'
+
+    def post(req, resp):
+        v = DockerConfig.storage_api_version()
+        vol = docker_client(version=v).inspect_volume('test_vol')
+        assert vol['Driver'] == 'local'
+        assert vol['Name'] == 'test_vol'
+        docker_client(version=v).remove_volume('test_vol')
+
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
+
+
+@if_docker
+def test_volume_deactivate_driver(agent):
+    def pre(req):
+        v = DockerConfig.storage_api_version()
+        docker_client(version=v).create_volume('test_vol',
+                                               'local')
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': {'size': '10G'}}}
+        vol['name'] = 'test_vol'
+
+    def post(req, resp):
+        v = DockerConfig.storage_api_version()
+        vol = docker_client(version=v).inspect_volume('test_vol')
+        assert vol['Driver'] == 'local'
+        assert vol['Name'] == 'test_vol'
+        docker_client(version=v).remove_volume('test_vol')
+
+    event_test(agent, 'docker/volume_deactivate', pre_func=pre, post_func=post)
+
+
+@if_docker
+def test_volume_deactivate(agent):
+    event_test(agent, 'docker/volume_deactivate')
+
+
+@if_docker
+def test_instance_activate_volume_driver(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
     def pre(req):
         instance = req['data']['instanceHostMap']['instance']
-        instance['name'] = None
+        instance['data']['fields']['volumeDriver'] = 'local'
 
-    def post(req, resp, valid_resp):
-        data = valid_resp['data']['instanceHostMap']['instance']['+data']
-        docker_con = data['dockerContainer']
-        del docker_con['Labels']['io.rancher.container.name']
-        docker_con['Names'] = ['/c861f990-4472-4fa1-960f-65171b544c28']
+    def post(req, resp):
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_inspect = instance_data['dockerInspect']
+        if newer_than('1.19'):
+            if newer_than('1.21'):
+                assert docker_inspect['HostConfig']['VolumeDriver'] == 'local'
+            else:
+                assert docker_inspect['Config']['VolumeDriver'] == 'local'
+        instance_activate_common_validation(resp)
 
-    schema = 'docker/instance_activate'
-    event_test(agent, schema, pre_func=pre, post_func=post, diff=False)
+    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
 
 
+@if_docker
+def test_volume_remove_driver(agent):
+    def pre(req):
+        v = DockerConfig.storage_api_version()
+        docker_client(version=v).create_volume('test_vol',
+                                               'local')
+        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol['data'] = {'fields': {'driver': 'local',
+                                  'driverOpts': {'size': '10G'}}}
+        vol['name'] = 'test_vol'
+        vol['uri'] = 'local:///test_vol'
+
+    def post(req, resp):
+        v = DockerConfig.storage_api_version()
+        with pytest.raises(APIError) as e:
+            docker_client(version=v).inspect_volume('test_vol')
+        assert e.value.explanation == 'no such volume' or \
+            e.value.explanation == 'get test_vol: no such volume'
+
+        del resp['links']
+        del resp['actions']
+
+    event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)
+
+
+@if_docker
 def test_instance_activate_no_name(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -63,13 +165,13 @@ def test_instance_activate_no_name(agent):
         docker_con = data['dockerContainer']
         del docker_con['Labels']['io.rancher.container.name']
         docker_con['Names'] = ['/c861f990-4472-4fa1-960f-65171b544c28']
-        # TODO Pull over below method
         instance_activate_common_validation(resp)
 
     schema = 'docker/instance_activate'
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_duplicate_name(agent):
     dupe_name_uuid = 'dupename-c861f990-4472-4fa1-960f-65171b544c28'
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
@@ -92,6 +194,7 @@ def test_instance_activate_duplicate_name(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_no_mac_address(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -100,22 +203,22 @@ def test_instance_activate_no_mac_address(agent):
         for nic in instance['nics']:
             nic['macAddress'] = ''
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
-    # mac_received = docker_inspect['Config']['NetworkSettings']['MacAddress']
+        assert 'MacAddress' not in docker_inspect['Config']
         mac_nic_received = docker_inspect['NetworkSettings']['MacAddress']
-        # assert mac_received == ''
         assert mac_nic_received is not None
         instance_activate_common_validation(resp)
 
     event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_mac_address(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         mac_received = docker_inspect['Config']['MacAddress']
@@ -127,10 +230,31 @@ def test_instance_activate_mac_address(agent):
     event_test(agent, 'docker/instance_activate', post_func=post)
 
 
+@pytest.mark.skip('TODO Figure out new way to test')
+def test_multiple_nics_pick_mac():
+    instance = {
+        'nics': [
+            {
+                'macAddress': '02:03:04:05:06:07',
+                'deviceNumber': 0
+            },
+            {
+                'macAddress': '02:03:04:05:06:09',
+                'deviceNumber': 1
+            }
+        ]
+    }
+    instance = JsonObject(instance)
+    config = {'test': 'Nothing'}
+    # setup_mac_and_ip(instance, config)
+    assert config['mac_address'] == '02:03:04:05:06:07'
+
+
+@if_docker
 def test_instance_activate_ports(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         del instance_data['dockerInspect']
         del instance_data['dockerMounts']
@@ -180,6 +304,7 @@ def test_instance_activate_ports(agent):
     event_test(agent, 'docker/instance_activate_ports', post_func=post)
 
 
+@if_docker
 def test_instance_activate_links_null_ports(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -196,7 +321,7 @@ def test_instance_activate_links_null_ports(agent):
             'targetInstanceId': None,
         }))
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         id = resp['data']['instanceHostMap']['instance']
         id = id['+data']['dockerContainer']['Id']
         instance_activate_common_validation(resp)
@@ -205,10 +330,11 @@ def test_instance_activate_links_null_ports(agent):
                post_func=post)
 
 
+@if_docker
 def test_instance_activate_double_links(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         id = resp['data']['instanceHostMap']['instance']
         id = id['+data']['dockerContainer']['Id']
         inspect = docker_client().inspect_container(id)
@@ -264,10 +390,11 @@ def test_instance_activate_double_links(agent):
     event_test(agent, 'docker/instance_activate_double_links', post_func=post)
 
 
+@if_docker
 def test_instance_activate_links(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         id = resp['data']['instanceHostMap']['instance']
         id = id['+data']['dockerContainer']['Id']
         inspect = docker_client().inspect_container(id)
@@ -320,6 +447,7 @@ def test_instance_activate_links(agent):
     event_test(agent, 'docker/instance_activate_links', post_func=post)
 
 
+@if_docker
 def test_instance_activate_links_no_service(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     delete_container('/target_redis')
@@ -338,7 +466,7 @@ def test_instance_activate_links_no_service(agent):
                                 name='target_redis')
     client.start(c)
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         id = resp['data']['instanceHostMap']['instance']
         id = id['+data']['dockerContainer']['Id']
         inspect = docker_client().inspect_container(id)
@@ -352,13 +480,13 @@ def test_instance_activate_links_no_service(agent):
                post_func=post)
 
 
+@if_docker
 def test_instance_activate_cpu_set(agent):
 
     def pre(req):
         delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
         instance = req['data']['instanceHostMap']['instance']
-        # instance['data']['fields']['cpuSet'] = '0,1'
-        instance['data']['fields']['cpuSetCpus'] = '1,3'
+        instance['data']['fields']['cpuSet'] = '0,1'
 
     def preNull(req):
         delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
@@ -375,8 +503,7 @@ def test_instance_activate_cpu_set(agent):
         instance_activate_assert_host_config(resp)
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
-        # assert docker_inspect['Config']['Cpuset'] == '0,1'
-        assert docker_inspect['HostConfig']['CpusetCpus'] == '1,3'
+        assert docker_inspect['HostConfig']['CpusetCpus'] == '0,1'
         container_field_test_boiler_plate(resp)
         docker_container = instance_data['dockerContainer']
         fields = instance_data['+fields']
@@ -410,6 +537,7 @@ def test_instance_activate_cpu_set(agent):
     event_test(agent, schema, pre_func=preEmpty, post_func=postEmpty)
 
 
+@if_docker
 def test_instance_activate_read_only(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     schema = 'docker/instance_activate_fields'
@@ -446,6 +574,7 @@ def test_instance_activate_read_only(agent):
     event_test(agent, schema, post_func=post)
 
 
+@if_docker
 def test_instance_activate_memory_swap(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     client = docker_client()
@@ -477,6 +606,7 @@ def test_instance_activate_memory_swap(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_extra_hosts(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -501,6 +631,7 @@ def test_instance_activate_extra_hosts(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_pid_mode(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -523,6 +654,7 @@ def test_instance_activate_pid_mode(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_log_config(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -554,6 +686,7 @@ def test_instance_activate_log_config(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_log_config_null(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -588,6 +721,7 @@ def test_instance_activate_log_config_null(agent):
     event_test(agent, schema, post_func=post)
 
 
+@if_docker
 def test_instance_activate_security_opt(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -611,6 +745,7 @@ def test_instance_activate_security_opt(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_working_dir(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -633,6 +768,7 @@ def test_instance_activate_working_dir(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_entrypoint(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -657,6 +793,7 @@ def test_instance_activate_entrypoint(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_memory(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -680,6 +817,7 @@ def test_instance_activate_memory(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_tty(agent):
 
     def preFalse(req):
@@ -719,6 +857,7 @@ def test_instance_activate_tty(agent):
     event_test(agent, schema, pre_func=preFalse, post_func=postFalse)
 
 
+@if_docker
 def test_instance_activate_stdinOpen(agent):
 
     def preTrueDetach(req):
@@ -784,6 +923,34 @@ def test_instance_activate_stdinOpen(agent):
     event_test(agent, schema, pre_func=preTrueDetach, post_func=postTrueDetach)
 
 
+@if_docker
+def test_instance_activate_lxc_conf(agent):
+    if newer_than('1.22'):
+        # lxc conf fields don't work in docker 1.10 and above
+        return
+
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+    expectedLxcConf = {"lxc.network.type": "veth"}
+
+    def pre(req):
+        instance = req['data']['instanceHostMap']['instance']
+        instance['data']['fields']['lxcConf'] = expectedLxcConf
+
+    def post(req, resp):
+        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        docker_inspect = instance_data['dockerInspect']
+        for conf in docker_inspect['HostConfig']['LxcConf']:
+            assert expectedLxcConf[conf['Key']] == conf['Value']
+        container_field_test_boiler_plate(resp)
+
+    schema = 'docker/instance_activate_fields'
+    with pytest.raises(APIError) as e:
+        event_test(agent, schema, pre_func=pre, post_func=post)
+    assert e.value.explanation == \
+        'Cannot use --lxc-conf with execdriver: native-0.2'
+
+
+@if_docker
 def test_instance_activate_domainname(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -806,6 +973,7 @@ def test_instance_activate_domainname(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_devices(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     input_devices = ['/dev/null:/dev/xnull', '/dev/random:/dev/xrandom:rw']
@@ -850,9 +1018,14 @@ def test_instance_activate_devices(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
-'''
+@if_docker
 @pytest.mark.skip("wait to implement host info api")
 def test_instance_activate_device_options(agent):
+    # Added to avoid flake8 errors
+    class DockerCompute(object):
+        def _setup_device_options(self, *args, **kw):
+            pass
+
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     # Note, can't test weight as it isn't supported in kernel by default
     device_options = {'/dev/sda': {
@@ -860,7 +1033,7 @@ def test_instance_activate_device_options(agent):
         'writeIops': 2000,
         'readBps': 1024,
         'writeBps': 2048
-    }
+        }
     }
 
     def pre(req):
@@ -890,7 +1063,6 @@ def test_instance_activate_device_options(agent):
     device = '/dev/mock'
 
     class MockHostInfo(object):
-
         def get_default_disk(self):
             return device
 
@@ -909,9 +1081,9 @@ def test_instance_activate_device_options(agent):
     device = None
     dc._setup_device_options(config, instance)
     assert not config  # config should be empty
-'''
 
 
+@if_docker
 def test_instance_activate_single_device_option(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     device_options = {'/dev/sda': {
@@ -942,6 +1114,7 @@ def test_instance_activate_single_device_option(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_dns(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -968,6 +1141,7 @@ def test_instance_activate_dns(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_caps(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -996,6 +1170,7 @@ def test_instance_activate_caps(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_privileged(agent):
 
     def preTrue(req):
@@ -1035,6 +1210,7 @@ def test_instance_activate_privileged(agent):
     event_test(agent, schema, pre_func=preFalse, post_func=postFalse)
 
 
+@if_docker
 def test_instance_restart_policy(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     expected_restart_pol_1 = {"maximumRetryCount": 0,
@@ -1106,6 +1282,7 @@ def test_instance_restart_policy(agent):
                post_func=post_name_policy)
 
 
+@if_docker
 def test_instance_activate_cpu_shares(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1129,15 +1306,17 @@ def test_instance_activate_cpu_shares(agent):
     event_test(agent, schema, pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_instance_activate_ipsec(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         instance_activate_common_validation(resp)
 
     event_test(agent, 'docker/instance_activate_ipsec', post_func=post)
 
 
+@if_docker
 def test_instance_activate_agent_instance_localhost(agent):
     CONFIG_OVERRIDE['CONFIG_URL'] = 'https://localhost:1234/a/path'
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
@@ -1154,7 +1333,11 @@ def test_instance_activate_agent_instance_localhost(agent):
         assert 'CATTLE_CONFIG_URL_PORT={0}'.format(port) in \
             inspect['Config']['Env']
 
+    event_test(agent, 'docker/instance_activate_agent_instance',
+               post_func=post)
 
+
+@if_docker
 def test_instance_activate_agent_instance(agent):
     CONFIG_OVERRIDE['CONFIG_URL'] = 'https://something.fake:1234/a/path'
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
@@ -1176,11 +1359,28 @@ def test_instance_activate_agent_instance(agent):
         assert 'ENV1=value1' in inspect['Config']['Env']
 
 
+@if_docker
 def test_instance_activate_start_fails(agent):
     delete_container('/r-start-fails')
     start_fails(agent)
     container = get_container('/r-start-fails')
     assert container is None
+
+
+@if_docker
+def test_instance_activate_start_fails_preexisting_container(agent):
+    delete_container('/r-start-fails')
+    client = docker_client()
+
+    labels = {'io.rancher.container.uuid': 'start-fails'}
+    client.create_container('ibuildthecloud/helloworld',
+                            labels=labels,
+                            command='willfail',
+                            name='r-start-fails')
+
+    start_fails(agent)
+    container = get_container('/r-start-fails')
+    assert container is not None
 
 
 def start_fails(agent):
@@ -1195,6 +1395,7 @@ def start_fails(agent):
                pre_func=pre, diff=False)
 
 
+@if_docker
 def test_instance_activate_volumes(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     delete_container('/target_volumes_from_by_uuid')
@@ -1217,7 +1418,7 @@ def test_instance_activate_volumes(agent):
         instance = req['data']['instanceHostMap']['instance']
         instance['dataVolumesFromContainers'][1]['externalId'] = c2['Id']
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         inspect = instance_data['dockerInspect']
 
@@ -1254,6 +1455,7 @@ def test_instance_activate_volumes(agent):
                post_func=post)
 
 
+@if_docker
 def test_instance_activate_null_command(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1263,6 +1465,7 @@ def test_instance_activate_null_command(agent):
     event_test(agent, 'docker/instance_activate_command_null', post_func=post)
 
 
+@if_docker
 def test_instance_activate_command(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1272,6 +1475,7 @@ def test_instance_activate_command(agent):
     event_test(agent, 'docker/instance_activate_command', post_func=post)
 
 
+@if_docker
 def test_instance_activate_command_args(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1281,16 +1485,7 @@ def test_instance_activate_command_args(agent):
     event_test(agent, 'docker/instance_activate_command_args', post_func=post)
 
 
-def test_instance_activate_labels(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-
-    def post(req, resp):
-        instance_activate_common_validation(resp)
-
-    event_test(agent, 'docker/instance_activate_labels',
-               post_func=post)
-
-
+@if_docker
 def test_instance_deactivate(agent):
     instance_only_activate(agent)
 
@@ -1320,6 +1515,221 @@ def test_instance_deactivate(agent):
     assert end - start > 1
 
 
+def assert_ping_stat_resources(resp):
+    hostname = Config.hostname()
+    pool_name = hostname + ' Storage Pool'
+    assert resp['data']['resources'][0]['hostname'] == hostname
+    assert resp['data']['resources'][1]['name'] == pool_name
+    resp['data']['resources'][0]['hostname'] = 'localhost'
+    resp['data']['resources'][1]['name'] = 'localhost Storage Pool'
+
+
+def ping_post_process(req, resp):
+    resources = resp['data']['resources']
+
+    labels = {'io.rancher.host.docker_version': '1.6',
+              'io.rancher.host.linux_kernel_version': '4.1'}
+
+    uuids = {'uuid-running': 0, 'uuid-stopped': 1, 'uuid-created': 2,
+             'uuid-system': 3, 'uuid-sys-nover': 4, 'uuid-agent-instance': 5}
+    instances = []
+    for r in resources:
+        if r['type'] == 'host':
+            if platform.system() == 'Linux':
+                # check whether the system is Linux.
+                # If so, execute the test script below
+                if 'io.rancher.host.kvm' in r['labels']:
+                    assert r['labels']['io.rancher.host.kvm'] == 'true'
+                    del r['labels']['io.rancher.host.kvm']
+                assert len(r['labels']) == 2
+            r['labels'] = labels
+            r['info'] = HostInfo.collect_data()
+            r['physicalHostUuid'] = 'hostuuid'
+            r['uuid'] = 'testuuid'
+        if r['type'] == 'storagePool':
+            r['hostUuid'] = 'testuuid'
+            r['uuid'] = 'testuuid-pool'
+        if r['type'] == 'instance' and r['uuid'] in uuids:
+            if r['uuid'] == 'uuid-running':
+                assert r['state'] == 'running'
+            elif r['uuid'] in ['uuid-stopped', 'uuid-agent-instance']:
+                assert r['state'] == 'stopped'
+            elif r['uuid'] == 'uuid-system' or r['uuid'] == 'uuid-sys-nover':
+                assert r['state'] == 'stopped'
+                # Account for docker 1.7/1.8 difference
+                try:
+                    del r['labels']['io.rancher.container.system']
+                except KeyError:
+                    pass
+
+            # Account for docker 1.6 where ':latest' is appended
+            if r['uuid'] == 'uuid-sys-nover' and r[
+                    'image'] == 'rancher/agent:latest':
+                r['image'] = 'rancher/agent'
+
+            assert r['dockerId'] is not None
+            del r['dockerId']
+            assert r['created'] is not None
+            del r['created']
+            if r['systemContainer'] == '':
+                r['systemContainer'] = None
+            instances.append(r)
+
+    def ping_sort(item):
+        return uuids[item['uuid']]
+
+    instances.sort(key=ping_sort)
+
+    assert len(instances) == 5
+
+    resources = filter(lambda x: x.get('kind') == 'docker', resources)
+    resources += instances
+    resp['data']['resources'] = resources
+    assert_ping_stat_resources(resp)
+    del resp['links']
+    del resp['actions']
+
+
+def ping_post_process_state_exception(req, resp, valid_resp):
+    labels = {'io.rancher.host.docker_version': '1.6',
+              'io.rancher.host.linux_kernel_version': '4.1'}
+
+    # This filters down the returned resources to just the stat-based ones.
+    # In other words, it gets rid of all containers from the response.
+    resp['data']['resources'] = filter(lambda x: x.get('kind') == 'docker',
+                                       resp['data']['resources'])
+    for r in resp['data']['resources']:
+        if r['type'] == 'host':
+            if platform.system() == 'Linux':
+                # check whether the system is Linux.
+                # If so, execute the test script below
+                if 'io.rancher.host.kvm' in r['labels']:
+                    assert r['labels']['io.rancher.host.kvm'] == 'true'
+                    del r['labels']['io.rancher.host.kvm']
+                assert len(r['labels']) == 2
+            r['labels'] = labels
+            try:
+                r['info'] = HostInfo.collect_data()
+            except:
+                pass
+            assert len(r['info']['osInfo']) == 0
+            assert len(r['info']['memoryInfo']) == 0
+            assert len(r['info']['diskInfo']['fileSystem']) == 0
+            assert len(r['info']['diskInfo']['mountPoints']) == 0
+            assert len(r['info']['diskInfo']['dockerStorageDriverStatus']) == 0
+            assert len(r['info']['cpuInfo']) == 0
+            assert len(r['info']['iopsInfo']) == 0
+            r['info'] = None
+            r['physicalHostUuid'] = 'hostuuid'
+            r['uuid'] = 'testuuid'
+
+        if r['type'] == 'storagePool':
+            r['hostUuid'] = 'testuuid'
+            r['uuid'] = 'testuuid-pool'
+
+    assert_ping_stat_resources(resp)
+    del valid_resp['previousNames']
+    del resp['links']
+    del resp['actions']
+
+
+@if_docker
+def test_ping(agent, pull_images, mocker):
+    mocker.patch.object(HostInfo, 'collect_data',
+                        return_value=json_data('docker/host_info_resp'))
+
+    client = docker_client()
+
+    delete_container('/named-running')
+    delete_container('/named-stopped')
+    delete_container('/named-created')
+    delete_container('/named-system')
+    delete_container('/named-sys-nover')
+    delete_container('/named-agent-instance')
+
+    client.create_container('ibuildthecloud/helloworld',
+                            name='named-created', labels={
+                                'io.rancher.container.uuid': 'uuid-created'})
+    running = client.create_container('ibuildthecloud/helloworld:latest',
+                                      name='named-running', labels={
+                                          'io.rancher.container.uuid':
+                                          'uuid-running'})
+    client.start(running)
+    stopped = client.create_container('ibuildthecloud/helloworld:latest',
+                                      name='named-stopped', labels={
+                                          'io.rancher.container.uuid':
+                                          'uuid-stopped'})
+    client.start(stopped)
+    client.kill(stopped, signal='SIGKILL')
+
+    system_con = client.create_container('rancher/agent:v0.7.9',
+                                         name='named-system', labels={
+                                             'io.rancher.container.uuid':
+                                             'uuid-system'})
+    client.start(system_con)
+    client.kill(system_con, signal='SIGKILL')
+
+    sys_nover = client.create_container('rancher/agent',
+                                        name='named-sys-nover', labels={
+                                            'io.rancher.container.uuid':
+                                            'uuid-sys-nover'})
+    client.start(sys_nover)
+    client.kill(sys_nover, signal='SIGKILL')
+
+    agent_inst_con = client.create_container(
+        'ibuildthecloud/helloworld:latest',
+        name='named-agent-instance',
+        labels={
+            'io.rancher.container.uuid':
+                'uuid-agent-instance',
+            'io.rancher.container.system':
+                'networkAgent'},
+        command='true')
+    client.start(agent_inst_con)
+    client.kill(agent_inst_con, signal='SIGKILL')
+
+    CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
+    CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
+
+    event_test(agent, 'docker/ping', post_func=ping_post_process)
+
+
+@pytest.mark.skip("this test doesn't make sense to go agent")
+def test_ping_stat_exception(agent, mocker):
+    mocker.patch.object(HostInfo, 'collect_data',
+                        side_effect=ValueError('Bad Value Found'))
+
+    CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
+    CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
+
+    event_test(agent, 'docker/ping_stat_exception',
+               post_func=ping_post_process_state_exception)
+
+
+@if_docker
+def test_volume_purge(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+    delete_container('/target_volumes_from')
+
+    client = docker_client()
+    c = client.create_container('ibuildthecloud/helloworld',
+                                volumes=['/volumes_from_path'],
+                                name='target_volumes_from')
+    client.start(c)
+
+    def post(req, resp):
+        del resp['links']
+        del resp['actions']
+
+    # TODO Figure out a better way to test this. Because purging a volume
+    # means removing it from disk, we run into trouble testing when
+    # boot2docker is in the picture because the locally running agent cannot
+    # see inside the b2d vm. We do currently test this functionality fully
+    # in the integration test suite.
+    event_test(agent, 'docker/volume_purge', post_func=post)
+
+
+@if_docker
 def test_instance_activate_ipsec_network_agent(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1334,6 +1744,7 @@ def test_instance_activate_ipsec_network_agent(agent):
                post_func=post)
 
 
+@if_docker
 def test_instance_activate_ipsec_lb_agent(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
@@ -1348,6 +1759,7 @@ def test_instance_activate_ipsec_lb_agent(agent):
                post_func=post)
 
 
+@if_docker
 def test_instance_force_stop(agent):
     delete_container('/force-stop-test')
 
@@ -1377,6 +1789,7 @@ def test_instance_force_stop(agent):
     event_test(agent, 'docker/instance_force_stop', pre_func=pre, diff=False)
 
 
+@if_docker
 def test_instance_remove(agent):
     instance_only_activate(agent)
     container = get_container('/r-test')
@@ -1411,6 +1824,71 @@ def test_instance_remove(agent):
     event_test(agent, 'docker/instance_remove', pre_func=pre, post_func=post)
 
 
+@if_docker
+def test_instance_activate_labels(agent):
+    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
+
+    def post(req, resp):
+        instance_activate_common_validation(resp)
+
+    event_test(agent, 'docker/instance_activate_labels',
+               post_func=post)
+
+
+@if_docker
+def test_404_on_remove():
+    # This tests the functionality in DockerCompute._do_instance_remove(),
+    # but recreating a scenario where a 404 is returned on a delete is pretty
+    # difficult from the event_test framework, so just testing the function
+    # ecplicitly
+    client = docker_client()
+    c = client.create_container('ibuildthecloud/helloworld',
+                                name='double_remove')
+
+    client.remove_container(c, force=True, v=True)
+    remove_container(client, c)
+    remove_container(client, c)
+
+
+@if_docker
+@pytest.mark.skip('TODO figure out new way to test')
+def test_no_label_field():
+    # Added to avoid flake8 errors
+    class DockerCompute(object):
+        def add_container(self, *args, **kw):
+            pass
+
+        def get_container(self, *args, **kw):
+            pass
+
+    delete_container('/no-label-test')
+    client = docker_client()
+    dc = DockerCompute()
+
+    c = client.create_container('ibuildthecloud/helloworld',
+                                name='no-label-test')
+    instance = JsonObject({
+        'uuid': 'irrelevant',
+        'externalId': c['Id']
+    })
+    container = dc.get_container(client, instance)
+    containers = []
+
+    # No Labels scenario
+    del container['Labels']
+    dc.add_container('running', container, containers)
+    assert containers[0]['uuid'] == 'no-label-test'
+    assert containers[0]['systemContainer'] is None
+
+    # None value for Labels scenario
+    containers = []
+    container['Labels'] = None
+    dc.add_container('running', container, containers)
+    assert containers[0]['uuid'] == 'no-label-test'
+    assert containers[0]['systemContainer'] is None
+
+
+@if_docker
 def test_instance_links_net_host(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     delete_container('/target_redis')
@@ -1448,6 +1926,7 @@ def test_instance_links_net_host(agent):
                       pre_func=pre, post_func=post, diff=False)
 
 
+@if_docker
 def test_volume_delete_orphaning(agent):
     # This test emulates the situatoin we've seen in docker 1.10 where we need
     # to delete a volume but docker's ref count is off and it won't let us
@@ -1473,7 +1952,7 @@ def test_volume_delete_orphaning(agent):
         vol['data'] = {'fields': {'driver': 'local'}}
         vol['uri'] = 'local:///%s' % vol_name
 
-    def post(req, resp, valid_resp):
+    def post(req, resp):
         found_vol = docker_client(version=v).inspect_volume(vol_name)
         assert found_vol is not None
         del resp['links']
@@ -1482,6 +1961,7 @@ def test_volume_delete_orphaning(agent):
     event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)
 
 
+@if_docker
 def test_volume_from_data_volume_mounts_with_opt(agent, request):
     driver_opts = JsonObject(
         {'foo': 'bar'}
@@ -1490,10 +1970,12 @@ def test_volume_from_data_volume_mounts_with_opt(agent, request):
                                          driver_opts=driver_opts)
 
 
+@if_docker
 def test_volume_from_data_volume_mounts(agent, request):
     volumes_from_data_volume_mounts_test(agent, request)
 
 
+@if_docker
 def test_volume_from_data_volume_mounts_empty_opts(agent, request):
     volumes_from_data_volume_mounts_test(agent, request,
                                          driver_opts=JsonObject({}))
@@ -1563,306 +2045,3 @@ def _launch_convoy_container(client, dr):
                          )
     client.start(container)
     return container
-
-
-def test_volume_activate(agent):
-
-    def post(req, resp, valid_resp):
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', post_func=post)
-
-
-def test_volume_activate_driver1(agent):
-    def pre(req):
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': None}}
-        vol['name'] = 'test_vol'
-
-    def post(req, resp, valid_resp):
-        v = DockerConfig.storage_api_version()
-        vol = docker_client(version=v).inspect_volume('test_vol')
-        assert vol['Driver'] == 'local'
-        assert vol['Name'] == 'test_vol'
-        docker_client(version=v).remove_volume('test_vol')
-
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
-
-
-def test_volume_activate_driver2(agent):
-    def pre(req):
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': {'size': '10G'}}}
-        vol['name'] = 'test_vol'
-
-    def post(req, resp, valid_resp):
-        v = DockerConfig.storage_api_version()
-        vol = docker_client(version=v).inspect_volume('test_vol')
-        assert vol['Driver'] == 'local'
-        assert vol['Name'] == 'test_vol'
-        docker_client(version=v).remove_volume('test_vol')
-
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
-
-
-def test_instance_activate_volume_driver(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-
-    def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
-        instance['data']['fields']['volumeDriver'] = 'local'
-
-    def post(req, resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        docker_inspect = instance_data['dockerInspect']
-        if newer_than('1.19'):
-            if newer_than('1.21'):
-                assert docker_inspect['HostConfig']['VolumeDriver'] == 'local'
-            else:
-                assert docker_inspect['Config']['VolumeDriver'] == 'local'
-        instance_activate_common_validation(resp)
-
-    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
-
-
-def test_volume_remove_driver(agent):
-    def pre(req):
-        v = DockerConfig.storage_api_version()
-        docker_client(version=v).create_volume('test_vol',
-                                               'local')
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': {'size': '10G'}}}
-        vol['name'] = 'test_vol'
-        vol['uri'] = 'local:///test_vol'
-
-    def post(req, resp, valid_resp):
-        v = DockerConfig.storage_api_version()
-        with pytest.raises(APIError) as e:
-            docker_client(version=v).inspect_volume('test_vol')
-        assert e.value.explanation == 'no such volume' or \
-            e.value.explanation == 'get test_vol: no such volume'
-
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_remove', pre_func=pre, post_func=post)
-
-
-def test_ping(agent, pull_images, mocker):
-    mocker.patch.object(HostInfo, 'collect_data',
-                        return_value=json_data('docker/host_info_resp'))
-
-    client = docker_client()
-
-    delete_container('/named-running')
-    delete_container('/named-stopped')
-    delete_container('/named-created')
-    delete_container('/named-system')
-    delete_container('/named-sys-nover')
-    delete_container('/named-agent-instance')
-
-    client.create_container('ibuildthecloud/helloworld',
-                            name='named-created', labels={
-                                'io.rancher.container.uuid': 'uuid-created'})
-    running = client.create_container('ibuildthecloud/helloworld:latest',
-                                      name='named-running', labels={
-                                          'io.rancher.container.uuid':
-                                          'uuid-running'})
-    client.start(running)
-    stopped = client.create_container('ibuildthecloud/helloworld:latest',
-                                      name='named-stopped', labels={
-                                          'io.rancher.container.uuid':
-                                          'uuid-stopped'})
-    client.start(stopped)
-    client.kill(stopped, signal='SIGKILL')
-
-    system_con = client.create_container('rancher/agent:v0.7.9',
-                                         name='named-system', labels={
-                                             'io.rancher.container.uuid':
-                                             'uuid-system'})
-    client.start(system_con)
-    client.kill(system_con, signal='SIGKILL')
-
-    sys_nover = client.create_container('rancher/agent',
-                                        name='named-sys-nover', labels={
-                                            'io.rancher.container.uuid':
-                                            'uuid-sys-nover'})
-    client.start(sys_nover)
-    client.kill(sys_nover, signal='SIGKILL')
-
-    agent_inst_con = client.create_container(
-        'ibuildthecloud/helloworld:latest',
-        name='named-agent-instance',
-        labels={
-            'io.rancher.container.uuid':
-                'uuid-agent-instance',
-            'io.rancher.container.system':
-                'networkAgent'},
-        command='true')
-    client.start(agent_inst_con)
-    client.kill(agent_inst_con, signal='SIGKILL')
-
-    CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
-    CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
-
-    event_test(agent, 'docker/ping', post_func=ping_post_process)
-
-
-def ping_post_process(req, resp, valid_resp):
-    resources = resp['data']['resources']
-
-    labels = {'io.rancher.host.docker_version': '1.6',
-              'io.rancher.host.linux_kernel_version': '4.1'}
-
-    uuids = {'uuid-running': 0, 'uuid-stopped': 1, 'uuid-created': 2,
-             'uuid-system': 3, 'uuid-sys-nover': 4, 'uuid-agent-instance': 5}
-    instances = []
-    for r in resources:
-        if r['type'] == 'host':
-            if platform.system() == 'Linux':
-                # check whether the system is Linux.
-                # If so, execute the test script below
-                if 'io.rancher.host.kvm' in r['labels']:
-                    assert r['labels']['io.rancher.host.kvm'] == 'true'
-                    del r['labels']['io.rancher.host.kvm']
-                assert len(r['labels']) == 2
-            r['labels'] = labels
-            r['info'] = HostInfo.collect_data()
-            r['physicalHostUuid'] = 'hostuuid'
-            r['uuid'] = 'testuuid'
-        if r['type'] == 'storagePool':
-            r['hostUuid'] = 'testuuid'
-            r['uuid'] = 'testuuid-pool'
-        if r['type'] == 'instance' and r['uuid'] in uuids:
-            if r['uuid'] == 'uuid-running':
-                assert r['state'] == 'running'
-            elif r['uuid'] in ['uuid-stopped', 'uuid-agent-instance']:
-                assert r['state'] == 'stopped'
-            elif r['uuid'] == 'uuid-system' or r['uuid'] == 'uuid-sys-nover':
-                assert r['state'] == 'stopped'
-                # Account for docker 1.7/1.8 difference
-                try:
-                    del r['labels']['io.rancher.container.system']
-                except KeyError:
-                    pass
-
-            # Account for docker 1.6 where ':latest' is appended
-            if r['uuid'] == 'uuid-sys-nover' and r[
-                    'image'] == 'rancher/agent:latest':
-                r['image'] = 'rancher/agent'
-
-            assert r['dockerId'] is not None
-            del r['dockerId']
-            assert r['created'] is not None
-            del r['created']
-            if r['systemContainer'] == '':
-                r['systemContainer'] = None
-            instances.append(r)
-
-    def ping_sort(item):
-        return uuids[item['uuid']]
-
-    instances.sort(key=ping_sort)
-
-    assert len(instances) == 5
-
-    resources = filter(lambda x: x.get('kind') == 'docker', resources)
-    resources += instances
-    resp['data']['resources'] = resources
-    assert_ping_stat_resources(resp)
-    del resp['links']
-    del resp['actions']
-
-
-def assert_ping_stat_resources(resp):
-    hostname = Config.hostname()
-    pool_name = hostname + ' Storage Pool'
-    assert resp['data']['resources'][0]['hostname'] == hostname
-    assert resp['data']['resources'][1]['name'] == pool_name
-    resp['data']['resources'][0]['hostname'] = 'localhost'
-    resp['data']['resources'][1]['name'] = 'localhost Storage Pool'
-
-
-# @pytest.skip("this test doesn't make sense to go agent")
-# def test_ping_stat_exception(agent, mocker):
-#     mocker.patch.object(HostInfo, 'collect_data',
-#                         side_effect=ValueError('Bad Value Found'))
-#
-#     CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
-#     CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
-#
-#     event_test(agent, 'docker/ping_stat_exception',
-#                post_func=ping_post_process_state_exception)
-#
-#
-# def ping_post_process_state_exception(req, resp, valid_resp):
-#     labels = {'io.rancher.host.docker_version': '1.6',
-#               'io.rancher.host.linux_kernel_version': '4.1'}
-#
-#     # This filters down the returned resources to just the stat-based ones.
-#     # In other words, it gets rid of all containers from the response.
-#     resp['data']['resources'] = filter(lambda x: x.get('kind') == 'docker',
-#                                        resp['data']['resources'])
-#     for r in resp['data']['resources']:
-#         if r['type'] == 'host':
-#             if platform.system() == 'Linux':
-#                 # check whether the system is Linux.
-#                 # If so, execute the test script below
-#                 if 'io.rancher.host.kvm' in r['labels']:
-#                     assert r['labels']['io.rancher.host.kvm'] == 'true'
-#                     del r['labels']['io.rancher.host.kvm']
-#                 assert len(r['labels']) == 2
-#             r['labels'] = labels
-#             try:
-#                 r['info'] = HostInfo.collect_data()
-#             except:
-#                 pass
-#             assert len(r['info']['osInfo']) == 0
-#             assert len(r['info']['memoryInfo']) == 0
-#             assert len(r['info']['diskInfo']['fileSystem']) == 0
-#             assert len(r['info']['diskInfo']['mountPoints']) == 0
-#         assert len(r['info']['diskInfo']['dockerStorageDriverStatus']) == 0
-#             assert len(r['info']['cpuInfo']) == 0
-#             assert len(r['info']['iopsInfo']) == 0
-#             r['info'] = None
-#             r['physicalHostUuid'] = 'hostuuid'
-#             r['uuid'] = 'testuuid'
-#
-#         if r['type'] == 'storagePool':
-#             r['hostUuid'] = 'testuuid'
-#             r['uuid'] = 'testuuid-pool'
-#
-#     assert_ping_stat_resources(resp)
-#     del valid_resp['previousNames']
-#     del resp['links']
-#     del resp['actions']
-
-
-# new added test case for go agent
-def test_env_variable(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-
-    def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
-        fields = instance['data']['fields']
-        fields['environment'] = {'foo': 'bar'}
-
-    def post(req, resp, valid_resp):
-        instance_activate_assert_host_config(resp)
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        docker_inspect = instance_data['dockerInspect']
-        assert 'foo=bar' in docker_inspect['Config']['Env']
-        instance_activate_common_validation(resp)
-
-    schema = 'docker/instance_activate'
-    event_test(agent, schema, pre_func=pre, post_func=post)

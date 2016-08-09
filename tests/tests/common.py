@@ -1,5 +1,6 @@
 from datadiff.tools import assert_equals
 from docker import Client
+from docker.errors import APIError
 from docker.utils import kwargs_from_env
 import inspect
 import json
@@ -7,6 +8,7 @@ import logging
 import os
 from os import path
 from os.path import dirname
+import pytest
 import requests
 import tests
 import time
@@ -19,6 +21,10 @@ TEST_DIR = os.path.join(dirname(tests.__file__))
 CONFIG_OVERRIDE = {}
 
 log = logging.getLogger("common")
+
+
+if_docker = pytest.mark.skipif('False',
+                               reason='Always true. Added for diff purposes.')
 
 
 def _to_json_object(v):
@@ -395,3 +401,14 @@ def random_num():
 
 class ImageValidationError(Exception):
     pass
+
+
+def remove_container(client, container):
+    try:
+        client.remove_container(container, force=True)
+    except APIError as e:
+        try:
+            if e.response.status_code != 404:
+                raise e
+        except AttributeError:
+            raise e
