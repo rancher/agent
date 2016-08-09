@@ -710,7 +710,7 @@ func setupCattleConfigURL(instance *model.Instance, createConfig map[string]inte
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			if parsed.Host == "localhost" {
+			if strings.Contains(parsed.Host, "localhost") {
 				port := APIProxyListenPort()
 				addToEnv(createConfig, map[string]string{
 					"CATTLE_AGENT_INSTANCE":    "true",

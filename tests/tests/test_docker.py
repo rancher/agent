@@ -97,13 +97,20 @@ def test_volume_deactivate_driver(agent):
         assert vol['Driver'] == 'local'
         assert vol['Name'] == 'test_vol'
         docker_client(version=v).remove_volume('test_vol')
+        del resp['data']['volumeStoragePoolMap']
+        del resp['links']
+        del resp['actions']
 
     event_test(agent, 'docker/volume_deactivate', pre_func=pre, post_func=post)
 
 
 @if_docker
 def test_volume_deactivate(agent):
-    event_test(agent, 'docker/volume_deactivate')
+    def post(req, resp):
+        del resp['data']['volumeStoragePoolMap']
+        del resp['links']
+        del resp['actions']
+    event_test(agent, 'docker/volume_deactivate', post_func=post)
 
 
 @if_docker
@@ -1317,7 +1324,9 @@ def test_instance_activate_ipsec(agent):
 
 
 @if_docker
+@pytest.mark.skip('will include this into gotest')
 def test_instance_activate_agent_instance_localhost(agent):
+    # note config_override cannot be written into go agent code
     CONFIG_OVERRIDE['CONFIG_URL'] = 'https://localhost:1234/a/path'
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 

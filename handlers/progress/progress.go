@@ -7,13 +7,11 @@ import (
 )
 
 type Progress struct {
-	//TODO mock not implemented
 	Request *revents.Event
 	Client  *client.RancherClient
 }
 
 func (p *Progress) Update(msg string) {
-	//TODO mock not implemented
 	resp := &client.Publish{
 		ResourceId:            p.Request.ResourceID,
 		PreviousIds:           []string{p.Request.ID},

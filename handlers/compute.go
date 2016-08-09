@@ -21,14 +21,15 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
+	dockerClient := docker.GetClient(utils.DefaultVersion)
 	if utils.IsNoOp(event.Data) {
-		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
+		utils.RecordState(dockerClient, instance, "")
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	if utils.IsInstanceActive(instance, host) {
 		logrus.Info("instance is activated")
-		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
+		utils.RecordState(dockerClient, instance, "")
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
@@ -45,8 +46,9 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
+	dockerClient := docker.GetClient(utils.DefaultVersion)
 	if utils.IsNoOp(event.Data) {
-		utils.RecordState(docker.GetClient(utils.DefaultVersion), instance, "")
+		utils.RecordState(dockerClient, instance, "")
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 	if utils.IsInstanceInactive(instance) {
