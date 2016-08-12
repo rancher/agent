@@ -9,11 +9,11 @@ type Publish struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
+	PreviousNames []string `json:"previousNames,omitempty" yaml:"previous_names,omitempty"`
+
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	PreviousIds []string `json:"previousIds,omitempty" yaml:"previous_ids,omitempty"`
-
-	PreviousNames []string `json:"previousNames,omitempty" yaml:"previous_names,omitempty"`
 
 	Publisher string `json:"publisher,omitempty" yaml:"publisher,omitempty"`
 

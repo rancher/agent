@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	//"os"
+	"os"
 	"regexp"
 
 	"time"
@@ -550,8 +550,7 @@ func (rancherClient *RancherBaseClient) doAction(schemaType string, action strin
 }
 
 func init() {
-	//debug = os.Getenv("RANCHER_CLIENT_DEBUG") == "true"
-	debug = true
+	debug = os.Getenv("RANCHER_CLIENT_DEBUG") == "true"
 	if debug {
 		fmt.Println("Rancher client debug on")
 	}
