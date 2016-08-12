@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"errors"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/progress"
-	"github.com/rancher/agent/handlers/utils"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/compute"
+	"github.com/rancher/agent/core/progress"
+	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/utilities/utils"
+	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
@@ -21,20 +23,20 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	if image.ID >= 0 && event.Data["processData"] != nil {
 		image.ProcessData = event.Data["processData"].(map[string]interface{})
 	}
-	if utils.IsImageActive(&image, &storagePool) {
+	if storage.IsImageActive(&image, &storagePool) {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	if utils.IsImageActive(&image, &storagePool) {
+	if storage.IsImageActive(&image, &storagePool) {
 		return reply(event.Data, event, cli)
 	}
 
-	err := utils.DoImageActivate(&image, &storagePool, &progress)
+	err := storage.DoImageActivate(&image, &storagePool, &progress)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to activate image")
 	}
 
-	if !utils.IsImageActive(&image, &storagePool) {
+	if !storage.IsImageActive(&image, &storagePool) {
 		return errors.New("operation failed")
 	}
 
@@ -48,15 +50,14 @@ func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	storagePool := volumeStoragePoolMap.StoragePool
 	progress := progress.Progress{Request: event, Client: cli}
 
-	if utils.IsVolumeActive(&volume, &storagePool) {
+	if storage.IsVolumeActive(&volume, &storagePool) {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	err := utils.DoVolumeActivate(&volume, &storagePool, &progress)
-	if err != nil {
-		return err
+	if err := storage.DoVolumeActivate(&volume, &storagePool, &progress); err != nil {
+		return errors.Wrap(err, "Failed to active volume")
 	}
-	if !utils.IsVolumeActive(&volume, &storagePool) {
+	if !storage.IsVolumeActive(&volume, &storagePool) {
 		return errors.New("operation failed")
 	}
 	return reply(utils.GetResponseData(event), event, cli)
@@ -69,15 +70,14 @@ func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	storagePool := volumeStoragePoolMap.StoragePool
 	progress := progress.Progress{}
 
-	if utils.IsVolumeInactive(&volume, &storagePool) {
+	if storage.IsVolumeInactive(&volume, &storagePool) {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	err := utils.DoVolumeDeactivate(&volume, &storagePool, &progress)
-	if err != nil {
-		return err
+	if err := storage.DoVolumeDeactivate(&volume, &storagePool, &progress); err != nil {
+		return errors.Wrap(err, "Failed to deactivate volume")
 	}
-	if !utils.IsVolumeInactive(&volume, &storagePool) {
+	if !storage.IsVolumeInactive(&volume, &storagePool) {
 		return errors.New("operation failed")
 	}
 	return reply(utils.GetResponseData(event), event, cli)
@@ -91,10 +91,10 @@ func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	progress := progress.Progress{Request: event, Client: cli}
 
 	if volume.DeviceNumber == 0 {
-		utils.PurgeState(volume.Instance)
+		compute.PurgeState(volume.Instance)
 	}
-	if !utils.IsVolumeRemoved(&volume, &storagePool) {
-		utils.DoVolumeRemove(&volume, &storagePool, &progress)
+	if !storage.IsVolumeRemoved(&volume, &storagePool) {
+		storage.DoVolumeRemove(&volume, &storagePool, &progress)
 	}
 	return reply(utils.GetResponseData(event), event, cli)
 }

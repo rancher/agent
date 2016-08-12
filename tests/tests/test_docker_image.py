@@ -1,6 +1,7 @@
 from docker.errors import APIError
 from .common import docker_client, event_test, instance_only_activate, \
     delete_container, json_data, random_str
+import pytest
 
 
 def test_image_activate(agent):
@@ -41,6 +42,7 @@ def test_image_activate_no_reg_cred_pull_image(agent):
     event_test(agent, 'docker/image_activate', pre_func=pre, post_func=post)
 
 
+@pytest.mark.skip('for the sake of time skip this one')
 def test_image_pull_variants(agent):
     image_names = [
         'ibuildthecloud/helloworld:latest',

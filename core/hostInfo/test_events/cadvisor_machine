@@ -1,0 +1,109 @@
+{
+  "num_cores": 1,
+  "cpu_frequency_khz": 2303747,
+  "memory_capacity": 1044639744,
+  "machine_id": "",
+  "system_uuid": "A0AEF532-0481-427C-B5A2-04E824978C96",
+  "boot_id": "1e897c1f-9f30-4664-bde9-8484a976f324",
+  "filesystems": [
+    {
+      "device": "/dev/sda1",
+      "capacity": 19507089408
+    },
+    {
+      "device": "/dev/mapper/docker-8:1-523310-c3ae1852921c3fec9c9a74dce987f47f7e1ae8e7e3bcd9ad98e671f5d80a28d8",
+      "capacity": 105555197952
+    }
+  ],
+  "disk_map": {
+    "249:0": {
+      "name": "dm-0",
+      "major": 249,
+      "minor": 0,
+      "size": 107374182400,
+      "scheduler": "none"
+    },
+    "249:1": {
+      "name": "dm-1",
+      "major": 249,
+      "minor": 1,
+      "size": 107374182400,
+      "scheduler": "none"
+    },
+    "249:2": {
+      "name": "dm-2",
+      "major": 249,
+      "minor": 2,
+      "size": 107374182400,
+      "scheduler": "none"
+    },
+    "250:0": {
+      "name": "zram0",
+      "major": 250,
+      "minor": 0,
+      "size": 223571968,
+      "scheduler": "none"
+    },
+    "8:0": {
+      "name": "sda",
+      "major": 8,
+      "minor": 0,
+      "size": 20971520000,
+      "scheduler": "deadline"
+    }
+  },
+  "network_devices": [
+    {
+      "name": "dummy0",
+      "mac_address": "82:6b:7e:04:ff:fa",
+      "speed": 0,
+      "mtu": 1500
+    },
+    {
+      "name": "eth0",
+      "mac_address": "08:00:27:dd:be:b0",
+      "speed": 1000,
+      "mtu": 1500
+    },
+    {
+      "name": "eth1",
+      "mac_address": "08:00:27:a5:51:88",
+      "speed": 1000,
+      "mtu": 1500
+    }
+  ],
+  "topology": [
+    {
+      "node_id": 0,
+      "memory": 0,
+      "cores": [
+        {
+          "core_id": 0,
+          "thread_ids": [
+            0
+          ],
+          "caches": [
+            {
+              "size": 32768,
+              "type": "Data",
+              "level": 1
+            },
+            {
+              "size": 32768,
+              "type": "Data",
+              "level": 1
+            },
+            {
+              "size": 6291456,
+              "type": "Data",
+              "level": 2
+            }
+          ]
+        }
+      ],
+      "caches": null
+    }
+  ],
+  "cloud_provider": "Unknown",
+  "instance_type": "Uknown"
+}

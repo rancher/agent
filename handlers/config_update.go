@@ -3,9 +3,10 @@ package handlers
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/handlers/progress"
-	"github.com/rancher/agent/handlers/utils"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/core/progress"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/utils"
+	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"os"
 	"os/exec"
@@ -24,20 +25,20 @@ func ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
 	for _, v := range utils.InterfaceToArray(event.Data["items"]) {
 		item := utils.InterfaceToMap(v)
 		name := utils.InterfaceToString(item["name"])
-		if name != "pyagent" || utils.ConfigUpdatePyagent() {
+		if name != "pyagent" || config.UpdatePyagent() {
 			itemNames = append(itemNames, name)
 		}
 	}
-	home := utils.Home()
+	home := config.Home()
 	env := os.Environ()
-	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_ACCESS_KEY", utils.AccessKey()))
-	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_SECRET_KEY", utils.SecretKey()))
+	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_ACCESS_KEY", config.AccessKey()))
+	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_SECRET_KEY", config.SecretKey()))
 	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_HOME", home))
 	args := itemNames
 
 	retcode := -1
 
-	command := exec.Command(utils.ConfigSh(), args...)
+	command := exec.Command(config.Sh(), args...)
 	command.Env = env
 	command.Dir = home
 	output, err := command.Output()

@@ -3,20 +3,20 @@ package events
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
-	"github.com/rancher/agent/handlers/cadvisor"
-	"github.com/rancher/agent/handlers/hostapi"
-	"github.com/rancher/agent/handlers/utils"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/service/cadvisor"
+	"github.com/rancher/agent/service/hostapi"
+	"github.com/rancher/agent/utilities/config"
+	revents "github.com/rancher/event-subscriber/events"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	logrus.Infof("Listening for events on %v", eventURL)
 
-	utils.SetAccessKey(accessKey)
-	utils.SetSecretKey(secretKey)
-	utils.SetAPIURL(eventURL)
+	config.SetAccessKey(accessKey)
+	config.SetSecretKey(secretKey)
+	config.SetAPIURL(eventURL)
 
-	utils.PhysicalHostUUID(true)
+	config.PhysicalHostUUID(true)
 
 	logrus.Info("launching hostapi")
 	go hostapi.StartUp()
@@ -25,7 +25,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	go cadvisor.StartUp()
 
 	eventHandlers := handlers.GetHandlers()
-	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount)
+	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount, revents.DefaultPingConfig)
 	if err != nil {
 		return err
 	}

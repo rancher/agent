@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/docker"
-	"github.com/rancher/agent/handlers/progress"
-	"github.com/rancher/agent/handlers/utils"
+	"github.com/rancher/agent/core/delegate"
+	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utilities/utils"
+	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
 )
@@ -23,7 +25,7 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 	if instanceData.Kind != "container" || instanceData.Token == "" {
 		return nil
 	}
-	client := docker.GetClient(utils.DefaultVersion)
+	client := docker.GetClient(constants.DefaultVersion)
 	instance := model.Instance{
 		UUID:       instanceData.UUID,
 		AgentID:    instanceData.AgentID,
@@ -43,7 +45,7 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 		return nil
 	}
 	progress := progress.Progress{Request: delegateEvent, Client: cli}
-	exitCode, output, data := utils.NsExec(inspect.State.Pid, delegateEvent)
+	exitCode, output, data := delegate.NsExec(inspect.State.Pid, delegateEvent)
 	if exitCode == 0 {
 		return replyWithParent(data, delegateEvent, event, cli)
 	}

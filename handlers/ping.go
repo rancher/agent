@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/handlers/utils"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/core/ping"
+	"github.com/rancher/agent/utilities/config"
+	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
@@ -12,9 +13,9 @@ func Ping(event *revents.Event, cli *client.RancherClient) error {
 	if event.Name != "ping" || event.ReplyTo == "" {
 		return nil
 	}
-	resp := utils.ReplyData(event)
-	if utils.DoPing() {
-		utils.DoPingAction(event, resp)
+	resp := ping.ReplyData(event)
+	if config.DoPing() {
+		ping.DoPingAction(event, resp)
 	}
 	return reply(resp.Data, event, cli)
 }

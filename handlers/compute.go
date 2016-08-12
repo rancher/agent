@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/agent/handlers/docker"
-	"github.com/rancher/agent/handlers/progress"
-	"github.com/rancher/agent/handlers/utils"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/compute"
+	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	revents "github.com/rancher/go-machine-service/events"
+	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utilities/utils"
+	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
@@ -21,19 +23,24 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
-	dockerClient := docker.GetClient(utils.DefaultVersion)
+	dockerClient := docker.DefaultClient
 	if utils.IsNoOp(event.Data) {
-		utils.RecordState(dockerClient, instance, "")
+		if err := compute.RecordState(dockerClient, instance, ""); err != nil {
+			return errors.Wrap(err, "failed to record state")
+		}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	if utils.IsInstanceActive(instance, host) {
-		logrus.Info("instance is activated")
-		utils.RecordState(dockerClient, instance, "")
+	if compute.IsInstanceActive(instance, host) {
+		if err := compute.RecordState(dockerClient, instance, ""); err != nil {
+			return errors.Wrap(err, "failed to record state")
+		}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	utils.DoInstanceActivate(instance, host, &progress)
+	if err := compute.DoInstanceActivate(instance, host, &progress); err != nil {
+		return errors.Wrap(err, "failed to activate instance")
+	}
 	return reply(utils.GetResponseData(event), event, cli)
 }
 
@@ -46,12 +53,12 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
-	dockerClient := docker.GetClient(utils.DefaultVersion)
+	dockerClient := docker.DefaultClient
 	if utils.IsNoOp(event.Data) {
-		utils.RecordState(dockerClient, instance, "")
+		compute.RecordState(dockerClient, instance, "")
 		return reply(utils.GetResponseData(event), event, cli)
 	}
-	if utils.IsInstanceInactive(instance) {
+	if compute.IsInstanceInactive(instance) {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
@@ -63,7 +70,7 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	case float64:
 		timeout = int(timeout.(float64))
 	}
-	err := utils.DoInstanceDeactivate(instance, &progress, timeout.(int))
+	err := compute.DoInstanceDeactivate(instance, &progress, timeout.(int))
 
 	if err != nil {
 		return err
@@ -76,14 +83,14 @@ func InstanceForceStop(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var request model.InstanceForceStop
 	mapstructure.Decode(event.Data["instanceForceStop"], &request)
-	return utils.DoInstanceForceStop(&request)
+	return compute.DoInstanceForceStop(&request)
 }
 
 func InstanceInspect(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var inspect model.InstanceInspect
 	mapstructure.Decode(event.Data["instanceInspect"], &inspect)
-	inspectResp, _ := utils.DoInstanceInspect(&inspect)
+	inspectResp, _ := compute.DoInstanceInspect(&inspect)
 	var inspectJSON map[string]interface{}
 	data, err1 := json.Marshal(inspectResp)
 	if err1 != nil {
@@ -105,7 +112,7 @@ func InstancePull(event *revents.Event, cli *client.RancherClient) error {
 	mapstructure.Decode(event.Data["instancePull"], &instancePull)
 	imageParams := model.ImageParams{Image: instancePull.Image,
 		Mode: instancePull.Mode, Complete: instancePull.Complete, Tag: instancePull.Tag}
-	imagePull, pullErr := utils.DoInstancePull(&imageParams, &progress)
+	imagePull, pullErr := compute.DoInstancePull(&imageParams, &progress)
 	if pullErr != nil {
 		logrus.Error(pullErr)
 	}
@@ -129,14 +136,14 @@ func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 		instance.ProcessData = event.Data["processData"].(map[string]interface{})
 	}
 
-	if utils.IsInstanceRemoved(instance) {
+	if compute.IsInstanceRemoved(instance) {
 		return reply(map[string]interface{}{}, event, cli)
 	}
 
-	if utils.IsInstanceRemoved(instance) {
+	if compute.IsInstanceRemoved(instance) {
 		return reply(map[string]interface{}{}, event, cli)
 	}
-	err := utils.DoInstanceRemove(instance, &progress)
+	err := compute.DoInstanceRemove(instance, &progress)
 	if err != nil {
 		logrus.Error(err)
 	}
