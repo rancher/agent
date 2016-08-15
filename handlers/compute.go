@@ -64,7 +64,7 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 
 	timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
 	if !ok {
-		timeout = 0
+		timeout = 10
 	}
 	switch timeout.(type) {
 	case float64:
@@ -145,7 +145,7 @@ func InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 	}
 	err := compute.DoInstanceRemove(instance, &progress)
 	if err != nil {
-		logrus.Error(err)
+		return errors.Wrap(err, "Failed to remove instance")
 	}
 	return reply(map[string]interface{}{}, event, cli)
 }

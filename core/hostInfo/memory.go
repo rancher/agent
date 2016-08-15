@@ -47,7 +47,6 @@ func (m MemoryDataGetter) GetMemInfoData() []string {
 			data = append(data, scanner.Text())
 		}
 	}
-	logrus.Infof("memory info %v", data)
 	return data
 }
 

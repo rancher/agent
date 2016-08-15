@@ -5,6 +5,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"os"
 	"os/exec"
+	"syscall"
 )
 
 func StartUp() error {
@@ -30,6 +31,9 @@ func StartUp() error {
 		args = append([]string{"nsenter", "--mount=/host/proc/1/ns/mnt", "--"}, args...)
 	}
 	command := exec.Command(args[0], args[1:len(args)]...)
+	command.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
 	command.Start()

@@ -5,6 +5,7 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"os"
 	"os/exec"
+	"syscall"
 )
 
 func StartUp() error {
@@ -25,6 +26,9 @@ func StartUp() error {
 	}
 	command := exec.Command("host-api", args...)
 	command.Env = env
+	command.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
 	command.Start()

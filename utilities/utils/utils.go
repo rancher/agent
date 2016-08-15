@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/client"
+	engineCli "github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/engine-api/types/filters"
@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	urls "net/url"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -423,7 +424,7 @@ func ParseRepoTag(name string) map[string]string {
 	}
 }
 
-func GetContainer(client *client.Client, instance *model.Instance, byAgent bool) *types.Container {
+func GetContainer(client *engineCli.Client, instance *model.Instance, byAgent bool) *types.Container {
 	if instance == nil {
 		return nil
 	}
@@ -587,7 +588,7 @@ func NameFilter(name string, container *types.Container) bool {
 	return found
 }
 
-func RemoveContainer(client *client.Client, containerID string) error {
+func RemoveContainer(client *engineCli.Client, containerID string) error {
 	client.ContainerKill(context.Background(), containerID, "KILL")
 	for i := 0; i < 10; i++ {
 		if inspect, err := client.ContainerInspect(context.Background(), containerID); err == nil && inspect.State.Pid == 0 {
@@ -595,7 +596,7 @@ func RemoveContainer(client *client.Client, containerID string) error {
 		}
 		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
-	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); err != nil {
+	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); !engineCli.IsErrNotFound(err) {
 		return errors.Wrap(err, "failed to remove container")
 	}
 	return nil
@@ -672,4 +673,23 @@ func GetInfoDriver() string {
 func DockerVersionRequest() (types.Version, error) {
 	client := docker.DefaultClient
 	return client.ServerVersion(context.Background())
+}
+
+func GetURLPort(url string) string {
+	parse, err := urls.Parse(url)
+	if err != nil {
+		return ""
+	}
+	host := parse.Host
+	parts := strings.Split(host, ":")
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	port := ""
+	if parse.Scheme == "http" {
+		port = "80"
+	} else if parse.Scheme == "https" {
+		port = "443"
+	}
+	return port
 }

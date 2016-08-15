@@ -152,7 +152,6 @@ func pingAddResource(pong *revents.Event, physcialHost map[string]interface{},
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), compute)
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), pool)
 	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), ip)
-	logrus.Infof("debug pong %v", physcialHost)
 }
 
 func getAllContainerByState() (map[string]types.Container, map[string]types.Container) {

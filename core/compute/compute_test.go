@@ -101,7 +101,7 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	container := utils.GetContainer(client, &instance, false)
 	containers := []map[string]interface{}{}
 
-	container.Labels = nil
+	container.Labels = map[string]string{}
 	containers = utils.AddContainer("running", container, containers)
 	c.Assert(containers[0]["uuid"], check.Equals, "no-label-test")
 	c.Assert(containers[0]["systemContainer"], check.Equals, "")

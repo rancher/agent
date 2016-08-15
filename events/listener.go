@@ -7,6 +7,7 @@ import (
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/agent/service/apiproxy"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -17,6 +18,9 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	config.SetAPIURL(eventURL)
 
 	config.PhysicalHostUUID(true)
+
+	logrus.Info("launching API proxy")
+	go apiproxy.StartUp()
 
 	logrus.Info("launching hostapi")
 	go hostapi.StartUp()

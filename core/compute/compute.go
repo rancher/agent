@@ -635,9 +635,11 @@ func IsInstanceInactive(instance *model.Instance) bool {
 
 func DoInstanceForceStop(request *model.InstanceForceStop) error {
 	client := docker.DefaultClient
-	time := time.Duration(0)
-	if stopErr := client.ContainerStop(context.Background(), request.ID, &time); stopErr != nil {
+	time := time.Duration(10)
+	if stopErr := client.ContainerStop(context.Background(), request.ID, &time); !engineCli.IsErrNotFound(stopErr) {
 		return errors.Wrap(stopErr, "Failed to force stop container")
+	} else if stopErr != nil {
+		logrus.Infof("container id %v not found", request.ID)
 	}
 	logrus.Infof("container id %v is forced to be stopped", request.ID)
 	return nil
