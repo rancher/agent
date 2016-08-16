@@ -93,7 +93,14 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
 	client := docker.GetClient(constants.DefaultVersion)
 	config := container.Config{Image: "ibuildthecloud/helloworld"}
-	resp, _ := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
+	resp, err := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
+	if err != nil {
+		c.Fatal(err)
+	}
+	err = client.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{})
+	if err != nil {
+		c.Fatal(err)
+	}
 	instance := model.Instance{
 		UUID:       "irrelevant",
 		ExternalID: resp.ID,

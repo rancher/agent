@@ -1,20 +1,20 @@
 package apiproxy
 
 import (
-	"strings"
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/utilities/config"
-	urls "net/url"
-	"net"
-	"github.com/Sirupsen/logrus"
 	"fmt"
-	"os/exec"
-	"syscall"
-	"os"
+	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/utils"
+	"net"
+	urls "net/url"
+	"os"
+	"os/exec"
+	"strings"
+	"syscall"
 )
 
-func StartUp() (error) {
+func StartUp() error {
 	url := config.URL()
 
 	if !strings.Contains(url, "localhost") {
@@ -29,14 +29,14 @@ func StartUp() (error) {
 
 	fromHost := config.APIProxyListenHost()
 	fromPort := config.APIProxyListenPort()
-	toHostIp, err := net.LookupIP(parsed.Host)
+	toHostIP, err := net.LookupIP(parsed.Host)
 	if err != nil {
 		return errors.Wrap(err, "Can not look up IPAddress")
 	}
 	toPort := utils.GetURLPort(url)
-	logrus.Infof("Proxying %s:%s -> %s:%s", fromHost, fromPort, toHostIp, toPort)
+	logrus.Infof("Proxying %s:%s -> %s:%s", fromHost, fromPort, toHostIP, toPort)
 	listen := fmt.Sprintf("TCP4-LISTEN:%v,fork,bind=%v,reuseaddr", fromPort, fromHost)
-	to := fmt.Sprintf("TCP:%v:%v", toHostIp, toPort)
+	to := fmt.Sprintf("TCP:%v:%v", toHostIP, toPort)
 	command := exec.Command("socat", listen, to)
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

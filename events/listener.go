@@ -3,11 +3,11 @@ package events
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
+	"github.com/rancher/agent/service/apiproxy"
 	"github.com/rancher/agent/service/cadvisor"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/agent/service/apiproxy"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {

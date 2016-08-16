@@ -19,6 +19,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	urls "net/url"
 	"os"
 	"path"
 	"regexp"
@@ -26,7 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	urls "net/url"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -438,7 +438,7 @@ func GetContainer(client *engineCli.Client, instance *model.Instance, byAgent bo
 		return &labeledContainers[0]
 	}
 
-	// Nest look by UUID using fallback method
+	// Next look by UUID using fallback method
 	options = types.ContainerListOptions{All: true}
 	containerList, err := client.ContainerList(context.Background(), options)
 	if err != nil {
@@ -464,7 +464,8 @@ func GetContainer(client *engineCli.Client, instance *model.Instance, byAgent bo
 		return container
 	}
 
-	if agentID := instance.AgentID; byAgent {
+	if byAgent {
+		agentID := instance.AgentID
 		container = FindFirst(containerList, func(c *types.Container) bool {
 			return AgentIDFilter(strconv.Itoa(agentID), c)
 		})
