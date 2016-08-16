@@ -3,7 +3,7 @@ package docker
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/constants"
+	"net/http"
 )
 
 func GetClient(version string) *client.Client {
@@ -16,4 +16,13 @@ func GetClient(version string) *client.Client {
 	return cli
 }
 
-var DefaultClient = GetClient(constants.DefaultVersion)
+func GetClientFromUrl(host string, version string, httpClient *http.Client, headers map[string]string) *client.Client {
+	cli, err := client.NewClient(host, version, httpClient, headers)
+	if err != nil {
+		return nil
+	}
+	return cli
+}
+
+//var DefaultClient = GetClient(constants.DefaultVersion)
+var DefaultClient = GetClientFromUrl("tcp://192.168.42.175:2375", "v1.22", nil, nil)

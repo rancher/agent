@@ -20,8 +20,8 @@ GOPATH_DIR = dirname(dirname(dirname(dirname(PROJECT_DIR))))
 def start_server(request):
     env = dict(os.environ)
     env["GOPATH"] = GOPATH_DIR
-    Popen(["go", "run", os.path.join(dirname(TEST_DIR), "main.go")],
-          env=env)
+    Popen(["C:\\Go\\bin\\go", "run", os.path.join(dirname(TEST_DIR), "main.go")],
+          env=env, shell=True)
 
     def kill_server():
         try:

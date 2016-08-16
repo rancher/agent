@@ -32,9 +32,9 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	}
 
 	if compute.IsInstanceActive(instance, host) {
-		if err := compute.RecordState(dockerClient, instance, ""); err != nil {
-			return errors.Wrap(err, "failed to record state")
-		}
+		//if err := compute.RecordState(dockerClient, instance, ""); err != nil {
+		//	return errors.Wrap(err, "failed to record state")
+		//}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 

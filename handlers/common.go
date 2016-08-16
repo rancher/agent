@@ -40,7 +40,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		Data:          replyData,
 		Time:          time.Now().UnixNano() / int64(time.Millisecond),
 		Resource:      client.Resource{Id: getUUID()},
-		PreviousNames: []string{event.Name},
+		//PreviousNames: []string{event.Name},
 	}
 
 	logrus.Infof("Reply: %+v", reply)
@@ -70,7 +70,7 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 		Data:          child,
 		Time:          time.Now().UnixNano() / int64(time.Millisecond),
 		Resource:      client.Resource{Id: getUUID()},
-		PreviousNames: []string{parent.Name},
+		//PreviousNames: []string{parent.Name},
 	}
 	if parent.ReplyTo == "" {
 		return nil
