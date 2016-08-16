@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/context"
 	"os"
 	"strings"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
@@ -23,7 +24,9 @@ func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {
 		return true
 	}
 	version := config.StorageAPIVersion()
-	vol, err := docker.GetClient(version).VolumeInspect(context.Background(), volume.Name)
+	docker.DefaultClient.UpdateClientVersion(version)
+	defer docker.DefaultClient.UpdateClientVersion(constants.DefaultVersion)
+	vol, err := docker.DefaultClient.VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		logrus.Error(err)
 		return false
@@ -65,7 +68,9 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 		}
 	}
 	v := config.StorageAPIVersion()
-	client := docker.GetClient(v)
+	docker.DefaultClient.UpdateClientVersion(v)
+	defer docker.DefaultClient.UpdateClientVersion(constants.DefaultVersion)
+	client := docker.DefaultClient
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -288,6 +293,8 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 		utils.RemoveContainer(client, container.ID)
 	} else if isManagedVolume(volume) {
 		version := config.StorageAPIVersion()
+		docker.DefaultClient.UpdateClientVersion(version)
+		defer docker.DefaultClient.UpdateClientVersion(constants.DefaultVersion)
 		err := docker.GetClient(version).VolumeRemove(context.Background(), volume.Name)
 		if err != nil {
 			if strings.Contains(err.Error(), "409") {

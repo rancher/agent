@@ -31,6 +31,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"runtime"
 )
 
 func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *progress.Progress) error {
@@ -72,17 +73,19 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		utils.AddLabel(&config, "io.rancher.container.name", instanceName)
 	}
 
-	setupPublishPorts(&hostConfig, instance)
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		setupPublishPorts(&hostConfig, instance)
 
-	setupDNSSearch(&hostConfig, instance)
+		setupDNSSearch(&hostConfig, instance)
+
+		setupLinks(&hostConfig, instance)
+	}
 
 	setupHostname(&config, instance)
 
 	setupPorts(&config, instance, &hostConfig)
 
 	setupVolumes(&config, instance, &hostConfig, dockerClient)
-
-	setupLinks(&hostConfig, instance)
 
 	setupNetworking(instance, host, &config, &hostConfig)
 
@@ -131,10 +134,11 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		}
 		return errors.Wrap(startErr, "Failed to activate instance")
 	}
-
-	//if err := RecordState(dockerClient, instance, containerID); err != nil {
-	//	return errors.Wrap(err, "Failed to activate instance")
-	//}
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		if err := RecordState(dockerClient, instance, containerID); err != nil {
+			return errors.Wrap(err, "Failed to activate instance")
+		}
+	}
 	return nil
 }
 

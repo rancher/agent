@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
+	"runtime"
 )
 
 func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -32,9 +33,11 @@ func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	}
 
 	if compute.IsInstanceActive(instance, host) {
-		//if err := compute.RecordState(dockerClient, instance, ""); err != nil {
-		//	return errors.Wrap(err, "failed to record state")
-		//}
+		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			if err := compute.RecordState(dockerClient, instance, ""); err != nil {
+				return errors.Wrap(err, "failed to record state")
+			}
+		}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 

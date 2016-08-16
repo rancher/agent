@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"runtime"
 )
 
 func StorageAPIVersion() string {

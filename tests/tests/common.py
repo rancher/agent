@@ -140,9 +140,9 @@ def event_test(agent, name, pre_func=None, post_func=None, diff=True):
         else:
             post_func(req, resp)
 
-    if diff:
-        del resp["id"]
-        del resp["time"]
+    # if diff:
+    #    del resp["id"]
+    #    del resp["time"]
 
         # diff_dict(valid_resp, JsonObject.unwrap(resp))
         # assert_equals(valid_resp, JsonObject.unwrap(resp))
@@ -151,7 +151,10 @@ def event_test(agent, name, pre_func=None, post_func=None, diff=True):
 
 
 def delete_container(name):
-    client = docker_client(version="1.24", base_url_override="tcp://192.168.42.175:2375")
+    if platform.system() == "Windows":
+        client = docker_client(version="1.24", base_url_override="tcp://192.168.42.175:2375")
+    else:
+        client = docker_client()
     for c in client.containers(all=True):
         found = False
         labels = c.get('Labels', {})
@@ -276,7 +279,8 @@ def instance_activate_common_validation(resp):
     for idx, p in enumerate(fields['dockerPorts']):
         if '8080' in p or '12201' in p:
             fields['dockerPorts'][idx] = re.sub(r':.*:', ':1234:', p)
-    assert state_file_exists(docker_id)
+    if platform.system() != "Windows":
+        assert state_file_exists(docker_id)
     instance_activate_assert_host_config(resp)
     instance_activate_assert_image_id(resp)
     del docker_container["State"]
@@ -287,7 +291,10 @@ def instance_activate_common_validation(resp):
 
 
 def newer_than(version):
-    client = docker_client()
+    if platform.system() == "Windows":
+        client = docker_client(version="1.24", base_url_override="tcp://192.168.42.175:2375")
+    else:
+        client = docker_client()
     ver = client.version()['ApiVersion']
     return compare_version(version, ver) >= 0
 
