@@ -89,15 +89,15 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 	c.Assert(hostConfig.BlkioDeviceReadIOps, check.HasLen, 0)
 }
 
-/*
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
 	client := docker.GetClient(constants.DefaultVersion)
-	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld", types.ImagePullOptions{})
+	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld:latest", types.ImagePullOptions{})
 	if err != nil {
 		c.Fatal(err)
 	}
-	config := container.Config{Image: "ibuildthecloud/helloworld"}
+	time.Sleep(time.Duration(5) * time.Second)
+	config := container.Config{Image: "ibuildthecloud/helloworld:latest"}
 	resp, err := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
 	if err != nil {
 		c.Fatal(err)
@@ -124,7 +124,6 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	c.Assert(containers[0]["uuid"], check.Equals, "no-label-test")
 	c.Assert(containers[0]["systemContainer"], check.Equals, "")
 }
-*/
 
 func (s *ComputeTestSuite) TestDefaultValue(c *check.C) {
 	varName, _ := uuid.NewV4()

@@ -1,7 +1,6 @@
 from docker.errors import APIError
 from .common import docker_client, event_test, instance_only_activate, \
     delete_container, json_data, random_str
-import pytest
 
 
 def test_image_activate(agent):
