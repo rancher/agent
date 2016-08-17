@@ -9,7 +9,9 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/blkiodev"
 	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
@@ -60,6 +62,7 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		Privileged:      utils.IsTrue(instance, "privileged"),
 		ReadonlyRootfs:  utils.IsTrue(instance, "readOnly"),
 	}
+	networkConfig := network.NetworkingConfig{}
 
 	initializeMaps(&config, &hostConfig)
 
@@ -92,6 +95,8 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	setupResource(instance.Data["fields"].(map[string]interface{}), &hostConfig)
 
 	setupFieldsHostConfig(instance.Data["fields"].(map[string]interface{}), &hostConfig)
+
+	setupNetworkingConfig(&networkConfig, instance)
 
 	setupDeviceOptions(&hostConfig, instance)
 
@@ -804,6 +809,61 @@ func setupFieldsHostConfig(fields map[string]interface{}, hostConfig *container.
 			hostConfig.VolumeDriver = utils.InterfaceToString(value)
 		case "cpuSet":
 			hostConfig.CpusetCpus = utils.InterfaceToString(value)
+		case "blkioWeight":
+			hostConfig.BlkioWeight = uint16(utils.InterfaceToFloat(value))
+		case "cgroupParent":
+			hostConfig.CgroupParent = utils.InterfaceToString(value)
+		case "cpuPeriod":
+			hostConfig.CPUPeriod = int64(utils.InterfaceToFloat(value))
+		case "cpuQuota":
+			hostConfig.CPUQuota = int64(utils.InterfaceToFloat(value))
+		case "cpusetMems":
+			hostConfig.CpusetMems = utils.InterfaceToString(value)
+		case "dnsOpt":
+			for _, singleValue := range utils.InterfaceToArray(value) {
+				if str := utils.InterfaceToString(singleValue); str != "" {
+					hostConfig.CapDrop = append(hostConfig.CapDrop, str)
+				}
+			}
+		case "groupAdd":
+			for _, singleValue := range utils.InterfaceToArray(value) {
+				if str := utils.InterfaceToString(singleValue); str != "" {
+					hostConfig.CapDrop = append(hostConfig.CapDrop, str)
+				}
+			}
+		case "isolation":
+			hostConfig.Isolation = container.Isolation(utils.InterfaceToString(value))
+		case "kernelMemory":
+			hostConfig.KernelMemory = int64(utils.InterfaceToFloat(value))
+		case "memoryReservation":
+			hostConfig.MemoryReservation = int64(utils.InterfaceToFloat(value))
+		case "memorySwap":
+			hostConfig.MemorySwap = int64(utils.InterfaceToFloat(value))
+		case "MemorySwappiness":
+			ms := int64(utils.InterfaceToFloat(value))
+			hostConfig.MemorySwappiness = &ms
+		case "oomKillDisable":
+			od := utils.InterfaceToBool(value)
+			hostConfig.OomKillDisable = &od
+		case "shmSize":
+			hostConfig.ShmSize = int64(utils.InterfaceToFloat(value))
+		case "tmpfs":
+			vmap := utils.InterfaceToMap(value)
+			hostConfig.Tmpfs = map[string]string{}
+			for k, v := range vmap {
+				hostConfig.Tmpfs[k] = utils.InterfaceToString(v)
+			}
+		case "ulimits":
+			vmap := utils.InterfaceToMap(value)
+			ul := units.Ulimit{
+				Name: utils.InterfaceToString(vmap["name"]),
+				Hard: int64(utils.InterfaceToFloat(vmap["hard"])),
+				Soft: int64(utils.InterfaceToFloat(vmap["soft"])),
+			}
+			hostConfig.Ulimits = []*units.Ulimit{}
+			hostConfig.Ulimits = append(hostConfig.Ulimits, &ul)
+		case "uts":
+			hostConfig.UTSMode = container.UTSMode(utils.InterfaceToString(value))
 		}
 	}
 }
@@ -850,9 +910,15 @@ func setupFieldsConfig(fields map[string]interface{}, config *container.Config) 
 				str := utils.InterfaceToString(v)
 				config.Labels[k] = str
 			}
+		case "stopSignal":
+			config.StopSignal = utils.InterfaceToString(value)
 		}
 
 	}
+}
+
+func setupNetworkingConfig(networkConfig *network.NetworkingConfig, instance *model.Instance) {
+
 }
 
 func setupLabels(labels map[string]interface{}, config *container.Config) {
