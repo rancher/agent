@@ -92,6 +92,10 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
 	client := docker.GetClient(constants.DefaultVersion)
+	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld", types.ImagePullOptions{})
+	if err != nil {
+		c.Fatal(err)
+	}
 	config := container.Config{Image: "ibuildthecloud/helloworld"}
 	resp, err := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
 	if err != nil {
