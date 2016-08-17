@@ -39,7 +39,6 @@ def test_volume_activate(agent):
 
 
 @if_docker
-@pytest.mark.skip('skip this one temporally')
 def test_volume_activate_driver1(agent):
     def pre(req):
         vol = req['data']['volumeStoragePoolMap']['volume']
@@ -61,7 +60,6 @@ def test_volume_activate_driver1(agent):
 
 
 @if_docker
-@pytest.mark.skip('skip this one temporally')
 def test_volume_activate_driver2(agent):
     def pre(req):
         vol = req['data']['volumeStoragePoolMap']['volume']
