@@ -8,3 +8,7 @@
 tests/.cache
 tests/.tox
 tests/.venv
+tests/.idea
+agent
+agent.iml
+logs
