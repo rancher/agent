@@ -55,7 +55,10 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	}
 	dockerClient := docker.DefaultClient
 	if utils.IsNoOp(event.Data) {
-		compute.RecordState(dockerClient, instance, "")
+		err := compute.RecordState(dockerClient, instance, "")
+		if err != nil {
+			return errors.Wrap(err, "Failed to deactivate instance")
+		}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 	if compute.IsInstanceInactive(instance) {
