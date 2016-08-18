@@ -57,7 +57,9 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 			}
 		}
 	}
-	config := container.Config{}
+	config := container.Config{
+		OpenStdin: true,
+	}
 	hostConfig := container.HostConfig{
 		PublishAllPorts: false,
 		Privileged:      utils.IsTrue(instance, "privileged"),

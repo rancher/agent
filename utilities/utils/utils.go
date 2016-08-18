@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os/exec"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -693,4 +694,15 @@ func GetURLPort(url string) string {
 		port = "443"
 	}
 	return port
+}
+
+func GetWindowsKernelVersion() (string, error) {
+	command := exec.Command("PowerShell", "wmic", "os", "get", "Version")
+	output, err := command.Output()
+	if err == nil {
+		ret := strings.Split(string(output), "\n")[1]
+		return ret, nil
+	} else {
+		return "", err
+	}
 }

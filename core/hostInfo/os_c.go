@@ -14,6 +14,7 @@ type OSCollector struct {
 type OSInfoGetter interface {
 	GetOS() map[string]interface{}
 	GetDockerVersion(bool) map[string]interface{}
+	GetWindowsOS() map[string]interface{}
 }
 
 type OSDataGetter struct{}
@@ -47,13 +48,34 @@ func (o OSDataGetter) GetOS() map[string]interface{} {
 	return data
 }
 
+func (o OSDataGetter) GetWindowsOS() map[string]interface{} {
+	data := map[string]interface{}{}
+	info, err := utils.GetInfo()
+	if err != nil {
+		logrus.Error(err)
+	} else {
+		data["operatingSystem"] = info.OperatingSystem
+		kv, err := utils.GetWindowsKernelVersion()
+		if err == nil {
+			data["kernelVersion"] = kv
+		} else {
+			logrus.Error(err)
+		}
+	}
+	return data
+}
+
 func (o OSCollector) GetData() map[string]interface{} {
 	data := map[string]interface{}{}
+	for key, value := range o.dataGetter.GetDockerVersion(true) {
+		data[key] = value
+	}
 	if o.GOOS == "linux" {
 		for key, value := range o.dataGetter.GetOS() {
 			data[key] = value
 		}
-		for key, value := range o.dataGetter.GetDockerVersion(true) {
+	} else if o.GOOS == "windows" {
+		for key, value := range o.dataGetter.GetWindowsOS() {
 			data[key] = value
 		}
 	}
@@ -61,10 +83,19 @@ func (o OSCollector) GetData() map[string]interface{} {
 }
 
 func (o OSCollector) GetLabels(prefix string) map[string]string {
-	labels := map[string]string{
-		fmt.Sprintf("%s.%s", prefix, "docker_version"):       utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
-		fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(utils.InterfaceToString(o.dataGetter.GetOS()["kernelVersion"]), 2),
+	labels := map[string]string{}
+	if o.GOOS == "linux" {
+		labels = map[string]string{
+			fmt.Sprintf("%s.%s", prefix, "docker_version"):       utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
+			fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(utils.InterfaceToString(o.dataGetter.GetOS()["kernelVersion"]), 2),
+		}
+	} else if o.GOOS == "windows" {
+		labels = map[string]string{
+			fmt.Sprintf("%s.%s", prefix, "docker_version"):       utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
+			fmt.Sprintf("%s.%s", prefix, "windows_kernel_version"): utils.InterfaceToString(o.dataGetter.GetWindowsOS()["kernelVersion"]),
+		}
 	}
+
 	return labels
 }
 

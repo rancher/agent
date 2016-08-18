@@ -1,13 +1,15 @@
 {
     "data": {
+        "processData" : {
+            "timeout" : 0
+        },
         "instanceHostMap": {
             "host": {
                 "agentId": 91,
                 "created": 1389396142000,
                 "data": {
                     "fields": {
-                        "accountId": 1,
-                        "cmd": "ping -t localhost"
+                        "accountId": 1
                     }
                 },
                 "description": null,
@@ -23,31 +25,14 @@
             "id": 50,
             "instance": {
                 "accountId": 1,
-                "agentId": 5,
                 "allocationState": "active",
                 "created": 1389396144000,
                 "data": {
                     "fields": {
                         "imageUuid": "docker:ibuildthecloud/helloworld",
-                        "startOnCreate": true,
-                        "publishAllPorts": true,
-                        "environment": {
-                            "ENV1": "value1"
-                        }
+                        "startOnCreate": true
                     }
                 },
-                "ports" : [
-                    {
-                        "protocol": "tcp",
-                        "privatePort": 80,
-                        "publicPort": 80
-                    },
-                    {
-                        "protocol": "udp",
-                        "privatePort": 12201,
-                        "publicPort": null
-                    }
-                ],
                 "description": null,
                 "hostname": null,
                 "id": 211,
@@ -60,7 +45,7 @@
                             "fullName": "microsoft/iis:latest",
                             "id": "4aece5bf9124998dae604ab09a9e3d6a3a5e305c68c313198f0faca6c67a1c3f",
                             "namespace": "cattle",
-                            "qualifiedName": "microsoft/iis",
+                            "qualifiedName": "microsoft/iis:latest",
                             "repository": "helloworld",
                             "tag": "latest"
                         }
@@ -77,7 +62,7 @@
                     "state": "active",
                     "type": "image",
                     "url": null,
-                    "uuid": "docker:microsoft/iis",
+                    "uuid": "docker:microsoft/iis:latest",
                     "virtualSizeBytes": null
                 },
                 "imageId": 14,
@@ -130,7 +115,7 @@
         }
     },
     "id": "fe8fe34c-1b13-4287-a094-a2c5f902722b",
-    "name": "compute.instance.activate",
+    "name": "compute.instance.deactivate",
     "previousIds": null,
     "previousNames": null,
     "publisher": null,

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"os/exec"
 )
 
 var KeyMap = map[string]string{
@@ -68,9 +69,42 @@ func (m MemoryCollector) parseLinuxMemInfo() map[string]interface{} {
 	return data
 }
 
+func (m MemoryCollector) parseWindowsMemInfo() map[string]interface{} {
+	data := map[string]interface{}{}
+	keys := []string{
+		"FreePhysicalMemory",
+		"FreeVirtualMemory",
+		"TotalSwapSpaceSize",
+		"TotalVirtualMemorySize",
+		"TotalVisibleMemorySize",
+	}
+	for _, key := range keys {
+		value, err := getCommandOutput(key)
+		if err != nil {
+			logrus.Error(err)
+		} else {
+			data[key] = value
+		}
+	}
+	return data
+}
+
+func getCommandOutput(key string) (string, error) {
+	command := exec.Command("PowerShell", "wmic", "os", "get", key)
+	output, err := command.Output()
+	if err == nil {
+		ret := strings.Split(string(output), "\n")[1]
+		return ret, nil
+	} else {
+		return "", err
+	}
+}
+
 func (m MemoryCollector) GetData() map[string]interface{} {
 	if m.GOOS == "linux" {
 		return m.parseLinuxMemInfo()
+	} else if m.GOOS == "windows" {
+		return m.parseWindowsMemInfo()
 	}
 	return nil
 }

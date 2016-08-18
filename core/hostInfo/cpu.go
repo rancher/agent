@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"os/exec"
+	"runtime"
 )
 
 type CPUInfoGetter interface {
@@ -45,32 +47,30 @@ func (c CPUCollector) getLinuxCPUInfo() map[string]interface{} {
 	data := map[string]interface{}{}
 
 	procs := []string{}
-	if c.GOOS == "linux" {
-		fileData := c.dataGetter.GetCPUInfoData()
-		for _, line := range fileData {
-			parts := strings.Split(line, ":")
-			if strings.TrimSpace(parts[0]) == "model name" {
-				procs = append(procs, strings.TrimSpace(parts[1]))
-				pattern := "([0-9\\.]+)\\s?GHz"
-				freq := regexp.MustCompile(pattern).FindString(parts[1])
-				if freq != "" {
-					ghz := strings.TrimSpace(freq[:len(freq)-3])
-					if ghz != "" {
-						mhz, _ := strconv.ParseFloat(ghz, 64)
-						data["mhz"] = mhz * 1000
-					}
-				}
-			}
-			if _, ok := data["mhz"]; !ok {
-				if strings.TrimSpace(parts[0]) == "cpu MHz" {
-					mhz, _ := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
-					data["mhz"] = mhz
+	fileData := c.dataGetter.GetCPUInfoData()
+	for _, line := range fileData {
+		parts := strings.Split(line, ":")
+		if strings.TrimSpace(parts[0]) == "model name" {
+			procs = append(procs, strings.TrimSpace(parts[1]))
+			pattern := "([0-9\\.]+)\\s?GHz"
+			freq := regexp.MustCompile(pattern).FindString(parts[1])
+			if freq != "" {
+				ghz := strings.TrimSpace(freq[:len(freq)-3])
+				if ghz != "" {
+					mhz, _ := strconv.ParseFloat(ghz, 64)
+					data["mhz"] = mhz * 1000
 				}
 			}
 		}
-		data["modelName"] = procs[0]
-		data["count"] = len(procs)
+		if _, ok := data["mhz"]; !ok {
+			if strings.TrimSpace(parts[0]) == "cpu MHz" {
+				mhz, _ := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+				data["mhz"] = mhz
+			}
+		}
 	}
+	data["modelName"] = procs[0]
+	data["count"] = len(procs)
 
 	return data
 }
@@ -114,19 +114,38 @@ func (c CPUDataGetter) GetCPULoadAverage() map[string]interface{} {
 	}
 }
 
+func (c CPUCollector) GetWindowCPUInfo() map[string]interface{} {
+	data := map[string]interface{}{}
+	command := exec.Command("PowerShell", "wmic", "cpu", "get", "Name")
+	output, err := command.Output()
+	if err == nil {
+		ret := strings.Split(string(output), "\n")[1]
+		data["modelName"] = ret
+	} else {
+		logrus.Error(err)
+	}
+	data["count"] = runtime.NumCPU()
+	return data
+}
+
 func (c CPUCollector) GetData() map[string]interface{} {
 	data := map[string]interface{}{}
 
+	for key, value := range c.getCPUPercentage() {
+		data[key] = value
+	}
 	if c.GOOS == "linux" {
 		for key, value := range c.getLinuxCPUInfo() {
-			data[key] = value
-		}
-		for key, value := range c.getCPUPercentage() {
 			data[key] = value
 		}
 		for key, value := range c.dataGetter.GetCPULoadAverage() {
 			data[key] = value
 		}
+	} else if c.GOOS == "windows" {
+		for key, value := range c.GetWindowCPUInfo() {
+			data[key] = value
+		}
+		// load average doesn't apply for windows
 	}
 	return data
 }

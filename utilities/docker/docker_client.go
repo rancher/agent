@@ -25,4 +25,4 @@ func GetClientFromUrl(host string, version string, httpClient *http.Client, head
 }
 
 //var DefaultClient = GetClient(constants.DefaultVersion)
-var DefaultClient = GetClientFromUrl("tcp://192.168.42.175:2375", "v1.22", nil, nil)
+var DefaultClient = GetClientFromUrl("tcp://192.168.42.177:2375", "v1.24", nil, nil)
