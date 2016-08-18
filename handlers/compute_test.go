@@ -56,7 +56,7 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 }
 
 func deleteContainer(name string) {
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.DefaultClient
 	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false

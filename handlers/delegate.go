@@ -7,7 +7,6 @@ import (
 	"github.com/rancher/agent/core/delegate"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
@@ -25,7 +24,7 @@ func DelegateRequest(event *revents.Event, cli *client.RancherClient) error {
 	if instanceData.Kind != "container" || instanceData.Token == "" {
 		return nil
 	}
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.DefaultClient
 	instance := model.Instance{
 		UUID:       instanceData.UUID,
 		AgentID:    instanceData.AgentID,

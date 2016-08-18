@@ -477,7 +477,6 @@ func setupCattleConfigURL(instance *model.Instance, config *container.Config) {
 	utils.AddLabel(config, "io.rancher.container.agent_id", strconv.Itoa(instance.AgentID))
 
 	url := configuration.URL()
-	logrus.Info("url info " + url)
 	if len(url) > 0 {
 		parsed, err := urls.Parse(url)
 

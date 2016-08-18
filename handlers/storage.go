@@ -27,10 +27,6 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
-	if storage.IsImageActive(&image, &storagePool) {
-		return reply(event.Data, event, cli)
-	}
-
 	err := storage.DoImageActivate(&image, &storagePool, &progress)
 	if err != nil {
 		return errors.Wrap(err, "Failed to activate image")
@@ -40,7 +36,7 @@ func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 		return errors.New("operation failed")
 	}
 
-	return reply(event.Data, event, cli)
+	return reply(utils.GetResponseData(event), event, cli)
 }
 
 func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {

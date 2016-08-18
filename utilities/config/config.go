@@ -238,7 +238,7 @@ func maxDroppedRequests() int {
 }
 
 func CadvisorDockerRoot() string {
-	info, _ := docker.GetClient(constants.DefaultVersion).Info(context.Background())
+	info, _ := docker.DefaultClient.Info(context.Background())
 	return info.DockerRootDir
 }
 

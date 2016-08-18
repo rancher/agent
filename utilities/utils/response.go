@@ -5,7 +5,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
@@ -42,7 +41,7 @@ func GetResponseData(event *revents.Event) map[string]interface{} {
 
 func getInstanceHostMapData(event *revents.Event) map[string]interface{} {
 	instance, _ := GetInstanceAndHost(event)
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.DefaultClient
 	var inspect types.ContainerJSON
 	container := GetContainer(client, instance, false)
 	dockerPorts := []string{}
@@ -98,7 +97,7 @@ func getInstanceHostMapData(event *revents.Event) map[string]interface{} {
 }
 
 func getMountData(containerID string) []types.MountPoint {
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.DefaultClient
 	inspect, err := client.ContainerInspect(context.Background(), containerID)
 	if err != nil {
 		logrus.Error(err)
@@ -110,7 +109,7 @@ func getMountData(containerID string) []types.MountPoint {
 func getInstancePullData(event *revents.Event) types.ImageInspect {
 	imageName, _ := GetFieldsIfExist(event.Data, "instancePull", "image", "data", "dockerImage", "fullName")
 	tag, _ := GetFieldsIfExist(event.Data, "instancePull", "tag")
-	inspect, _, _ := docker.GetClient(constants.DefaultVersion).ImageInspectWithRaw(context.Background(),
+	inspect, _, _ := docker.DefaultClient.ImageInspectWithRaw(context.Background(),
 		fmt.Sprintf("%v%v", imageName, tag), false)
 	return inspect
 }
