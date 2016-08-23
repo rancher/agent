@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"runtime"
 )
 
 func StorageAPIVersion() string {
@@ -66,7 +67,12 @@ func PhysicalHostUUID(forceWrite bool) string {
 }
 
 func Home() string {
-	return DefaultValue("HOME", "/var/lib/cattle")
+	if runtime.GOOS == "linux" {
+		return DefaultValue("HOME", "/var/lib/cattle")
+	} else {
+		return DefaultValue("HOME", "c:/Cattle")
+	}
+
 }
 
 func getUUIDFromFile(uuidFilePath string) string {

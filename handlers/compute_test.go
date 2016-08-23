@@ -17,6 +17,8 @@ import (
 	"path"
 	"testing"
 	"time"
+	"github.com/rancher/agent/utilities/constants"
+	"runtime"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -31,7 +33,7 @@ var _ = check.Suite(&ComputeTestSuite{})
 
 func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
 }
-/*
+
 func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	constants.ConfigOverride["CONFIG_URL"] = "https://localhost:1234/a/path"
 	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
@@ -54,54 +56,58 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	c.Assert(ok2, check.Equals, true)
 	c.Assert(ok3, check.Equals, true)
 }
-*/
+
 
 func (s *ComputeTestSuite) TestInstanceActivateWindowsImage(c *check.C) {
-	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c26")
+	if runtime.GOOS == "windows"{
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c26")
 
-	rawEvent := loadEvent("./test_events/instance_activate_windows", c)
-	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No ID found")
+		rawEvent := loadEvent("./test_events/instance_activate_windows", c)
+		reply := testEvent(rawEvent, c)
+		container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
 	}
-	inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
-	c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
 }
 
-/*
+
 func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
-	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c26")
+	if runtime.GOOS == "windows" {
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c26")
 
-	rawEvent := loadEvent("./test_events/instance_activate_windows", c)
-	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No ID found")
-	}
-	inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
-	c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
+		rawEvent := loadEvent("./test_events/instance_activate_windows", c)
+		reply := testEvent(rawEvent, c)
+		container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
 
 
-	rawEventDe := loadEvent("./test_events/instance_deactivate_windows", c)
-	replyDe := testEvent(rawEventDe, c)
-	container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No ID found")
+		rawEventDe := loadEvent("./test_events/instance_deactivate_windows", c)
+		replyDe := testEvent(rawEventDe, c)
+		container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		inspect, err = docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.State.Status, check.Equals, "exited")
 	}
-	inspect, err = docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
-	c.Check(inspect.State.Status, check.Equals, "exited")
 }
-*/
+
 
 
 func deleteContainer(name string) {

@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
+	"runtime"
+	"reflect"
 )
 
 func StartUp() error {
@@ -38,8 +40,14 @@ func StartUp() error {
 	listen := fmt.Sprintf("TCP4-LISTEN:%v,fork,bind=%v,reuseaddr", fromPort, fromHost)
 	to := fmt.Sprintf("TCP:%v:%v", toHostIP, toPort)
 	command := exec.Command("socat", listen, to)
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
+	if runtime.GOOS == "linux" {
+		attr := syscall.SysProcAttr{}
+		r := reflect.ValueOf(attr)
+		f := reflect.Indirect(r).FieldByName("Setpgid")
+		if f.CanSet() {
+			f.SetBool(true)
+		}
+		command.SysProcAttr = &attr
 	}
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout

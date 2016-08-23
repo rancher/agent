@@ -572,7 +572,7 @@ func GetLoadAverage() []string {
 }
 
 func GetInfo() (types.Info, error) {
-	return docker.DefaultClient.Info(context.Background())
+	return docker.Info, docker.InfoErr
 }
 
 func NameFilter(name string, container *types.Container) bool {

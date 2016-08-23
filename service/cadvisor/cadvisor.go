@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"runtime"
+	"reflect"
 )
 
 func StartUp() error {
@@ -31,8 +33,14 @@ func StartUp() error {
 		args = append([]string{"nsenter", "--mount=/host/proc/1/ns/mnt", "--"}, args...)
 	}
 	command := exec.Command(args[0], args[1:len(args)]...)
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
+	if runtime.GOOS == "linux" {
+		attr := syscall.SysProcAttr{}
+		r := reflect.ValueOf(attr)
+		f := reflect.Indirect(r).FieldByName("Setpgid")
+		if f.CanSet() {
+			f.SetBool(true)
+		}
+		command.SysProcAttr = &attr
 	}
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout

@@ -4,6 +4,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"net/http"
+	"golang.org/x/net/context"
+	"fmt"
+	"os"
 )
 
 func GetClient(version string) *client.Client {
@@ -25,4 +28,8 @@ func GetClientFromUrl(host string, version string, httpClient *http.Client, head
 }
 
 //var DefaultClient = GetClient(constants.DefaultVersion)
-var DefaultClient = GetClientFromUrl("tcp://192.168.42.177:2375", "v1.24", nil, nil)
+var DefaultClient = GetClientFromUrl(fmt.Sprintf("tcp://%v:2375", os.Getenv("CATTLE_AGENT_IP")), "v1.24", nil, nil)
+
+var info, err = DefaultClient.Info(context.Background())
+var Info = info
+var InfoErr = err

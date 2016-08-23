@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"os/exec"
+	"regexp"
 )
 
 var KeyMap = map[string]string{
@@ -71,19 +72,19 @@ func (m MemoryCollector) parseLinuxMemInfo() map[string]interface{} {
 
 func (m MemoryCollector) parseWindowsMemInfo() map[string]interface{} {
 	data := map[string]interface{}{}
-	keys := []string{
-		"FreePhysicalMemory",
-		"FreeVirtualMemory",
-		"TotalSwapSpaceSize",
-		"TotalVirtualMemorySize",
-		"TotalVisibleMemorySize",
+	keys := map[string]string{
+		"memFree": "FreePhysicalMemory",
+		"memTotal": "TotalVisibleMemorySize",
 	}
-	for _, key := range keys {
-		value, err := getCommandOutput(key)
+	for k, v := range keys {
+		value, err := getCommandOutput(v)
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			data[key] = value
+			pattern := "([0-9]+)"
+			possibleMemValue := regexp.MustCompile(pattern).FindString(value)
+			memValue, _ := strconv.ParseFloat(possibleMemValue, 64)
+			data[k] = memValue / 1024
 		}
 	}
 	return data
