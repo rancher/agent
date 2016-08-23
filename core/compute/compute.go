@@ -136,11 +136,11 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 		}
 		return errors.Wrap(startErr, "Failed to activate instance")
 	}
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		if err := RecordState(dockerClient, instance, containerID); err != nil {
-			return errors.Wrap(err, "Failed to activate instance")
-		}
+
+	if err := RecordState(dockerClient, instance, containerID); err != nil {
+		return errors.Wrap(err, "Failed to activate instance")
 	}
+
 	return nil
 }
 
