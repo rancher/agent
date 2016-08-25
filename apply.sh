@@ -36,7 +36,7 @@ stage()
         cat ./dist/websocket/cacert.orig ${CURL_CA_BUNDLE} > ./dist/websocket/cacert.pem
     fi
 
-    cp -rf apply.sh bin/agent $TEMP
+    cp -rf apply.sh agent $TEMP
 
     find $TEMP -name "*.sh" -exec chmod +x {} \;
     find $TEMP \( -name host-api -o -name cadvisor -o -name nsenter -o -name socat \) -exec chmod +x {} \;

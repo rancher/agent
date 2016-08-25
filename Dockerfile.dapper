@@ -1,6 +1,6 @@
 FROM golang:1.6.2
 RUN apt-get update && \
-    apt-get install xz-utils
+    apt-get install -y uuid-runtime
 RUN go get github.com/rancher/trash
 RUN go get github.com/golang/lint/golint
 RUN curl -sL https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 > /usr/bin/docker && \

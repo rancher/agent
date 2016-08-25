@@ -48,7 +48,8 @@ func getInstanceHostMapData(event *revents.Event) map[string]interface{} {
 	dockerIP := ""
 	dockerMounts := []types.MountPoint{}
 	if container != nil {
-		inspect, _ = client.ContainerInspect(context.Background(), container.ID)
+		inspectInfo, _ := client.ContainerInspect(context.Background(), container.ID)
+		inspect = inspectInfo
 		dockerMounts = getMountData(container.ID)
 		dockerIP = inspect.NetworkSettings.IPAddress
 		if container.Ports != nil && len(container.Ports) > 0 {
