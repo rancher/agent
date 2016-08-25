@@ -20,7 +20,6 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 
 	config.PhysicalHostUUID(true)
 
-
 	if runtime.GOOS == "linux" {
 		logrus.Info("launching API proxy")
 		go apiproxy.StartUp()

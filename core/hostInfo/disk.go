@@ -4,8 +4,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/utilities/utils"
 	"math"
-	"strings"
 	"runtime"
+	"strings"
 )
 
 type DiskCollector struct {
