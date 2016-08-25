@@ -21,7 +21,7 @@ import:
   version: d2dd0262208475919e1a362f675cfc0e7c10e905
 
 - package: github.com/docker/engine-api
-  version: bac0f6860e3e8f13c374c22c31b3506b9a281f5d
+  version: b66d7d91dbde8b568eab9587fe9cbdd08506ed2e
 
 - package: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3

@@ -15,8 +15,6 @@ type Publish struct {
 
 	Publisher string `json:"publisher,omitempty" yaml:"publisher,omitempty"`
 
-	PreviousNames []string `json:"previousNames,omitempty" yaml:"previousNames,omitempty"`
-
 	ResourceId string `json:"resourceId,omitempty" yaml:"resource_id,omitempty"`
 
 	ResourceType string `json:"resourceType,omitempty" yaml:"resource_type,omitempty"`
