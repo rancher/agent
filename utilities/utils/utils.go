@@ -28,10 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-<<<<<<< 9b5369dc8d23c302070697f35f70ded5f640c0c4
-	"os/exec"
-=======
->>>>>>> fmt correct
 )
 
 func unwrap(obj interface{}) interface{} {
