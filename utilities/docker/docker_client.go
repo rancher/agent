@@ -7,15 +7,18 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"golang.org/x/net/context"
 	"os"
+	"runtime"
 )
 
 func GetClient(version string, timeout string) *client.Client {
 	if config.UseBoot2dockerConnectionEnvVars() {
 		return launchDefaultCli(version)
 	}
-	defCli := launchDefaultCli(version)
-	if defCli != nil {
-		return defCli
+	if runtime.GOOS == "linux" {
+		defCli := launchDefaultCli(version)
+		if defCli != nil {
+			return defCli
+		}
 	}
 	cli, err := client.NewClient(fmt.Sprintf("tcp://%v:2375", os.Getenv("CATTLE_AGENT_IP")), version, nil, map[string]string{
 		"timeout": timeout,
