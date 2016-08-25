@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
+	"runtime"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -19,14 +20,17 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 
 	config.PhysicalHostUUID(true)
 
-	logrus.Info("launching API proxy")
-	go apiproxy.StartUp()
 
-	logrus.Info("launching hostapi")
-	go hostapi.StartUp()
+	if runtime.GOOS == "linux" {
+		logrus.Info("launching API proxy")
+		go apiproxy.StartUp()
 
-	logrus.Info("launching cadvisor")
-	go cadvisor.StartUp()
+		logrus.Info("launching hostapi")
+		go hostapi.StartUp()
+
+		logrus.Info("launching cadvisor")
+		go cadvisor.StartUp()
+	}
 
 	eventHandlers := handlers.GetHandlers()
 	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount, revents.DefaultPingConfig)

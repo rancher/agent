@@ -99,6 +99,10 @@ func (m MockOSCollector) GetDockerVersion(verbose bool) map[string]interface{} {
 	return data
 }
 
+func (m MockOSCollector) GetWindowsOS() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
 func (m MockCadvisorGetter) GetContainers() (map[string]interface{}, error) {
 	return loadJSON("./test_events/cadvisor_stats")
 }
@@ -568,7 +572,7 @@ func (s *ComputeTestSuite) TestNonLinuxHost(c *check.C) {
 	osInfo := utils.InterfaceToMap(NonLinuxHostData["osInfo"])
 	cpuInfo := utils.InterfaceToMap(NonLinuxHostData["cpuInfo"])
 	c.Assert(len(memoryInfo), check.Equals, 0)
-	c.Assert(len(osInfo), check.Equals, 0)
+	c.Assert(len(osInfo), check.Equals, 1)
 	c.Assert(len(cpuInfo), check.Equals, 0)
 	_, ok1 := utils.InterfaceToMap(NonLinuxHostData["diskInfo"])["mountPoints"]
 	_, ok2 := utils.InterfaceToMap(NonLinuxHostData["diskInfo"])["fileSystems"]

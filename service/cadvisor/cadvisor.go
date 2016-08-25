@@ -2,6 +2,7 @@ package cadvisor
 
 import (
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"os"
 	"os/exec"
@@ -18,7 +19,7 @@ func StartUp() error {
 		"-port", config.CadvisorPort(),
 		"-housekeeping_interval", config.CadvisorInterval(),
 	}
-	dockerRoot := config.CadvisorDockerRoot()
+	dockerRoot := cadvisorDockerRoot()
 	if len(dockerRoot) > 0 {
 		args = append(args, []string{"-docker_root", dockerRoot}...)
 	}
@@ -47,4 +48,8 @@ func StartUp() error {
 	command.Start()
 	err := command.Wait()
 	return err
+}
+
+func cadvisorDockerRoot() string {
+	return docker.Info.DockerRootDir
 }

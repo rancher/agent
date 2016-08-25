@@ -295,7 +295,7 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 		version := config.StorageAPIVersion()
 		docker.DefaultClient.UpdateClientVersion(version)
 		defer docker.DefaultClient.UpdateClientVersion(constants.DefaultVersion)
-		err := docker.GetClient(version).VolumeRemove(context.Background(), volume.Name)
+		err := docker.DefaultClient.VolumeRemove(context.Background(), volume.Name)
 		if err != nil {
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",

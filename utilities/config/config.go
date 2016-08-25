@@ -5,8 +5,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
-	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -67,12 +65,10 @@ func PhysicalHostUUID(forceWrite bool) string {
 }
 
 func Home() string {
-	if runtime.GOOS == "linux" {
-		return DefaultValue("HOME", "/var/lib/cattle")
-	} else {
+	if runtime.GOOS == "windows" {
 		return DefaultValue("HOME", "c:/Cattle")
 	}
-
+	return DefaultValue("HOME", "/var/lib/cattle")
 }
 
 func getUUIDFromFile(uuidFilePath string) string {
@@ -243,11 +239,6 @@ func maxDroppedRequests() int {
 	return ret
 }
 
-func CadvisorDockerRoot() string {
-	info, _ := docker.DefaultClient.Info(context.Background())
-	return info.DockerRootDir
-}
-
 func CadvisorOpts() string {
 	return DefaultValue("CADVISOR_OPTS", "")
 }
@@ -336,6 +327,11 @@ func CadvisorPort() string {
 
 func CadvisorInterval() string {
 	return DefaultValue("CADVISOR_INTERVAL", "1s")
+}
+
+func UseBoot2dockerConnectionEnvVars() bool {
+	useB2d := DefaultValue("DOCKER_USE_BOOT2DOCKER", "false")
+	return strings.ToLower(useB2d) == "true"
 }
 
 func DefaultValue(name string, df string) string {

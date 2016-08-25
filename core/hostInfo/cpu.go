@@ -140,10 +140,10 @@ func (c CPUCollector) GetWindowCPUInfo() map[string]interface{} {
 func (c CPUCollector) GetData() map[string]interface{} {
 	data := map[string]interface{}{}
 
-	for key, value := range c.getCPUPercentage() {
-		data[key] = value
-	}
 	if c.GOOS == "linux" {
+		for key, value := range c.getCPUPercentage() {
+			data[key] = value
+		}
 		for key, value := range c.getLinuxCPUInfo() {
 			data[key] = value
 		}

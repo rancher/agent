@@ -151,10 +151,7 @@ def event_test(agent, name, pre_func=None, post_func=None, diff=True):
 
 
 def delete_container(name):
-    if platform.system() == "Windows":
-        client = docker_client(version="1.24", base_url_override="tcp://192.168.42.175:2375")
-    else:
-        client = docker_client()
+    client = docker_client()
     for c in client.containers(all=True):
         found = False
         labels = c.get('Labels', {})
@@ -291,10 +288,7 @@ def instance_activate_common_validation(resp):
 
 
 def newer_than(version):
-    if platform.system() == "Windows":
-        client = docker_client(version="1.24", base_url_override="tcp://192.168.42.175:2375")
-    else:
-        client = docker_client()
+    client = docker_client()
     ver = client.version()['ApiVersion']
     return compare_version(version, ver) >= 0
 

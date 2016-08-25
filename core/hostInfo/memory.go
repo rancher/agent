@@ -96,9 +96,8 @@ func getCommandOutput(key string) (string, error) {
 	if err == nil {
 		ret := strings.Split(string(output), "\n")[1]
 		return ret, nil
-	} else {
-		return "", err
 	}
+	return "", err
 }
 
 func (m MemoryCollector) GetData() map[string]interface{} {

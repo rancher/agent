@@ -702,7 +702,6 @@ func GetWindowsKernelVersion() (string, error) {
 	if err == nil {
 		ret := strings.Split(string(output), "\n")[1]
 		return ret, nil
-	} else {
-		return "", err
 	}
+	return "", err
 }

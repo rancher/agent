@@ -5,6 +5,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"math"
 	"strings"
+	"runtime"
 )
 
 type DiskCollector struct {
@@ -104,11 +105,13 @@ func (d DiskCollector) GetData() map[string]interface{} {
 		"dockerStorageDriverStatus": map[string]interface{}{},
 		"dockerStorageDriver":       d.dockerStorageDriver,
 	}
-	for key, value := range d.getMachineFilesystemsCadvisor() {
-		data["fileSystems"].(map[string]interface{})[key] = value
-	}
-	for key, value := range d.getMountPointsCadvisor() {
-		data["mountPoints"].(map[string]interface{})[key] = value
+	if runtime.GOOS == "linux" {
+		for key, value := range d.getMachineFilesystemsCadvisor() {
+			data["fileSystems"].(map[string]interface{})[key] = value
+		}
+		for key, value := range d.getMountPointsCadvisor() {
+			data["mountPoints"].(map[string]interface{})[key] = value
+		}
 	}
 	return data
 }

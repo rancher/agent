@@ -2,33 +2,40 @@ package docker
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"golang.org/x/net/context"
-	"net/http"
 	"os"
 )
 
-func GetClient(version string) *client.Client {
-	// Launch client from environment variables if go-agent is not running on host
+func GetClient(version string, timeout string) *client.Client {
+	if config.UseBoot2dockerConnectionEnvVars() {
+		return launchDefaultCli(version)
+	}
+	defCli := launchDefaultCli(version)
+	if defCli != nil {
+		return defCli
+	}
+	cli, err := client.NewClient(fmt.Sprintf("tcp://%v:2375", os.Getenv("CATTLE_AGENT_IP")), version, nil, map[string]string{
+		"timeout": timeout,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return cli
+}
+
+func launchDefaultCli(version string) *client.Client {
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		logrus.Error(err)
+		return nil
 	}
 	cli.UpdateClientVersion(version)
 	return cli
 }
 
-func GetClientFromUrl(host string, version string, httpClient *http.Client, headers map[string]string) *client.Client {
-	cli, err := client.NewClient(host, version, httpClient, headers)
-	if err != nil {
-		return nil
-	}
-	return cli
-}
-
-//var DefaultClient = GetClient(constants.DefaultVersion)
-var DefaultClient = GetClientFromUrl(fmt.Sprintf("tcp://%v:2375", os.Getenv("CATTLE_AGENT_IP")), "v1.24", nil, nil)
+var DefaultClient = GetClient(constants.DefaultVersion, "0")
 
 var info, err = DefaultClient.Info(context.Background())
 var Info = info

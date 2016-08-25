@@ -10,10 +10,10 @@ import (
 	urls "net/url"
 	"os"
 	"os/exec"
+	"reflect"
+	"runtime"
 	"strings"
 	"syscall"
-	"runtime"
-	"reflect"
 )
 
 func StartUp() error {
