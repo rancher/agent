@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
-	"runtime"
 )
 
 func StorageAPIVersion() string {

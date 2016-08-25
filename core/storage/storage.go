@@ -11,12 +11,12 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"os"
 	"strings"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 func IsVolumeActive(volume *model.Volume, storagePool *model.StoragePool) bool {

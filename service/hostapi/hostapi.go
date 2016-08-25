@@ -5,9 +5,9 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"os"
 	"os/exec"
-	"syscall"
-	"runtime"
 	"reflect"
+	"runtime"
+	"syscall"
 )
 
 func StartUp() error {

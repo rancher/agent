@@ -1,11 +1,11 @@
 package docker
 
 import (
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
-	"net/http"
 	"golang.org/x/net/context"
-	"fmt"
+	"net/http"
 	"os"
 )
 

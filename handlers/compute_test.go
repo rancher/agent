@@ -6,6 +6,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/config"
 	//"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
@@ -15,10 +16,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"testing"
 	"time"
-	"github.com/rancher/agent/utilities/constants"
-	"runtime"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -57,9 +57,8 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	c.Assert(ok3, check.Equals, true)
 }
 
-
 func (s *ComputeTestSuite) TestInstanceActivateWindowsImage(c *check.C) {
-	if runtime.GOOS == "windows"{
+	if runtime.GOOS == "windows" {
 		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c26")
 
 		rawEvent := loadEvent("./test_events/instance_activate_windows", c)
@@ -75,7 +74,6 @@ func (s *ComputeTestSuite) TestInstanceActivateWindowsImage(c *check.C) {
 		c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
 	}
 }
-
 
 func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 	if runtime.GOOS == "windows" {
@@ -93,7 +91,6 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 		}
 		c.Check(inspect.Config.Image, check.Equals, "microsoft/iis:latest")
 
-
 		rawEventDe := loadEvent("./test_events/instance_deactivate_windows", c)
 		replyDe := testEvent(rawEventDe, c)
 		container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
@@ -107,8 +104,6 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 		c.Check(inspect.State.Status, check.Equals, "exited")
 	}
 }
-
-
 
 func deleteContainer(name string) {
 	client := docker.DefaultClient

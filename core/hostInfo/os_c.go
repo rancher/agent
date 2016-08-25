@@ -91,7 +91,7 @@ func (o OSCollector) GetLabels(prefix string) map[string]string {
 		}
 	} else if o.GOOS == "windows" {
 		labels = map[string]string{
-			fmt.Sprintf("%s.%s", prefix, "docker_version"):       utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
+			fmt.Sprintf("%s.%s", prefix, "docker_version"):         utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
 			fmt.Sprintf("%s.%s", prefix, "windows_kernel_version"): utils.InterfaceToString(o.dataGetter.GetWindowsOS()["kernelVersion"]),
 		}
 	}

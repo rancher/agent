@@ -7,11 +7,11 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"math"
 	"os"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
-	"os/exec"
-	"runtime"
 )
 
 type CPUInfoGetter interface {

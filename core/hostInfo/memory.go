@@ -5,10 +5,10 @@ import (
 	"github.com/Sirupsen/logrus"
 	"math"
 	"os"
-	"strconv"
-	"strings"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 var KeyMap = map[string]string{
@@ -73,7 +73,7 @@ func (m MemoryCollector) parseLinuxMemInfo() map[string]interface{} {
 func (m MemoryCollector) parseWindowsMemInfo() map[string]interface{} {
 	data := map[string]interface{}{}
 	keys := map[string]string{
-		"memFree": "FreePhysicalMemory",
+		"memFree":  "FreePhysicalMemory",
 		"memTotal": "TotalVisibleMemorySize",
 	}
 	for k, v := range keys {

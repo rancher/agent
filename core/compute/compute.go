@@ -28,10 +28,10 @@ import (
 	urls "net/url"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
-	"runtime"
 )
 
 func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *progress.Progress) error {
