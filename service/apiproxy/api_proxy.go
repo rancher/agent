@@ -10,10 +10,8 @@ import (
 	urls "net/url"
 	"os"
 	"os/exec"
-	"reflect"
-	"runtime"
 	"strings"
-	"syscall"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {
@@ -40,15 +38,7 @@ func StartUp() error {
 	listen := fmt.Sprintf("TCP4-LISTEN:%v,fork,bind=%v,reuseaddr", fromPort, fromHost)
 	to := fmt.Sprintf("TCP:%v:%v", toHostIP, toPort)
 	command := exec.Command("socat", listen, to)
-	if runtime.GOOS == "linux" {
-		attr := syscall.SysProcAttr{}
-		r := reflect.ValueOf(attr)
-		f := reflect.Indirect(r).FieldByName("Setpgid")
-		if f.CanSet() {
-			f.SetBool(true)
-		}
-		command.SysProcAttr = &attr
-	}
+	command.SysProcAttr = constants.SysAttr
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
 	command.Start()

@@ -111,6 +111,6 @@ func getInstancePullData(event *revents.Event) types.ImageInspect {
 	imageName, _ := GetFieldsIfExist(event.Data, "instancePull", "image", "data", "dockerImage", "fullName")
 	tag, _ := GetFieldsIfExist(event.Data, "instancePull", "tag")
 	inspect, _, _ := docker.DefaultClient.ImageInspectWithRaw(context.Background(),
-		fmt.Sprintf("%v%v", imageName, tag), false)
+		fmt.Sprintf("%v%v", imageName, tag))
 	return inspect
 }

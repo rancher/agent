@@ -82,7 +82,7 @@ func DoVolumeActivate(volume *model.Volume, storagePool *model.StoragePool, prog
 	}
 	if vol.Mountpoint == "moved" {
 		logrus.Info(fmt.Sprintf("Removing moved volume %s so that it can be re-added.", volume.Name))
-		if err := client.VolumeRemove(context.Background(), volume.Name); err != nil {
+		if err := client.VolumeRemove(context.Background(), volume.Name, true); err != nil {
 			logrus.Error(err)
 		}
 	}
@@ -265,7 +265,7 @@ func IsImageActive(image *model.Image, storagePool *model.StoragePool) bool {
 		return true
 	}
 	parsedTag := utils.ParseRepoTag(utils.InterfaceToString(image.Data["dockerImage"].(map[string]interface{})["fullName"]))
-	_, _, err := docker.DefaultClient.ImageInspectWithRaw(context.Background(), parsedTag["uuid"], false)
+	_, _, err := docker.DefaultClient.ImageInspectWithRaw(context.Background(), parsedTag["uuid"])
 	if err == nil {
 		return true
 	}
@@ -295,7 +295,7 @@ func DoVolumeRemove(volume *model.Volume, storagePool *model.StoragePool, progre
 		version := config.StorageAPIVersion()
 		docker.DefaultClient.UpdateClientVersion(version)
 		defer docker.DefaultClient.UpdateClientVersion(constants.DefaultVersion)
-		err := docker.DefaultClient.VolumeRemove(context.Background(), volume.Name)
+		err := docker.DefaultClient.VolumeRemove(context.Background(), volume.Name, false)
 		if err != nil {
 			if strings.Contains(err.Error(), "409") {
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",

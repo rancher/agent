@@ -329,11 +329,6 @@ func CadvisorInterval() string {
 	return DefaultValue("CADVISOR_INTERVAL", "1s")
 }
 
-func UseBoot2dockerConnectionEnvVars() bool {
-	useB2d := DefaultValue("DOCKER_USE_BOOT2DOCKER", "false")
-	return strings.ToLower(useB2d) == "true"
-}
-
 func DefaultValue(name string, df string) string {
 	if value, ok := constants.ConfigOverride[name]; ok {
 		return value

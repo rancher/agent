@@ -6,9 +6,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"os"
 	"os/exec"
-	"reflect"
-	"runtime"
-	"syscall"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {
@@ -34,15 +32,7 @@ func StartUp() error {
 		args = append([]string{"nsenter", "--mount=/host/proc/1/ns/mnt", "--"}, args...)
 	}
 	command := exec.Command(args[0], args[1:len(args)]...)
-	if runtime.GOOS == "linux" {
-		attr := syscall.SysProcAttr{}
-		r := reflect.ValueOf(attr)
-		f := reflect.Indirect(r).FieldByName("Setpgid")
-		if f.CanSet() {
-			f.SetBool(true)
-		}
-		command.SysProcAttr = &attr
-	}
+	command.SysProcAttr = constants.SysAttr
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
 	command.Start()

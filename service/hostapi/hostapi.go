@@ -5,9 +5,8 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"os"
 	"os/exec"
-	"reflect"
 	"runtime"
-	"syscall"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {
@@ -26,17 +25,15 @@ func StartUp() error {
 		"-cattle-url", config.APIURL(""),
 		"-cattle-state-dir", config.ContainerStateDir(),
 	}
-	command := exec.Command("host-api", args...)
-	command.Env = env
-	if runtime.GOOS == "linux" {
-		attr := syscall.SysProcAttr{}
-		r := reflect.ValueOf(attr)
-		f := reflect.Indirect(r).FieldByName("Setpgid")
-		if f.CanSet() {
-			f.SetBool(true)
-		}
-		command.SysProcAttr = &attr
+	var execPath string
+	if runtime.GOOS == "windows" {
+		execPath = "c:\\host-api.exe"
+	} else {
+		execPath = "hostapi"
 	}
+	command := exec.Command(execPath, args...)
+	command.Env = env
+	command.SysProcAttr = constants.SysAttr
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
 	command.Start()

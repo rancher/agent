@@ -241,7 +241,7 @@ func DoInstancePull(params *model.ImageParams, progress *progress.Progress) (typ
 	}
 	var dockerImage model.DockerImage
 	mapstructure.Decode(imageJSON, &dockerImage)
-	existing, _, err := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName, false)
+	existing, _, err := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -264,7 +264,7 @@ func DoInstancePull(params *model.ImageParams, progress *progress.Progress) (typ
 		client.ImageTag(context.Background(), dockerImage.FullName, repoTag)
 	}
 
-	inspect, _, err2 := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName, false)
+	inspect, _, err2 := client.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
 	logrus.Infof("image inspect %v", inspect)
 	return inspect, err2
 }

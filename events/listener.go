@@ -20,12 +20,12 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 
 	config.PhysicalHostUUID(true)
 
+	logrus.Info("launching hostapi")
+	go hostapi.StartUp()
+
 	if runtime.GOOS == "linux" {
 		logrus.Info("launching API proxy")
 		go apiproxy.StartUp()
-
-		logrus.Info("launching hostapi")
-		go hostapi.StartUp()
 
 		logrus.Info("launching cadvisor")
 		go cadvisor.StartUp()

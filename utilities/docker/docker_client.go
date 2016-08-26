@@ -1,44 +1,29 @@
 package docker
 
 import (
-	"fmt"
 	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"golang.org/x/net/context"
-	"os"
-	"runtime"
 )
 
-func GetClient(version string, timeout string) *client.Client {
-	if config.UseBoot2dockerConnectionEnvVars() {
-		return launchDefaultCli(version)
-	}
-	if runtime.GOOS == "linux" {
-		defCli := launchDefaultCli(version)
-		if defCli != nil {
-			return defCli
-		}
-	}
-	cli, err := client.NewClient(fmt.Sprintf("tcp://%v:2375", os.Getenv("CATTLE_AGENT_IP")), version, nil, map[string]string{
-		"timeout": timeout,
-	})
+func GetClient(version string) *client.Client {
+	defCli, err := launchDefaultClient(version)
 	if err != nil {
 		panic(err)
 	}
-	return cli
+	return defCli
 }
 
-func launchDefaultCli(version string) *client.Client {
+func launchDefaultClient(version string) (*client.Client, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	cli.UpdateClientVersion(version)
-	return cli
+	return cli, nil
 }
 
-var DefaultClient = GetClient(constants.DefaultVersion, "0")
+var DefaultClient = GetClient(constants.DefaultVersion)
 
 var info, err = DefaultClient.Info(context.Background())
 var Info = info
