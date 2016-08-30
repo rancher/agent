@@ -2,8 +2,8 @@ import:
 - package: github.com/Sirupsen/logrus
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
-- package: github.com/rancher/go-machine-service
-  version: 5c4bd5b7a92e67638e43e425ea1e44b7b8adbf4d
+- package: github.com/rancher/event-subscriber
+  version: 2e42f210dae2234d08786806100b4ddc4ce87641
 
 - package: github.com/rancher/go-rancher
   version: 37c17e456a2d6dce279f54ee2f957797d30a20dc
@@ -21,7 +21,7 @@ import:
   version: d2dd0262208475919e1a362f675cfc0e7c10e905
 
 - package: github.com/docker/engine-api
-  version: bac0f6860e3e8f13c374c22c31b3506b9a281f5d
+  version: b66d7d91dbde8b568eab9587fe9cbdd08506ed2e
 
 - package: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
@@ -40,3 +40,16 @@ import:
 
 - package: github.com/opencontainers/runc
   version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
+
+- package: github.com/pkg/errors
+  version: a22138067af1c4942683050411a841ade67fe1eb
+
+- package: gopkg.in/check.v1
+  version: 4f90aeace3a26ad7021961c297b22c42160c7b25
+
+- package: github.com/Microsoft/go-winio
+  version: ce2922f643c8fd76b46cadc7f404a06282678b34
+
+- package: golang.org/x/sys
+  version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
+

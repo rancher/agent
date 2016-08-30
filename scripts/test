@@ -12,5 +12,5 @@ go test -race -cover -tags=test ${PACKAGES}
 cd tests
 find -depth -name __pycache__ -o -name "*.pyc" -exec rm -rf {} \;
 if [ -z "$NO_TEST" ]; then
-    tox "$@"
+   tox "$@"
 fi
