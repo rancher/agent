@@ -2,11 +2,11 @@ package cadvisor
 
 import (
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"os"
 	"os/exec"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {

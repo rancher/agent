@@ -38,29 +38,22 @@ func (o OSDataGetter) GetDockerVersion(verbose bool) map[string]interface{} {
 
 func (o OSDataGetter) GetOS() map[string]interface{} {
 	data := map[string]interface{}{}
-	info, err := utils.GetInfo()
-	if err != nil {
-		logrus.Error(err)
-	} else {
-		data["operatingSystem"] = info.OperatingSystem
-		data["kernelVersion"] = utils.GetKernelVersion()
-	}
+	info := utils.GetInfo()
+	data["operatingSystem"] = info.OperatingSystem
+	data["kernelVersion"] = utils.GetKernelVersion()
+
 	return data
 }
 
 func (o OSDataGetter) GetWindowsOS() map[string]interface{} {
 	data := map[string]interface{}{}
-	info, err := utils.GetInfo()
-	if err != nil {
-		logrus.Error(err)
+	info := utils.GetInfo()
+	data["operatingSystem"] = info.OperatingSystem
+	kv, err := utils.GetWindowsKernelVersion()
+	if err == nil {
+		data["kernelVersion"] = kv
 	} else {
-		data["operatingSystem"] = info.OperatingSystem
-		kv, err := utils.GetWindowsKernelVersion()
-		if err == nil {
-			data["kernelVersion"] = kv
-		} else {
-			logrus.Error(err)
-		}
+		logrus.Error(err)
 	}
 	return data
 }

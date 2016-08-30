@@ -3,10 +3,10 @@ package hostapi
 import (
 	"fmt"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"os"
 	"os/exec"
 	"runtime"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {

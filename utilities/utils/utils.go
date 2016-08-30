@@ -571,8 +571,8 @@ func GetLoadAverage() []string {
 	return []string{}
 }
 
-func GetInfo() (types.Info, error) {
-	return docker.Info, docker.InfoErr
+func GetInfo() types.Info {
+	return docker.Info
 }
 
 func NameFilter(name string, container *types.Container) bool {
@@ -666,10 +666,7 @@ func Get(url string) (map[string]interface{}, error) {
 }
 
 func GetInfoDriver() string {
-	if info, err := GetInfo(); err != nil {
-		return info.Driver
-	}
-	return ""
+	return GetInfo().Driver
 }
 
 func DockerVersionRequest() (types.Version, error) {

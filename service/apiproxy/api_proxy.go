@@ -5,13 +5,13 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"net"
 	urls "net/url"
 	"os"
 	"os/exec"
 	"strings"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {

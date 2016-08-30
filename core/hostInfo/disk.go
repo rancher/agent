@@ -29,15 +29,10 @@ func (d DiskCollector) convertUnits(number float64) float64 {
 func (d DiskDataGetter) GetDockerStorageInfo() map[string]interface{} {
 	data := map[string]interface{}{}
 
-	info, err := utils.GetInfo()
-	if err != nil {
-		logrus.Error(err)
-	} else {
-		for _, item := range info.DriverStatus {
-			data[item[0]] = item[1]
-		}
+	info := utils.GetInfo()
+	for _, item := range info.DriverStatus {
+		data[item[0]] = item[1]
 	}
-
 	return data
 }
 

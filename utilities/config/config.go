@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	goUUID "github.com/nu7hatch/gouuid"
@@ -8,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strconv"
@@ -112,8 +114,13 @@ func DoPing() bool {
 }
 
 func Hostname() string {
-	name, _ := os.Hostname()
-	return DefaultValue("HOSTNAME", name)
+	var hostname string
+	if runtime.GOOS == "windows" {
+		hostname, _ = os.Hostname()
+	} else {
+		hostname = getFQDNLinux()
+	}
+	return DefaultValue("HOSTNAME", hostname)
 }
 
 func workers() string {
@@ -337,4 +344,17 @@ func DefaultValue(name string, df string) string {
 		return result
 	}
 	return df
+}
+
+func getFQDNLinux() string {
+	cmd := exec.Command("/bin/hostname", "-f")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		return ""
+	}
+	fqdn := out.String()
+	fqdn = fqdn[:len(fqdn)-1]
+	return fqdn
 }
