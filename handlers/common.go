@@ -2,16 +2,20 @@ package handlers
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	goUUID "github.com/nu7hatch/gouuid"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
-	"time"
 )
 
 func GetHandlers() map[string]revents.EventHandler {
+	h := handler{
+		dockerClient: GetClient(),
+	}
 	return map[string]revents.EventHandler{
-		"compute.instance.activate":   InstanceActivate,
+		"compute.instance.activate":   h.InstanceActivate,
 		"compute.instance.deactivate": InstanceDeactivate,
 		"compute.instance.force.stop": InstanceForceStop,
 		"compute.instance.inspect":    InstanceInspect,

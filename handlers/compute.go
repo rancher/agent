@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"runtime"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -12,27 +14,31 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
-	"runtime"
 )
 
-func InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
+type handler struct {
+	dockerClient *client.DockerClient
+}
+
+func (h *handler) InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, host := utils.GetInstanceAndHost(event)
 
+	// TODO: extract to common function
 	progress := progress.Progress{Request: event, Client: cli}
 
 	if processData, ok := event.Data["processData"]; ok && instance != nil {
 		instance.ProcessData = processData.(map[string]interface{})
 	}
-	dockerClient := docker.DefaultClient
 	if utils.IsNoOp(event.Data) {
-		if err := compute.RecordState(dockerClient, instance, ""); err != nil {
+		if err := compute.RecordState(h.dockerClient, instance, ""); err != nil {
 			return errors.Wrap(err, "failed to record state")
 		}
 		return reply(utils.GetResponseData(event), event, cli)
 	}
 
 	if compute.IsInstanceActive(instance, host) {
+		// TODO: on window we should save state too
 		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 			if err := compute.RecordState(dockerClient, instance, ""); err != nil {
 				return errors.Wrap(err, "failed to record state")
@@ -88,6 +94,7 @@ func InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
 func InstanceForceStop(event *revents.Event, cli *client.RancherClient) error {
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var request model.InstanceForceStop
+	//TODO: across the board look for error on mapstructure.Decode.  And use errors.Wrap(...)
 	mapstructure.Decode(event.Data["instanceForceStop"], &request)
 	return compute.DoInstanceForceStop(&request)
 }
@@ -100,6 +107,7 @@ func InstanceInspect(event *revents.Event, cli *client.RancherClient) error {
 	var inspectJSON map[string]interface{}
 	data, err1 := json.Marshal(inspectResp)
 	if err1 != nil {
+		// use errors.Wrap to add context message to the error.  And then don't log here, just return
 		logrus.Error(err1)
 		return err1
 	}
@@ -116,10 +124,16 @@ func InstancePull(event *revents.Event, cli *client.RancherClient) error {
 	progress := progress.Progress{Request: event, Client: cli}
 	var instancePull model.InstancePull
 	mapstructure.Decode(event.Data["instancePull"], &instancePull)
-	imageParams := model.ImageParams{Image: instancePull.Image,
-		Mode: instancePull.Mode, Complete: instancePull.Complete, Tag: instancePull.Tag}
+	// TODO: put struct as multiline
+	imageParams := model.ImageParams{
+		Image:    instancePull.Image,
+		Mode:     instancePull.Mode,
+		Complete: instancePull.Complete,
+		Tag:      instancePull.Tag,
+	}
 	imagePull, pullErr := compute.DoInstancePull(&imageParams, &progress)
 	if pullErr != nil {
+		//return error
 		logrus.Error(pullErr)
 	}
 	result := map[string]interface{}{}

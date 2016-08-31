@@ -3,6 +3,15 @@ package compute
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	urls "net/url"
+	"os"
+	"path"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	engineCli "github.com/docker/engine-api/client"
@@ -24,20 +33,13 @@ import (
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"io/ioutil"
-	urls "net/url"
-	"os"
-	"path"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *progress.Progress) error {
 	if utils.IsNoOp(instance.Data) {
 		return nil
 	}
+	//pass in
 	dockerClient := docker.DefaultClient
 
 	imageTag, err := getImageTag(instance)
@@ -144,16 +146,19 @@ func DoInstanceActivate(instance *model.Instance, host *model.Host, progress *pr
 	return nil
 }
 
+// relook at method that doesn't error
 func IsInstanceActive(instance *model.Instance, host *model.Host) bool {
 	if utils.IsNoOp(instance.Data) {
 		return true
 	}
 
+	// Can't use global, probably pass it in
 	client := docker.DefaultClient
 	container := utils.GetContainer(client, instance, false)
 	return isRunning(client, container)
 }
 
+// TODO: not handling error
 func isRunning(client *client.Client, container *types.Container) bool {
 	if container == nil {
 		return false
@@ -177,6 +182,7 @@ func RecordState(client *client.Client, instance *model.Instance, dockerID strin
 		return nil
 	}
 	contDir := configuration.ContainerStateDir()
+	//TODO: use ioutil.TempFile
 	temFilePath := path.Join(contDir, fmt.Sprintf("tmp-%s", dockerID))
 	if _, err := os.Stat(temFilePath); err == nil {
 		os.Remove(temFilePath)

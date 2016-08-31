@@ -1,10 +1,18 @@
 package model
 
+type InstanceFields struct {
+	ReadOnly bool
+}
+
+type InstanceData struct {
+	Fields InstanceFields
+}
+
 type Instance struct {
 	AccountID                   int    `json:"accountId"`
 	AllocationState             string `json:"allocationState"`
 	Created                     int64  `json:"created"`
-	Data                        map[string]interface{}
+	Data                        InstanceData
 	Ports                       []Port
 	Description                 string `json:"description"`
 	Hostname                    string `json:"hostname"`

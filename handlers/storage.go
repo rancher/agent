@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/go-rancher/client"
 )
 
+// TODO: similar to compute turn into struct w/ dockerclient as field
 func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	var imageStoragePoolMap model.ImageStoragePoolMap
 	mapstructure.Decode(event.Data["imageStoragePoolMap"], &imageStoragePoolMap)

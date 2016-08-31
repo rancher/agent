@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/events"
-	"os"
 )
 
 func main() {
@@ -16,6 +17,6 @@ func main() {
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {
-		logrus.Errorf("Exiting. Error: %v", err)
+		logrus.Fatalf("Exiting. Error: %v", err)
 	}
 }
