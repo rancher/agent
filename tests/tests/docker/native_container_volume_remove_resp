@@ -1,0 +1,18 @@
+{
+  "name": "reply.3826413832580807098",
+  "resourceType": "volumeStoragePoolMap",
+  "resourceId": "1vspm6",
+  "previousNames": [
+    "storage.volume.remove"
+  ],
+  "previousIds": [
+    "9e8fcc85-98dd-4d43-8f2f-9498cfbe906e"
+  ],
+  "data": {
+    "volumeStoragePoolMap": {
+      "volume": {
+        "format": "docker"
+      }
+    }
+  }
+}

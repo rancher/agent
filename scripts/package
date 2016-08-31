@@ -3,12 +3,32 @@ set -e
 
 source $(dirname $0)/version
 
-cd $(dirname $0)/../package
+cd $(dirname $0)/..
 
-TAG=${TAG:-${VERSION}}
-REPO=${REPO:-rancher}
+CONTENT=$(uuidgen)
 
-cp ../bin/agent .
-docker build -t ${REPO}/agent:${TAG} .
+rm -rf dist/artifacts
 
-echo Built ${REPO}/agent:${TAG}
+mkdir -p build/${CONTENT}
+mkdir -p dist/artifacts
+
+cp -rf apply.sh bin/agent build/${CONTENT}
+
+cd build
+
+sha1sum -b $(find ${CONTENT} -type f) > ${CONTENT}/SHA1SUMS
+sha1sum ${CONTENT}/SHA1SUMS > ${CONTENT}/SHA1SUMSSUM
+
+tar czf ../dist/artifacts/go-agent.tar.gz ${CONTENT}
+echo Created ../dist/artifacts/go-agent.tar.gz
+#mkdir -p build
+#cd build
+#
+#mkdir -p bin
+#cp ../bin/agent bin/
+#cp ../apply.sh .
+#
+#mkdir -p ../dist/artifacts
+#tar czvf ../dist/artifacts/go-agent.tar.gz .
+#
+#echo Created ../dist/artifacts/go-agent.tar.gz

@@ -1,0 +1,37 @@
+{
+    "data": {
+        "instanceHostMap": {
+            "instance": {
+                "+data": {
+                    "+fields": {
+                        "dockerHostIp": "1.2.3.4",
+                        "dockerPorts": [
+                            "0.0.0.0:8888:6666/tcp",
+                            "12201/udp",
+                            "127.0.0.1:7777:6666/tcp",
+                            "8080/tcp"
+                        ]
+                    },
+                    "dockerContainer": {
+                        "Command": "/sleep.sh",
+                        "Labels": {},
+                        "Image": "ibuildthecloud/helloworld:latest",
+                        "Names": [
+                            "/r-test"
+                        ],
+                        "Labels": {
+                            "io.rancher.container.uuid": "c861f990-4472-4fa1-960f-65171b544c28",
+                            "io.rancher.container.name": "test",
+                            "io.rancher.container.ip": "10.10.10.10/24"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "previousIds": ["fe8fe34c-1b13-4287-a094-a2c5f902722b"],
+    "previousNames": ["compute.instance.activate"],
+    "name": "reply.6533363327570546786",
+    "resourceId": "211",
+    "resourceType": "instanceHostMap"
+}
