@@ -1,0 +1,13 @@
+{
+    "name": "reply.402719472243191890",
+    "previousIds": ["d3de8aa6-6ed7-4b79-964c-9c6a4a3dadfd"],
+    "previousNames": ["compute.instance.pull"],
+    "resourceId": null,
+    "resourceType": "instancePull",
+    "data": {
+        "fields": {
+            "dockerImage": {
+            }
+        }
+    }
+}
