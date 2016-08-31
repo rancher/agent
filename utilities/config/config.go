@@ -3,9 +3,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	goUUID "github.com/nu7hatch/gouuid"
-	"github.com/rancher/agent/utilities/constants"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
+	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StorageAPIVersion() string {
@@ -81,6 +82,7 @@ func getUUIDFromFile(uuidFilePath string) string {
 	}
 	if uuid == "" {
 		if newUUID, err := goUUID.NewV4(); err == nil {
+			// if err != nil, panic(err)
 			uuid = newUUID.String()
 			file, _ := os.Create(uuidFilePath)
 			file.WriteString(uuid)
@@ -155,6 +157,7 @@ func isMultiProc() bool {
 	return multiStyle() == "proc"
 }
 
+// TODO: check if all functions here are used
 func isMultiStyle() bool {
 	return multiStyle() == "thread"
 }
@@ -346,10 +349,13 @@ func DefaultValue(name string, df string) string {
 	return df
 }
 
+// handle error, maybe panic
 func getFQDNLinux() string {
 	cmd := exec.Command("/bin/hostname", "-f")
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	//TODO: use cmd.CombinedOutput()
+	cmd.CombinedOutput()
 	err := cmd.Run()
 	if err != nil {
 		return ""

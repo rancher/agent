@@ -1,15 +1,17 @@
 package cadvisor
 
 import (
+	"os"
+	"os/exec"
+
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
-	"os"
-	"os/exec"
 )
 
 func StartUp() error {
+	//TODO: this should be in for loop to keep restarting every 5 seconds
 	args := []string{
 		"cadvisor",
 		"-logtostderr=true",
@@ -32,6 +34,7 @@ func StartUp() error {
 		args = append([]string{"nsenter", "--mount=/host/proc/1/ns/mnt", "--"}, args...)
 	}
 	command := exec.Command(args[0], args[1:len(args)]...)
+	// need to pdeathsig
 	command.SysProcAttr = constants.SysAttr
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout

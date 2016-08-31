@@ -2,13 +2,14 @@ package docker
 
 import (
 	"fmt"
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/constants"
 	"golang.org/x/net/context"
-	"os"
-	"runtime"
-	"time"
 )
 
 func GetClient(version string) *client.Client {
@@ -36,6 +37,7 @@ func launchDefaultClient(version string) (*client.Client, error) {
 	return cli, nil
 }
 
+//TODO: remove and move construction to creating the the Handler
 func init() {
 	// try 10 times to see if we could get the Info from docker daemon
 	for i := 0; i < 10; i++ {

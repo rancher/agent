@@ -2,14 +2,16 @@ package hostapi
 
 import (
 	"fmt"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() error {
+	// TODO: run in for loop.  probably make a common function to share w/ cadvisor
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_ACCESS_KEY", config.AccessKey()))
 	env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_SECRET_KEY", config.SecretKey()))
@@ -25,11 +27,9 @@ func StartUp() error {
 		"-cattle-url", config.APIURL(""),
 		"-cattle-state-dir", config.ContainerStateDir(),
 	}
-	var execPath string
+	execPath := "host-api"
 	if runtime.GOOS == "windows" {
-		execPath = "c:\\host-api.exe"
-	} else {
-		execPath = "hostapi"
+		execPath += ".exe"
 	}
 	command := exec.Command(execPath, args...)
 	command.Env = env

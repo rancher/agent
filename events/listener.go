@@ -1,6 +1,8 @@
 package events
 
 import (
+	"runtime"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/apiproxy"
@@ -8,7 +10,6 @@ import (
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
-	"runtime"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -24,6 +25,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	go hostapi.StartUp()
 
 	if runtime.GOOS == "linux" {
+		//TODO: remove all reference "api proxy"
 		logrus.Info("launching API proxy")
 		go apiproxy.StartUp()
 

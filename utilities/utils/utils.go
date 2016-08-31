@@ -4,18 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	engineCli "github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/container"
-	"github.com/docker/engine-api/types/filters"
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
-	revents "github.com/rancher/event-subscriber/events"
-	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +16,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	engineCli "github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/filters"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
+	revents "github.com/rancher/event-subscriber/events"
+	"golang.org/x/net/context"
 )
 
 func unwrap(obj interface{}) interface{} {
@@ -51,6 +52,7 @@ func unwrap(obj interface{}) interface{} {
 	}
 }
 
+// should return error
 func GetInstanceAndHost(event *revents.Event) (*model.Instance, *model.Host) {
 
 	data := event.Data
@@ -60,8 +62,10 @@ func GetInstanceAndHost(event *revents.Event) (*model.Instance, *model.Host) {
 	var instance model.Instance
 	mapstructure.Decode(ihm.Instance, &instance)
 	var host model.Host
+	// TODO: handle error
 	mapstructure.Decode(ihm.Host, &host)
 
+	// TODO: clusterConnection is never set
 	clusterConnection, ok := GetFieldsIfExist(data, "field", "clusterConnection")
 	if ok {
 		host.Data["clusterConnection"] = InterfaceToString(clusterConnection)
@@ -425,11 +429,8 @@ func ParseRepoTag(name string) map[string]string {
 	}
 }
 
-func GetContainer(client *engineCli.Client, instance *model.Instance, byAgent bool) *types.Container {
-	if instance == nil {
-		return nil
-	}
-
+// Take a look at pointer vs struct to avoid nil check on model struct
+func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) types.Container {
 	// First look for UUID label directly
 	args := filters.NewArgs()
 	args.Add("label", fmt.Sprintf("%s=%s", constants.UUIDLabel, instance.UUID))
