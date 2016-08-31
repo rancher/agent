@@ -2,14 +2,54 @@ import:
 - package: github.com/Sirupsen/logrus
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
-- package: github.com/rancher/go-machine-service
-  version: 5c4bd5b7a92e67638e43e425ea1e44b7b8adbf4d
+- package: github.com/rancher/event-subscriber
+  version: 2e42f210dae2234d08786806100b4ddc4ce87641
 
 - package: github.com/rancher/go-rancher
   version: 37c17e456a2d6dce279f54ee2f957797d30a20dc
 
-- package: gopkg.in/check.v1
-  version: 4f90aeace3a26ad7021961c297b22c42160c7b25
+- package: github.com/gorilla/mux
+  version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e
+
+- package: github.com/gorilla/context
+  version: aed02d124ae4a0e94fea4541c8effd05bf0c8296
 
 - package: github.com/gorilla/websocket
   version: e2e3d8414d0fbae04004f151979f4e27c6747fe7
+
+- package: github.com/mitchellh/mapstructure
+  version: d2dd0262208475919e1a362f675cfc0e7c10e905
+
+- package: github.com/docker/engine-api
+  version: b66d7d91dbde8b568eab9587fe9cbdd08506ed2e
+
+- package: github.com/nu7hatch/gouuid
+  version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+
+- package: golang.org/x/net
+  version: f841c39de738b1d0df95b5a7187744f0e03d8112
+
+- package: github.com/docker/distribution
+  version: 4e17ab5d319ac5b70b2769442947567a83386fbc
+
+- package: github.com/docker/go-units
+  version: f2d77a61e3c169b43402a0a1e84f06daf29b8190
+
+- package: github.com/docker/go-connections
+  version: 990a1a1a70b0da4c4cb70e117971a4f0babfbf1a
+
+- package: github.com/opencontainers/runc
+  version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
+
+- package: github.com/pkg/errors
+  version: a22138067af1c4942683050411a841ade67fe1eb
+
+- package: gopkg.in/check.v1
+  version: 4f90aeace3a26ad7021961c297b22c42160c7b25
+
+- package: github.com/Microsoft/go-winio
+  version: ce2922f643c8fd76b46cadc7f404a06282678b34
+
+- package: golang.org/x/sys
+  version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
+
