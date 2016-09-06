@@ -11,9 +11,9 @@ type Publish struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
-	PreviousNames []string `json:"previousNames,omitempty" yaml:"previousNames,omitempty"`
-
 	PreviousIds []string `json:"previousIds,omitempty" yaml:"previous_ids,omitempty"`
+
+	PreviousNames []string `json:"previousNames,omitempty" yaml:"previousNames,omitempty"`
 
 	Publisher string `json:"publisher,omitempty" yaml:"publisher,omitempty"`
 
