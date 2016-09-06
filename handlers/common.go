@@ -104,6 +104,10 @@ func initializeHandlers() *Handler {
 			Cadvisor:   Cadvisor,
 			Unit:       1048576,
 			DataGetter: hostInfo.DiskDataGetter{},
+			InfoData:   model.InfoData{
+				Info: info,
+				Version: version,
+			},
 		},
 		hostInfo.IopsCollector{
 			GOOS: runtime.GOOS,
@@ -116,6 +120,10 @@ func initializeHandlers() *Handler {
 		hostInfo.OSCollector{
 			DataGetter: hostInfo.OSDataGetter{},
 			GOOS:       runtime.GOOS,
+			InfoData:   model.InfoData{
+				Info: info,
+				Version: version,
+			},
 		},
 	}
 	computerHandler := ComputeHandler{

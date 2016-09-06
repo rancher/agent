@@ -202,6 +202,7 @@ func RecordState(client *client.Client, instance model.Instance, dockerID string
 		return errors.Wrap(err, constants.RecordStateError)
 	}
 	tempFile, err := ioutil.TempFile(contDir, "tmp-")
+
 	if err != nil {
 		return errors.Wrap(err, constants.RecordStateError)
 	}
@@ -210,9 +211,22 @@ func RecordState(client *client.Client, instance model.Instance, dockerID string
 		return errors.Wrap(writeErr, constants.RecordStateError)
 	}
 
-	if renameErr := os.Rename(tempFile.Name(), filePath); renameErr != nil {
-		return errors.Wrap(renameErr, constants.RecordStateError)
+	if err := tempFile.Close(); err != nil {
+		return errors.Wrap(err, constants.RecordStateError)
 	}
+	// this one is weird. Seems like the host-api is using the temp file and we can't rename the file
+	// try it multiple times to wait for the host-api to release that file lock
+	success := false
+	for i := 0; i < 10; i++ {
+		if err = os.Rename(tempFile.Name(), filePath); err == nil {
+			success = true
+			break
+		}
+	}
+	if !success {
+		return errors.Wrap(err, constants.RecordStateError)
+	}
+
 	return nil
 }
 

@@ -19,6 +19,7 @@ func StartUp() {
 		uuid, err := config.DockerUUID()
 		if err != nil {
 			logrus.Error(err)
+			time.Sleep(time.Duration(1) * time.Second)
 			continue
 		}
 		args := []string{

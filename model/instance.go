@@ -50,7 +50,7 @@ type Instance struct {
 type InstanceFieldsData struct {
 	Fields        InstanceFields
 	IPSec         IPSec
-	DockerInspect ContainerJSON
+	DockerInspect ContainerJSON `json:"dockerInspect,omitempty" yaml:"dockerInspect,omitempty"`
 	Process       ProcessData
 }
 
@@ -73,7 +73,7 @@ type ContainerJSON struct {
 	ProcessLabel    string
 	AppArmorProfile string
 	ExecIDs         []string
-	HostConfig      container.HostConfig
+	HostConfig      *container.HostConfig
 	GraphDriver     types.GraphDriverData
 	SizeRw          int64 `json:",omitempty"`
 	SizeRootFs      int64 `json:",omitempty"`

@@ -1,7 +1,15 @@
 package hostInfo
 
-func (d DiskCollector) getMachineFilesystemsCadvisor() (map[string]interface{}, error) {}
+import "github.com/rancher/agent/model"
 
-func (d DiskCollector) getMountPointsCadvisor() map[string]interface{} {}
+func (d DiskCollector) getMachineFilesystemsCadvisor(infoData model.InfoData) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
+}
 
-func (d DiskDataGetter) GetDockerStorageInfo() map[string]interface{} {}
+func (d DiskCollector) getMountPointsCadvisor() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
+func (d DiskDataGetter) GetDockerStorageInfo(infoData model.InfoData) map[string]interface{} {
+	return map[string]interface{}{}
+}

@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os/exec"
 )
 
 func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
@@ -470,6 +471,16 @@ func GetKernelVersion() (string, error) {
 	}
 	version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
 	return version, nil
+}
+
+func GetWindowsKernelVersion() (string, error) {
+	command := exec.Command("PowerShell", "wmic", "os", "get", "Version")
+	output, err := command.Output()
+	if err == nil {
+		ret := strings.Split(string(output), "\n")[1]
+		return ret, nil
+	}
+	return "", err
 }
 
 func GetLoadAverage() ([]string, error) {

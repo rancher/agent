@@ -77,7 +77,7 @@ func getUUIDFromFile(uuidFilePath string) (string, error) {
 	uuid := ""
 
 	fileBuffer, err := ioutil.ReadFile(uuidFilePath)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
 	}
 	uuid = string(fileBuffer)

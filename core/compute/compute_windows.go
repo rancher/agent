@@ -1,5 +1,11 @@
 package compute
 
+import (
+	"github.com/docker/engine-api/types/container"
+	"github.com/rancher/agent/model"
+	"github.com/docker/engine-api/client"
+)
+
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {}
 
 func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) error {
@@ -8,7 +14,8 @@ func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) e
 
 func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {}
 
-func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client) {
+func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client) error {
+	return nil
 }
 
 func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.HostConfig) {
