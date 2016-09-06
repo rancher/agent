@@ -1,173 +1,57 @@
 package hostInfo
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/utilities/utils"
-	"math"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/utilities/constants"
 	"os"
-	"os/exec"
-	"regexp"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 type CPUInfoGetter interface {
-	GetCPUInfoData() []string
-	GetCPULoadAverage() map[string]interface{}
+	GetCPUInfoData() ([]string, error)
+	GetCPULoadAverage() (map[string]interface{}, error)
 }
 
 type CPUCollector struct {
-	cadvisor   CadvisorAPIClient
-	dataGetter CPUInfoGetter
+	Cadvisor   CadvisorAPIClient
+	DataGetter CPUInfoGetter
 	GOOS       string
 }
 
 type CPUDataGetter struct{}
 
-func (c CPUDataGetter) GetCPUInfoData() []string {
-	file, err := os.Open("/proc/cpuinfo")
-	defer file.Close()
-	data := []string{}
+func (c CPUCollector) GetData() (map[string]interface{}, error) {
+	data := map[string]interface{}{}
+
+	cInfo, err := c.getCPUInfo()
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			data = append(data, scanner.Text())
-		}
+		return data, errors.Wrap(err, constants.CPUGetDataError)
 	}
-	return data
-}
-
-func (c CPUCollector) getLinuxCPUInfo() map[string]interface{} {
-	data := map[string]interface{}{}
-
-	procs := []string{}
-	fileData := c.dataGetter.GetCPUInfoData()
-	for _, line := range fileData {
-		parts := strings.Split(line, ":")
-		if strings.TrimSpace(parts[0]) == "model name" {
-			procs = append(procs, strings.TrimSpace(parts[1]))
-			pattern := "([0-9\\.]+)\\s?GHz"
-			freq := regexp.MustCompile(pattern).FindString(parts[1])
-			if freq != "" {
-				ghz := strings.TrimSpace(freq[:len(freq)-3])
-				if ghz != "" {
-					mhz, _ := strconv.ParseFloat(ghz, 64)
-					data["mhz"] = mhz * 1000
-				}
-			}
-		}
-		if _, ok := data["mhz"]; !ok {
-			if strings.TrimSpace(parts[0]) == "cpu MHz" {
-				mhz, _ := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
-				data["mhz"] = mhz
-			}
-		}
+	for key, value := range c.getCPUPercentage() {
+		data[key] = value
 	}
-	data["modelName"] = procs[0]
-	data["count"] = len(procs)
-
-	return data
-}
-
-func (c CPUCollector) getCPUPercentage() map[string]interface{} {
-	data := map[string]interface{}{}
-	cpuCoresPercentages := []string{}
-
-	stats := c.cadvisor.GetStats()
-
-	if len(stats) >= 2 {
-		statLatest := stats[len(stats)-1].(map[string]interface{})
-		statPrev := stats[len(stats)-2].(map[string]interface{})
-
-		timeDiff := c.cadvisor.TimestampDiff(utils.InterfaceToString(statLatest["timestamp"]), utils.InterfaceToString(statPrev["timestamp"].(string)))
-		latestUsage, _ := utils.GetFieldsIfExist(statLatest, "cpu", "usage", "per_cpu_usage")
-		prevUsage, _ := utils.GetFieldsIfExist(statPrev, "cpu", "usage", "per_cpu_usage")
-		for i, cu := range utils.InterfaceToArray(latestUsage) {
-			coreUsage := utils.InterfaceToString(cu)
-			core, _ := strconv.ParseFloat(coreUsage, 64)
-			pu := utils.InterfaceToString(utils.InterfaceToArray(prevUsage)[i])
-			prev, _ := strconv.ParseFloat(pu, 64)
-			cpuUsage := core - prev
-			percentage := (cpuUsage / float64(timeDiff)) * 100
-			percentage = percentage * 1000 // round to 3
-			if percentage > 100000 {
-				percentage = 100
-			} else {
-				percentage = math.Floor(percentage) / 1000
-			}
-			cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(percentage, 'f', -1, 64))
-		}
-		data["cpuCoresPercentages"] = cpuCoresPercentages
+	for key, value := range cInfo {
+		data[key] = value
 	}
-	return data
-}
-
-func (c CPUDataGetter) GetCPULoadAverage() map[string]interface{} {
-	return map[string]interface{}{
-		"loadAvg": utils.GetLoadAverage(),
+	loadAvg, err := c.DataGetter.GetCPULoadAverage()
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.CPUGetDataError)
 	}
-}
-
-func (c CPUCollector) GetWindowCPUInfo() map[string]interface{} {
-	data := map[string]interface{}{}
-	command := exec.Command("PowerShell", "wmic", "cpu", "get", "Name")
-	output, err := command.Output()
-	if err == nil {
-		ret := strings.Split(string(output), "\n")[1]
-		data["modelName"] = ret
-		pattern := "([0-9\\.]+)\\s?GHz"
-		freq := regexp.MustCompile(pattern).FindString(ret)
-		if freq != "" {
-			ghz := strings.TrimSpace(freq[:len(freq)-3])
-			if ghz != "" {
-				mhz, _ := strconv.ParseFloat(ghz, 64)
-				data["mhz"] = mhz * 1000
-			}
-		}
-	} else {
-		logrus.Error(err)
+	for key, value := range loadAvg {
+		data[key] = value
 	}
-	data["count"] = runtime.NumCPU()
-	return data
-}
-
-func (c CPUCollector) GetData() map[string]interface{} {
-	data := map[string]interface{}{}
-
-	if c.GOOS == "linux" {
-		for key, value := range c.getCPUPercentage() {
-			data[key] = value
-		}
-		for key, value := range c.getLinuxCPUInfo() {
-			data[key] = value
-		}
-		for key, value := range c.dataGetter.GetCPULoadAverage() {
-			data[key] = value
-		}
-	} else if c.GOOS == "windows" {
-		for key, value := range c.GetWindowCPUInfo() {
-			data[key] = value
-		}
-		// load average doesn't apply for windows
-	}
-	return data
+	return data, nil
 }
 
 func (c CPUCollector) KeyName() string {
 	return "cpuInfo"
 }
 
-func (c CPUCollector) GetLabels(prefix string) map[string]string {
+func (c CPUCollector) GetLabels(prefix string) (map[string]string, error) {
 	if _, err := os.Stat("/dev/kvm"); err == nil {
 		return map[string]string{
 			fmt.Sprintf("%s.%s", prefix, "kvm"): "true",
-		}
+		}, nil
 	}
-	return map[string]string{}
+	return map[string]string{}, nil
 }

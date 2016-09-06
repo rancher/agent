@@ -12,7 +12,10 @@ import (
 	"os/exec"
 )
 
-func ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
+type ConfigUpdateHandler struct {
+}
+
+func (h *ConfigUpdateHandler) ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
 	if event.Name != "config.update" || event.ReplyTo == "" {
 		return nil
 	}

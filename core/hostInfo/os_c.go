@@ -2,94 +2,66 @@ package hostInfo
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 )
 
 type OSCollector struct {
-	dataGetter OSInfoGetter
+	DataGetter OSInfoGetter
 	GOOS       string
+	InfoData   model.InfoData
 }
 
 type OSInfoGetter interface {
-	GetOS() map[string]interface{}
-	GetDockerVersion(bool) map[string]interface{}
-	GetWindowsOS() map[string]interface{}
+	GetOS(model.InfoData) (map[string]string, error)
+	GetDockerVersion(model.InfoData, bool) map[string]string
 }
 
 type OSDataGetter struct{}
 
-func (o OSDataGetter) GetDockerVersion(verbose bool) map[string]interface{} {
+func (o OSDataGetter) GetDockerVersion(infoData model.InfoData, verbose bool) map[string]string {
+	data := map[string]string{}
+	versionData := infoData.Version
+	version := "unknown"
+	if verbose && versionData.Version != "" {
+		version = fmt.Sprintf("Docker version %v, build %v", versionData.Version, versionData.GitCommit)
+	} else if versionData.Version != "" {
+		version = utils.SemverTrunk(versionData.Version, 2)
+	}
+	data["dockerVersion"] = version
+
+	return data
+}
+
+func (o OSCollector) GetData() (map[string]interface{}, error) {
+	infoData := o.InfoData
 	data := map[string]interface{}{}
-	verResp, err := utils.DockerVersionRequest()
+	osData, err := o.DataGetter.GetOS(infoData)
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		version := "unknown"
-		if verbose && verResp.Version != "" {
-			version = fmt.Sprintf("Docker version %v, build %v", verResp.Version, verResp.GitCommit)
-		} else if verResp.Version != "" {
-			version = utils.SemverTrunk(verResp.Version, 2)
-		}
-		data["dockerVersion"] = version
+		return data, errors.Wrap(err, constants.OSGetDataError)
 	}
-	return data
-}
 
-func (o OSDataGetter) GetOS() map[string]interface{} {
-	data := map[string]interface{}{}
-	info := utils.GetInfo()
-	data["operatingSystem"] = info.OperatingSystem
-	data["kernelVersion"] = utils.GetKernelVersion()
-
-	return data
-}
-
-func (o OSDataGetter) GetWindowsOS() map[string]interface{} {
-	data := map[string]interface{}{}
-	info := utils.GetInfo()
-	data["operatingSystem"] = info.OperatingSystem
-	kv, err := utils.GetWindowsKernelVersion()
-	if err == nil {
-		data["kernelVersion"] = kv
-	} else {
-		logrus.Error(err)
-	}
-	return data
-}
-
-func (o OSCollector) GetData() map[string]interface{} {
-	data := map[string]interface{}{}
-	for key, value := range o.dataGetter.GetDockerVersion(true) {
+	for key, value := range o.DataGetter.GetDockerVersion(infoData, true) {
 		data[key] = value
 	}
-	if o.GOOS == "linux" {
-		for key, value := range o.dataGetter.GetOS() {
-			data[key] = value
-		}
-	} else if o.GOOS == "windows" {
-		for key, value := range o.dataGetter.GetWindowsOS() {
-			data[key] = value
-		}
+	for key, value := range osData {
+		data[key] = value
 	}
-	return data
+	return data, nil
 }
 
-func (o OSCollector) GetLabels(prefix string) map[string]string {
-	labels := map[string]string{}
-	if o.GOOS == "linux" {
-		labels = map[string]string{
-			fmt.Sprintf("%s.%s", prefix, "docker_version"):       utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
-			fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(utils.InterfaceToString(o.dataGetter.GetOS()["kernelVersion"]), 2),
-		}
-	} else if o.GOOS == "windows" {
-		labels = map[string]string{
-			fmt.Sprintf("%s.%s", prefix, "docker_version"):         utils.InterfaceToString(o.dataGetter.GetDockerVersion(false)["dockerVersion"]),
-			fmt.Sprintf("%s.%s", prefix, "windows_kernel_version"): utils.InterfaceToString(o.dataGetter.GetWindowsOS()["kernelVersion"]),
-		}
+func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
+	osData, err := o.DataGetter.GetOS(o.InfoData)
+	if err != nil {
+		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError)
 	}
-
-	return labels
+	labels := map[string]string{
+		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.DataGetter.GetDockerVersion(o.InfoData, false)["dockerVersion"],
+		fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(osData["kernelVersion"], 2),
+	}
+	return labels, nil
 }
 
 func (o OSCollector) KeyName() string {

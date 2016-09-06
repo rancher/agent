@@ -1,68 +1,48 @@
 package hostInfo
 
 import (
-	"fmt"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
 	"runtime"
 )
 
 type Collector interface {
-	GetData() map[string]interface{}
+	GetData() (map[string]interface{}, error)
 	KeyName() string
-	GetLabels(string) map[string]string
+	GetLabels(string) (map[string]string, error)
 }
 
-var Cadvisor = CadvisorAPIClient{
-	dataGetter: CadvisorDataGetter{
-		URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2"),
-	},
-}
-
-var Collectors = []Collector{
-	CPUCollector{
-		cadvisor:   Cadvisor,
-		dataGetter: CPUDataGetter{},
-		GOOS:       runtime.GOOS,
-	},
-	DiskCollector{
-		cadvisor:            Cadvisor,
-		dockerStorageDriver: utils.GetInfoDriver(),
-		unit:                1048576,
-		dataGetter:          DiskDataGetter{},
-	},
-	IopsCollector{
-		GOOS: runtime.GOOS,
-	},
-	MemoryCollector{
-		unit:       1024.00,
-		dataGetter: MemoryDataGetter{},
-		GOOS:       runtime.GOOS,
-	},
-	OSCollector{
-		dataGetter: OSDataGetter{},
-		GOOS:       runtime.GOOS,
-	},
-}
-
-func CollectData() map[string]interface{} {
+func CollectData(collectors []Collector) map[string]interface{} {
 	data := map[string]interface{}{}
-	for _, collector := range Collectors {
-		data[collector.KeyName()] = collector.GetData()
+	for _, collector := range collectors {
+		collectedData, err := collector.GetData()
+		if err != nil {
+			logrus.Warnf("Failed to collect data from collector %v error msg: %v", collector.KeyName(), err.Error())
+		}
+		data[collector.KeyName()] = collectedData
 	}
 	return data
 }
 
-func HostLabels(prefix string) map[string]string {
+func HostLabels(prefix string, collectors []Collector) (map[string]string, error) {
 	labels := map[string]string{}
-	for _, collector := range Collectors {
-		for key, value := range collector.GetLabels(prefix) {
+	for _, collector := range collectors {
+		lmap, err := collector.GetLabels(prefix)
+		if err != nil {
+			return map[string]string{}, errors.Wrap(err, constants.HostLabelsError)
+		}
+		for key, value := range lmap {
 			labels[key] = value
 		}
 	}
-	return labels
+	return labels, nil
 }
 
-func GetDefaultDisk() string {
-	return Collectors[2].(IopsCollector).getDefaultDisk()
+func GetDefaultDisk(infoData model.InfoData) (string, error) {
+	collector := IopsCollector{
+		GOOS: runtime.GOOS,
+	}
+	return collector.getDefaultDisk()
 }

@@ -4,8 +4,16 @@ type Port struct {
 	Protocol    string `json:"protocol"`
 	PrivatePort int    `json:"privatePort"`
 	PublicPort  int    `json:"publicPort"`
-	Data        map[string]interface{}
+	Data        PortData
 	IPAddress   string
+}
+
+type PortData struct {
+	Fields PortFields
+}
+
+type PortFields struct {
+	BindAddress string
 }
 
 type Nic struct {
@@ -39,5 +47,17 @@ type Link struct {
 	TargetInstanceID int
 	LinkName         string
 	TargetInstance   Instance
-	Data             map[string]interface{}
+	Data             LinkData
+}
+
+type LinkData struct {
+	Fields LinkFields
+}
+
+type LinkFields struct {
+	InstanceNames []string
+	Ports         []struct {
+		Protocol    string
+		PrivatePort string
+	}
 }

@@ -4,7 +4,7 @@ type Image struct {
 	AccountID          int         `json:"accountId"`
 	Checksum           interface{} `json:"checksum"`
 	Created            int64       `json:"created"`
-	Data               map[string]interface{}
+	Data               ImageData
 	Description        interface{} `json:"description"`
 	ID                 int         `json:"id"`
 	IsPublic           bool        `json:"isPublic"`
@@ -19,8 +19,40 @@ type Image struct {
 	URL                interface{} `json:"url"`
 	UUID               string      `json:"uuid"`
 	VirtualSizeBytes   interface{} `json:"virtualSizeBytes"`
-	RegistryCredential map[string]interface{}
+	RegistryCredential RegistryCredential
 	ProcessData        map[string]interface{}
+}
+
+type ImageData struct {
+	Fields      ImageFields
+	DockerImage DockerImage
+	ProcessData ProcessData
+}
+
+type ImageFields struct {
+	Build BuildOptions
+}
+
+type BuildOptions struct {
+	Context string
+	FileObj string
+	Remote  string
+	Tag     string
+}
+
+type RegistryCredential struct {
+	PublicValue string
+	SecretValue string
+	Data        CredentialData
+}
+
+type CredentialData struct {
+	Fields CredentialFields
+}
+
+type CredentialFields struct {
+	ServerAddress string
+	Email         string
 }
 
 type DockerImage struct {

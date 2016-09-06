@@ -44,7 +44,8 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
 	}
@@ -67,7 +68,8 @@ func (s *ComputeTestSuite) TestInstanceActivateWindowsImage(c *check.C) {
 		if !ok {
 			c.Fatal("No ID found")
 		}
-		inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		dockerClient := docker.GetClient(constants.DefaultVersion)
+		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
 		if err != nil {
 			c.Fatal("Inspect Err")
 		}
@@ -85,7 +87,8 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 		if !ok {
 			c.Fatal("No ID found")
 		}
-		inspect, err := docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		dockerClient := docker.GetClient(constants.DefaultVersion)
+		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
 		if err != nil {
 			c.Fatal("Inspect Err")
 		}
@@ -97,7 +100,7 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 		if !ok {
 			c.Fatal("No ID found")
 		}
-		inspect, err = docker.DefaultClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
 		if err != nil {
 			c.Fatal("Inspect Err")
 		}
@@ -106,8 +109,8 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 }
 
 func deleteContainer(name string) {
-	client := docker.DefaultClient
-	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false
 		labels := c.Labels
@@ -122,14 +125,14 @@ func deleteContainer(name string) {
 			}
 		}
 		if found {
-			client.ContainerKill(context.Background(), c.ID, "KILL")
+			dockerClient.ContainerKill(context.Background(), c.ID, "KILL")
 			for i := 0; i < 10; i++ {
-				if inspect, err := client.ContainerInspect(context.Background(), c.ID); err == nil && inspect.State.Pid == 0 {
+				if inspect, err := dockerClient.ContainerInspect(context.Background(), c.ID); err == nil && inspect.State.Pid == 0 {
 					break
 				}
 				time.Sleep(time.Duration(500) * time.Millisecond)
 			}
-			client.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{})
+			dockerClient.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{})
 			RemoveStateFile(c.ID)
 		}
 	}

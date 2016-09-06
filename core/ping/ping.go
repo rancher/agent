@@ -2,117 +2,128 @@ package ping
 
 import (
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
-	"github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
 	"net"
 )
 
-func ReplyData(event *revents.Event) *revents.Event {
-	var result revents.Event
-	if event.ReplyTo != "" {
-		value, _ := uuid.NewV4()
-		result = revents.Event{
-			ID:            value.String(),
-			Name:          event.ReplyTo,
-			Data:          map[string]interface{}{},
-			ResourceType:  event.ResourceType,
-			ResourceID:    event.ResourceID,
-			PreviousIds:   event.ID,
-			PreviousNames: event.Name,
-		}
-	}
-	return &result
-}
-
-func DoPingAction(event, resp *revents.Event) {
+func DoPingAction(event *revents.Event, resp *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
 	if !config.DockerEnable() {
-		return
+		return nil
 	}
-	addResource(event, resp)
-	addInstance(event, resp)
+	if err := addResource(event, resp, dockerClient, collectors); err != nil {
+		return errors.Wrap(err, constants.DoPingActionError)
+	}
+	if err := addInstance(event, resp, dockerClient); err != nil {
+		return errors.Wrap(err, constants.DoPingActionError)
+	}
+	return nil
 }
 
-func addResource(ping, pong *revents.Event) {
+func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
 	if !pingIncludeResource(ping) {
-		return
+		return nil
 	}
 	stats := map[string]interface{}{}
 	if pingIncludeStats(ping) {
-		data := hostInfo.CollectData()
+		data := hostInfo.CollectData(collectors)
 		stats = data
 	}
 
-	physicalHost := config.PhysicalHost()
-
-	compute := map[string]interface{}{
-		"type":             "host",
-		"kind":             "docker",
-		"hostname":         config.Hostname(),
-		"createLabels":     config.Labels(),
-		"labels":           getHostLabels(),
-		"uuid":             config.DockerUUID(),
-		"info":             stats,
-		"physicalHostUuid": physicalHost["uuid"],
+	physicalHost, err := config.PhysicalHost()
+	if err != nil {
+		return errors.Wrap(err, constants.AddResourceError)
 	}
 
-	pool := map[string]interface{}{
-		"type":     "storagePool",
-		"kind":     "docker",
-		"name":     utils.InterfaceToString(compute["hostname"]) + " Storage Pool",
-		"hostUuid": utils.InterfaceToString(compute["uuid"]),
-		"uuid":     utils.InterfaceToString(compute["uuid"]) + "-pool",
+	hostname, err := config.Hostname()
+	if err != nil {
+		return errors.Wrap(err, constants.AddResourceError)
+	}
+	labels, err := getHostLabels(collectors)
+	if err != nil {
+		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
+	}
+	uuid, err := config.DockerUUID()
+	if err != nil {
+		return errors.Wrap(err, constants.AddResourceError)
+	}
+	compute := model.PingResource{
+		Type:             "host",
+		Kind:             "docker",
+		HostName:         hostname,
+		CreateLabels:     config.Labels(),
+		Labels:           labels,
+		UUID:             uuid,
+		PhysicalHostUUID: physicalHost.UUID,
+		Info:             stats,
+		APIProxy:         config.HostProxy(),
+	}
+
+	pool := model.PingResource{
+		Type:     "storagePool",
+		Kind:     "docker",
+		Name:     compute.HostName + " Storage Pool",
+		HostUUID: compute.UUID,
+		UUID:     compute.UUID + "-pool",
 	}
 
 	resolvedIP, err := net.LookupIP(config.DockerHostIP())
+	ipAddr := ""
 	if err != nil {
-		logrus.Error(err)
+		logrus.Warn(err)
+	} else {
+		ipAddr = resolvedIP[0].String()
 	}
-
-	ip := map[string]interface{}{
-		"type":     "ipAddress",
-		"uuid":     resolvedIP,
-		"addresss": resolvedIP,
-		"hostUuid": compute["uuid"],
+	ip := model.PingResource{
+		Type:     "ipAddress",
+		UUID:     ipAddr,
+		Addresss: ipAddr,
+		HostUUID: compute.UUID,
 	}
-	proxy := config.HostProxy()
-	if proxy != "" {
-		compute["apiProxy"] = proxy
-	}
-	pingAddResource(pong, physicalHost, compute, pool, ip)
+	pong.Resources = append(pong.Resources, physicalHost, compute, pool, ip)
+	return nil
 }
 
-func addInstance(ping, pong *revents.Event) {
+func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client) error {
 	if !pingIncludeInstance(ping) {
-		return
+		return nil
 	}
-	if _, ok := utils.GetFieldsIfExist(pong.Data, "resources"); !ok {
-		pong.Data["resources"] = []map[string]interface{}{}
+	uuid, err := config.DockerUUID()
+	if err != nil {
+		return errors.Wrap(err, constants.AddInstanceError)
 	}
-	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), map[string]interface{}{
-		"type": "hostUuid",
-		"uuid": config.DockerUUID(),
+	pong.Resources = append(pong.Resources, model.PingResource{
+		Type: "hostUuid",
+		UUID: uuid,
 	})
-	containers := []map[string]interface{}{}
-	running, nonrunning := getAllContainerByState()
+	containers := []model.PingResource{}
+	running, nonrunning, err := getAllContainerByState(dockerClient)
+	if err != nil {
+		return errors.Wrap(err, constants.AddInstanceError)
+	}
 	for _, container := range running {
-		containers = utils.AddContainer("running", &container, containers)
+		containers, err = utils.AddContainer("running", container, containers, dockerClient)
+		if err != nil {
+			return errors.Wrap(err, constants.AddInstanceError)
+		}
 	}
 	for _, container := range nonrunning {
-		containers = utils.AddContainer("stopped", &container, containers)
+		containers, err = utils.AddContainer("stopped", container, containers, dockerClient)
+		if err != nil {
+			return errors.Wrap(err, constants.AddInstanceError)
+		}
 	}
-	if _, ok := utils.GetFieldsIfExist(pong.Data, "resources"); !ok {
-		pong.Data["resources"] = []map[string]interface{}{}
-	}
-	for _, container := range containers {
-		pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), container)
-	}
-	pingSetOptions(pong, "instances", true)
+	pong.Resources = append(pong.Resources, containers...)
+	pong.Option.Instance = true
+	return nil
 }
 
 func pingIncludeResource(ping *revents.Event) bool {
@@ -139,42 +150,26 @@ func pingIncludeInstance(ping *revents.Event) bool {
 	return utils.InterfaceToBool(value)
 }
 
-func getHostLabels() map[string]string {
-	return hostInfo.HostLabels("io.rancher.host")
+func getHostLabels(collectors []hostInfo.Collector) (map[string]string, error) {
+	return hostInfo.HostLabels("io.rancher.host", collectors)
 }
 
-func pingAddResource(pong *revents.Event, physcialHost map[string]interface{},
-	compute map[string]interface{}, pool map[string]interface{}, ip map[string]interface{}) {
-	if _, ok := utils.GetFieldsIfExist(pong.Data, "resources"); !ok {
-		pong.Data["resources"] = []map[string]interface{}{}
-	}
-	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), physcialHost)
-	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), compute)
-	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), pool)
-	pong.Data["resources"] = append(pong.Data["resources"].([]map[string]interface{}), ip)
-}
-
-func getAllContainerByState() (map[string]types.Container, map[string]types.Container) {
-	client := docker.DefaultClient
+func getAllContainerByState(dockerClient *client.Client) (map[string]types.Container, map[string]types.Container, error) {
 	nonrunningContainers := map[string]types.Container{}
-	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	if err != nil {
+		return map[string]types.Container{}, map[string]types.Container{}, errors.Wrap(err, constants.GetAllContainerByStateError)
+	}
 	for _, c := range containerList {
 		if c.Status != "" && c.Status != "Created" {
 			nonrunningContainers[c.ID] = c
 		}
 	}
 	runningContainers := map[string]types.Container{}
-	containerListRunning, _ := client.ContainerList(context.Background(), types.ContainerListOptions{})
+	containerListRunning, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
 	for _, c := range containerListRunning {
 		runningContainers[c.ID] = c
 		delete(nonrunningContainers, c.ID)
 	}
-	return runningContainers, nonrunningContainers
-}
-
-func pingSetOptions(pong *revents.Event, key string, value bool) {
-	if _, ok := pong.Data["options"]; !ok {
-		pong.Data["options"] = map[string]interface{}{}
-	}
-	pong.Data["options"].(map[string]interface{})[key] = value
+	return runningContainers, nonrunningContainers, nil
 }

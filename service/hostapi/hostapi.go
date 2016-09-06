@@ -2,41 +2,46 @@ package hostapi
 
 import (
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"os"
 	"os/exec"
-	"runtime"
+	"time"
 )
 
-func StartUp() error {
-	env := os.Environ()
-	env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_ACCESS_KEY", config.AccessKey()))
-	env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_SECRET_KEY", config.SecretKey()))
-	url := fmt.Sprintf("http://%v:%v", config.CadvisorIP(), config.CadvisorPort())
-	args := []string{
-		"-cadvisor-url", url,
-		"-logtostderr=true",
-		"-ip", config.HostAPIIP(),
-		"-port", config.HostAPIPort(),
-		"-auth=true",
-		"-host-uuid", config.DockerUUID(),
-		"-public-key", config.JwtPublicKeyFile(),
-		"-cattle-url", config.APIURL(""),
-		"-cattle-state-dir", config.ContainerStateDir(),
+func StartUp() {
+	for {
+		env := os.Environ()
+		env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_ACCESS_KEY", config.AccessKey()))
+		env = append(env, fmt.Sprintf("%v=%v", "HOST_API_CATTLE_SECRET_KEY", config.SecretKey()))
+		url := fmt.Sprintf("http://%v:%v", config.CadvisorIP(), config.CadvisorPort())
+		uuid, err := config.DockerUUID()
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+		args := []string{
+			"-cadvisor-url", url,
+			"-logtostderr=true",
+			"-ip", config.HostAPIIP(),
+			"-port", config.HostAPIPort(),
+			"-auth=true",
+			"-host-uuid", uuid,
+			"-public-key", config.JwtPublicKeyFile(),
+			"-cattle-url", config.APIURL(""),
+			"-cattle-state-dir", config.ContainerStateDir(),
+		}
+		command := exec.Command(execPath, args...)
+		command.Env = env
+		command.SysProcAttr = constants.SysAttr
+		command.Stderr = os.Stderr
+		command.Stdout = os.Stdout
+		command.Start()
+		err = command.Wait()
+		if err != nil {
+			logrus.Error(err)
+		}
+		time.Sleep(time.Duration(5) * time.Second)
 	}
-	var execPath string
-	if runtime.GOOS == "windows" {
-		execPath = "c:\\host-api.exe"
-	} else {
-		execPath = "hostapi"
-	}
-	command := exec.Command(execPath, args...)
-	command.Env = env
-	command.SysProcAttr = constants.SysAttr
-	command.Stderr = os.Stderr
-	command.Stdout = os.Stdout
-	command.Start()
-	err := command.Wait()
-	return err
 }

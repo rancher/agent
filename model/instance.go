@@ -1,10 +1,16 @@
 package model
 
+import (
+	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/go-units"
+)
+
 type Instance struct {
 	AccountID                   int    `json:"accountId"`
 	AllocationState             string `json:"allocationState"`
 	Created                     int64  `json:"created"`
-	Data                        map[string]interface{}
+	Data                        InstanceFieldsData
 	Ports                       []Port
 	Description                 string `json:"description"`
 	Hostname                    string `json:"hostname"`
@@ -30,13 +36,123 @@ type Instance struct {
 	ExternalID                  string
 	AgentID                     int
 	InstanceLinks               []Link
-	NetworkContainer            map[string]interface{}
+	NetworkContainer            *Instance
 	NativeContainer             bool
 	SystemContainer             string
-	DataVolumesFromContainers   []map[string]interface{}
+	DataVolumesFromContainers   []*Instance
 	CommandArgs                 []string
 	Labels                      map[string]interface{}
-	ProcessData                 map[string]interface{}
+	ProcessData                 ProcessData
 	VolumesFromDataVolumeMounts []Volume
 	Token                       string
+}
+
+type InstanceFieldsData struct {
+	Fields        InstanceFields
+	IPSec         IPSec
+	DockerInspect ContainerJSON
+	Process       ProcessData
+}
+
+type ContainerJSON struct {
+	ID              string `json:"Id"`
+	Created         string
+	Path            string
+	Args            []string
+	State           types.ContainerState
+	Image           string
+	ResolvConfPath  string
+	HostnamePath    string
+	HostsPath       string
+	LogPath         string
+	Node            types.ContainerNode `json:",omitempty"`
+	Name            string
+	RestartCount    int
+	Driver          string
+	MountLabel      string
+	ProcessLabel    string
+	AppArmorProfile string
+	ExecIDs         []string
+	HostConfig      container.HostConfig
+	GraphDriver     types.GraphDriverData
+	SizeRw          int64 `json:",omitempty"`
+	SizeRootFs      int64 `json:",omitempty"`
+	Mounts          []types.MountPoint
+	Config          container.Config
+	NetworkSettings types.NetworkSettings
+}
+
+type InstanceFields struct {
+	PublishAllPorts    bool
+	DataVolumes        []string
+	Privileged         bool
+	ReadOnly           bool
+	BlkioDeviceOptions map[string]DeviceOptions
+	CommandArgs        []string
+	ExtraHosts         []string
+	PidMode            container.PidMode
+	LogConfig          LogConfig
+	SecurityOpt        []string
+	Devices            []string
+	DNS                []string
+	DNSSearch          []string
+	CapAdd             []string
+	CapDrop            []string
+	RestartPolicy      container.RestartPolicy
+	CPUShares          int64
+	VolumeDriver       string
+	CPUSet             string
+	BlkioWeight        uint16
+	CgroupParent       string
+	CPUPeriod          int64
+	CPUQuota           int64
+	CPUsetMems         string
+	DNSOpt             []string
+	GroupAdd           []string
+	Isolation          container.Isolation
+	KernelMemory       int64
+	Memory             int64
+	MemoryReservation  int64
+	MemorySwap         int64
+	MemorySwappiness   *int64
+	OomKillDisable     *bool
+	ShmSize            int64
+	Tmpfs              map[string]string
+	Ulimits            []*units.Ulimit
+	Uts                container.UTSMode
+	IpcMode            container.IpcMode
+	ConsoleSize        [2]int
+	CPUCount           int64
+	CPUPercent         int64
+	IOMaximumIOps      uint64
+	IOMaximumBandwidth uint64
+	Command            interface{} // this one is so weird
+	Environment        map[string]string
+	WorkingDir         string
+	EntryPoint         []string
+	Tty                bool
+	StdinOpen          bool
+	DomainName         string
+	Labels             map[string]string
+	StopSignal         string
+}
+
+type LogConfig struct {
+	Driver string
+	Config map[string]string
+}
+
+type DeviceOptions struct {
+	Weight    uint16
+	ReadIops  uint64
+	WriteIops uint64
+	ReadBps   uint64
+	WriteBps  uint64
+}
+
+type IPSec struct {
+	Setting map[string]struct {
+		Nat    float64
+		Isakmp float64
+	}
 }

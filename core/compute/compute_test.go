@@ -9,6 +9,7 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -64,18 +65,19 @@ func (s *ComputeTestSuite) TestMultiNicsPickMac(c *check.C) {
 		},
 	}
 	config := container.Config{}
-	setupMacAndIP(&instance, &config, true, true)
+	setupMacAndIP(instance, &config, true, true)
 	c.Assert(config.MacAddress, check.Equals, "02:03:04:05:06:07")
 }
 
 func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 	device := "/dev/mock"
 	instance := model.Instance{}
-	instance.Data = make(map[string]interface{})
-	instance.Data["fields"] = map[string]interface{}{
-		"blkioDeviceOptions": map[string]interface{}{
-			"DEFAULT_DISK": map[string]interface{}{
-				"readIops": 10.0,
+	instance.Data = model.InstanceFieldsData{
+		Fields: model.InstanceFields{
+			BlkioDeviceOptions: map[string]model.DeviceOptions{
+				"DEFAULT_DISK": model.DeviceOptions{
+					ReadIops: 10,
+				},
 			},
 		},
 	}
@@ -90,7 +92,7 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
-	client := docker.DefaultClient
+	client := docker.GetClient(constants.DefaultVersion)
 	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld:latest", types.ImagePullOptions{})
 	if err != nil {
 		c.Fatal(err)
@@ -109,19 +111,28 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 		UUID:       "irrelevant",
 		ExternalID: resp.ID,
 	}
-	container := utils.GetContainer(client, &instance, false)
-	containers := []map[string]interface{}{}
+	container, err := utils.GetContainer(client, instance, false)
+	if err != nil {
+		c.Fatal(err)
+	}
+	containers := []model.PingResource{}
 
 	container.Labels = map[string]string{}
-	containers = utils.AddContainer("running", container, containers)
-	c.Assert(containers[0]["uuid"], check.Equals, "no-label-test")
-	c.Assert(containers[0]["systemContainer"], check.Equals, "")
+	containers, err = utils.AddContainer("running", container, containers, client)
+	if err != nil {
+		c.Fatal()
+	}
+	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
+	c.Assert(containers[0].SystemContainer, check.Equals, "")
 
-	containers = []map[string]interface{}{}
+	containers = []model.PingResource{}
 	container.Labels = map[string]string{}
-	containers = utils.AddContainer("running", container, containers)
-	c.Assert(containers[0]["uuid"], check.Equals, "no-label-test")
-	c.Assert(containers[0]["systemContainer"], check.Equals, "")
+	containers, err = utils.AddContainer("running", container, containers, client)
+	if err != nil {
+		c.Fatal(err)
+	}
+	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
+	c.Assert(containers[0].SystemContainer, check.Equals, "")
 }
 
 func (s *ComputeTestSuite) TestDefaultValue(c *check.C) {
@@ -148,81 +159,62 @@ func (s *ComputeTestSuite) TestDefaultValue(c *check.C) {
 }
 
 func setupDeviceOptionsTest(hostConfig *container.HostConfig, instance *model.Instance, mockDevice string) {
+	deviceOptions := instance.Data.Fields.BlkioDeviceOptions
 
-	if deviceOptions, ok := utils.GetFieldsIfExist(instance.Data, "fields", "blkioDeviceOptions"); ok {
-		blkioWeightDevice := []*blkiodev.WeightDevice{}
-		blkioDeviceReadIOps := []*blkiodev.ThrottleDevice{}
-		blkioDeviceWriteBps := []*blkiodev.ThrottleDevice{}
-		blkioDeviceReadBps := []*blkiodev.ThrottleDevice{}
-		blkioDeviceWriteIOps := []*blkiodev.ThrottleDevice{}
+	blkioWeightDevice := []*blkiodev.WeightDevice{}
+	blkioDeviceReadIOps := []*blkiodev.ThrottleDevice{}
+	blkioDeviceWriteBps := []*blkiodev.ThrottleDevice{}
+	blkioDeviceReadBps := []*blkiodev.ThrottleDevice{}
+	blkioDeviceWriteIOps := []*blkiodev.ThrottleDevice{}
 
-		deviceOptions := deviceOptions.(map[string]interface{})
-		for dev, options := range deviceOptions {
-			if dev == "DEFAULT_DISK" {
-				// mock data
-				dev = mockDevice
-				if dev == "" {
-					logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
-					continue
-				}
-			}
-			options := options.(map[string]interface{})
-			for key, value := range options {
-				value := utils.InterfaceToFloat(value)
-				switch key {
-				case "weight":
-					blkioWeightDevice = append(blkioWeightDevice, &blkiodev.WeightDevice{
-						Path:   dev,
-						Weight: uint16(value),
-					})
-					break
-				case "readIops":
-					blkioDeviceReadIOps = append(blkioDeviceReadIOps, &blkiodev.ThrottleDevice{
-						Path: dev,
-						Rate: uint64(value),
-					})
-					break
-				case "writeIops":
-					blkioDeviceWriteIOps = append(blkioDeviceWriteIOps, &blkiodev.ThrottleDevice{
-						Path: dev,
-						Rate: uint64(value),
-					})
-					break
-				case "readBps":
-					blkioDeviceReadBps = append(blkioDeviceReadBps, &blkiodev.ThrottleDevice{
-						Path: dev,
-						Rate: uint64(value),
-					})
-					break
-				case "writeBps":
-					blkioDeviceWriteBps = append(blkioDeviceWriteBps, &blkiodev.ThrottleDevice{
-						Path: dev,
-						Rate: uint64(value),
-					})
-					break
-				}
+	for dev, options := range deviceOptions {
+		if dev == "DEFAULT_DISK" {
+			dev = mockDevice
+			if dev == "" {
+				logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
+				continue
 			}
 		}
-		if len(blkioWeightDevice) > 0 {
-			hostConfig.BlkioWeightDevice = blkioWeightDevice
-		}
-		if len(blkioDeviceReadIOps) > 0 {
-			hostConfig.BlkioDeviceReadIOps = blkioDeviceReadIOps
-		}
-		if len(blkioDeviceWriteIOps) > 0 {
-			hostConfig.BlkioDeviceWriteIOps = blkioDeviceWriteIOps
-		}
-		if len(blkioDeviceReadBps) > 0 {
-			hostConfig.BlkioDeviceReadBps = blkioDeviceReadBps
-		}
-		if len(blkioDeviceWriteBps) > 0 {
-			hostConfig.BlkioDeviceWriteBps = blkioDeviceWriteBps
-		}
+		blkioWeightDevice = append(blkioWeightDevice, &blkiodev.WeightDevice{
+			Path:   dev,
+			Weight: options.Weight,
+		})
+		blkioDeviceReadIOps = append(blkioDeviceReadIOps, &blkiodev.ThrottleDevice{
+			Path: dev,
+			Rate: options.ReadIops,
+		})
+		blkioDeviceWriteIOps = append(blkioDeviceWriteIOps, &blkiodev.ThrottleDevice{
+			Path: dev,
+			Rate: options.WriteIops,
+		})
+		blkioDeviceReadBps = append(blkioDeviceReadBps, &blkiodev.ThrottleDevice{
+			Path: dev,
+			Rate: options.ReadBps,
+		})
+		blkioDeviceWriteBps = append(blkioDeviceWriteBps, &blkiodev.ThrottleDevice{
+			Path: dev,
+			Rate: options.WriteBps,
+		})
+	}
+	if len(blkioWeightDevice) > 0 {
+		hostConfig.BlkioWeightDevice = blkioWeightDevice
+	}
+	if len(blkioDeviceReadIOps) > 0 {
+		hostConfig.BlkioDeviceReadIOps = blkioDeviceReadIOps
+	}
+	if len(blkioDeviceWriteIOps) > 0 {
+		hostConfig.BlkioDeviceWriteIOps = blkioDeviceWriteIOps
+	}
+	if len(blkioDeviceReadBps) > 0 {
+		hostConfig.BlkioDeviceReadBps = blkioDeviceReadBps
+	}
+	if len(blkioDeviceWriteBps) > 0 {
+		hostConfig.BlkioDeviceWriteBps = blkioDeviceWriteBps
 	}
 }
 
 func deleteContainer(name string) {
-	client := docker.DefaultClient
+	client := docker.GetClient(constants.DefaultVersion)
 	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false

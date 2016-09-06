@@ -5,14 +5,14 @@ type Volume struct {
 	AllocationState string `json:"allocationState"`
 	AttachedState   string `json:"attachedState"`
 	Created         int64  `json:"created"`
-	Data            map[string]interface{}
+	Data            VolumeData
 	Description     interface{} `json:"description"`
 	DeviceNumber    int         `json:"deviceNumber"`
 	Format          string      `json:"format"`
 	ID              int         `json:"id"`
 	Image           Image       `json:"image"`
 	ImageID         interface{} `json:"imageId"`
-	Instance        *Instance   `json:"instance"`
+	Instance        Instance    `json:"instance"`
 	InstanceID      interface{} `json:"instanceId"`
 	Kind            string      `json:"kind"`
 	Name            string      `json:"name"`
@@ -22,11 +22,21 @@ type Volume struct {
 	RemoveTime      int64       `json:"removeTime"`
 	Removed         int64       `json:"removed"`
 	State           string      `json:"state"`
-	StoragePools    StoragePool
+	StoragePools    []StoragePool
 	Type            string      `json:"type"`
 	URI             string      `json:"uri"`
 	UUID            string      `json:"uuid"`
 	VirtualSizeMb   interface{} `json:"virtualSizeMb"`
 	ZoneID          int         `json:"zoneId"`
 	Driver          string
+}
+
+type VolumeData struct {
+	Fields VolumeFields
+}
+
+type VolumeFields struct {
+	Driver     string
+	DriverOpts map[string]string
+	IsHostPath bool
 }
