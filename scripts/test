@@ -1,16 +1,16 @@
-#!/bin/bash
-set -e
-
-cd $(dirname $0)/..
-
-echo Running tests
-
-PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
-
-go test -race -cover -tags=test ${PACKAGES}
-
-cd tests
-find -depth -name __pycache__ -o -name "*.pyc" -exec rm -rf {} \;
-if [ -z "$NO_TEST" ]; then
-   tox "$@"
-fi
+##!/bin/bash
+#set -e
+#
+#cd $(dirname $0)/..
+#
+#echo Running tests
+#
+#PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
+#
+#go test -race -cover -tags=test ${PACKAGES}
+#
+#cd tests
+#find -depth -name __pycache__ -o -name "*.pyc" -exec rm -rf {} \;
+#if [ -z "$NO_TEST" ]; then
+#   tox "$@"
+#fi

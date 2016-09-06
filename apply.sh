@@ -29,25 +29,26 @@ cd $(dirname $0)
 
 stage()
 {
-    if [[ -n "${CURL_CA_BUNDLE}" && -e ./dist/websocket/cacert.pem ]]; then
-        if [ ! -e ./dist/websocket/cacert.orig ]; then
-            cp ./dist/websocket/cacert.pem ./dist/websocket/cacert.orig
-        fi
-        cat ./dist/websocket/cacert.orig ${CURL_CA_BUNDLE} > ./dist/websocket/cacert.pem
-    fi
-
-    cp -rf apply.sh agent $TEMP
-
-    find $TEMP -name "*.sh" -exec chmod +x {} \;
-    find $TEMP \( -name host-api -o -name cadvisor -o -name nsenter -o -name socat \) -exec chmod +x {} \;
-
-    if [ -e $DEST ]; then
-        mv $DEST ${OLD}
-    fi
-    mv $TEMP ${DEST}
-    rm -rf ${OLD}
-
-    echo $RANDOM > $STAMP
+#    if [[ -n "${CURL_CA_BUNDLE}" && -e ./dist/websocket/cacert.pem ]]; then
+#        if [ ! -e ./dist/websocket/cacert.orig ]; then
+#            cp ./dist/websocket/cacert.pem ./dist/websocket/cacert.orig
+#        fi
+#        cat ./dist/websocket/cacert.orig ${CURL_CA_BUNDLE} > ./dist/websocket/cacert.pem
+#    fi
+#
+#    cp -rf apply.sh agent $TEMP
+#
+#    find $TEMP -name "*.sh" -exec chmod +x {} \;
+#    find $TEMP \( -name host-api -o -name cadvisor -o -name nsenter -o -name socat \) -exec chmod +x {} \;
+#
+#    if [ -e $DEST ]; then
+#        mv $DEST ${OLD}
+#    fi
+#    mv $TEMP ${DEST}
+#    rm -rf ${OLD}
+#
+#    echo $RANDOM > $STAMP
+echo "mock"
 }
 
 conf()
@@ -91,7 +92,7 @@ start(){
     info Executing $MAIN
     cleanup
 
-   $CATTLE_HOME/config.sh host-config
+    $CATTLE_HOME/config.sh host-config
 
    if [ "$CATTLE_RUN_FIO" == "true" ]; then
        run_fio

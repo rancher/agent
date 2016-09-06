@@ -104,7 +104,7 @@ func initializeHandlers() *Handler {
 			Cadvisor:   Cadvisor,
 			Unit:       1048576,
 			DataGetter: hostInfo.DiskDataGetter{},
-			InfoData:   model.InfoData{
+			InfoData: model.InfoData{
 				Info: info,
 				Version: version,
 			},
@@ -120,9 +120,9 @@ func initializeHandlers() *Handler {
 		hostInfo.OSCollector{
 			DataGetter: hostInfo.OSDataGetter{},
 			GOOS:       runtime.GOOS,
-			InfoData:   model.InfoData{
-				Info: info,
-				Version: version,
+			InfoData: model.InfoData{
+			Info: info,
+			Version: version,
 			},
 		},
 	}

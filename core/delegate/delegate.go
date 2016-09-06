@@ -68,10 +68,9 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 		}
 
 		time.Sleep(time.Duration(1) * time.Second)
-
 	}
 	if retcode != 0 {
-		return retcode, string(output), map[string]interface{}{}, nil
+		return retcode, string(output), map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
 	}
 	text := []string{}
 	for _, line := range strings.Split(string(output), "\n") {

@@ -23,13 +23,11 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	indata, _ := utils.GetFieldsIfExist(event.Data, "instanceData")
 	deEvent, _ := utils.GetFieldsIfExist(event.Data, "event")
 	var instanceData model.InstanceData
-	if err := mapstructure.Decode(utils.InterfaceToMap(indata), &instanceData); err != nil {
-		return errors.Wrap(err, constants.DelegateRequestError)
-	}
+	//temperately ignore this error because the json file sent from cattle is different from the go type
+	//return this err will cause the delegate request fail
+	mapstructure.Decode(utils.InterfaceToMap(indata), &instanceData)
 	var delegateEvent *revents.Event
-	if err := mapstructure.Decode(utils.InterfaceToMap(deEvent), &delegateEvent); err != nil {
-		return errors.Wrap(err, constants.DelegateRequestError)
-	}
+	mapstructure.Decode(utils.InterfaceToMap(deEvent), &delegateEvent)
 	if instanceData.Kind != "container" || instanceData.Token == "" {
 		return nil
 	}
