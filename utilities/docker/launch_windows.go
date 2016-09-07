@@ -1,10 +1,10 @@
 package docker
 
 import (
+	"fmt"
+	"github.com/docker/engine-api/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/docker/engine-api/client"
-	"fmt"
 	"os"
 )
 

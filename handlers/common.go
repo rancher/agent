@@ -105,7 +105,7 @@ func initializeHandlers() *Handler {
 			Unit:       1048576,
 			DataGetter: hostInfo.DiskDataGetter{},
 			InfoData: model.InfoData{
-				Info: info,
+				Info:    info,
 				Version: version,
 			},
 		},
@@ -121,8 +121,8 @@ func initializeHandlers() *Handler {
 			DataGetter: hostInfo.OSDataGetter{},
 			GOOS:       runtime.GOOS,
 			InfoData: model.InfoData{
-			Info: info,
-			Version: version,
+				Info:    info,
+				Version: version,
 			},
 		},
 	}

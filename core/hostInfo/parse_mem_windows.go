@@ -3,10 +3,10 @@ package hostInfo
 import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"os/exec"
 )
 
 func (m MemoryCollector) parseMemInfo() (map[string]interface{}, error) {

@@ -1,10 +1,10 @@
 package hostInfo
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
 )
 
 func (o OSDataGetter) GetOS(infoData model.InfoData) (map[string]string, error) {

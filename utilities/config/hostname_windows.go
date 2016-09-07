@@ -2,8 +2,8 @@ package config
 
 import (
 	"github.com/pkg/errors"
-	"os"
 	"github.com/rancher/agent/utilities/constants"
+	"os"
 )
 
 func Hostname() (string, error) {

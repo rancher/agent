@@ -1,9 +1,9 @@
 package compute
 
 import (
+	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types/container"
 	"github.com/rancher/agent/model"
-	"github.com/docker/engine-api/client"
 )
 
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {}

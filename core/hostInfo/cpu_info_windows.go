@@ -1,13 +1,13 @@
 package hostInfo
 
 import (
-	"os/exec"
-	"strings"
-	"regexp"
-	"strconv"
-	"runtime"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
+	"os/exec"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
