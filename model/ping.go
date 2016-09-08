@@ -2,11 +2,11 @@ package model
 
 type PingResponse struct {
 	Resources []PingResource `json:"resources,omitempty" yaml:"resources,omitempty"`
-	Option    PingOptions    `json:"option,omitempty" yaml:"option,omitempty"`
+	Options   PingOptions    `json:"options,omitempty" yaml:"options,omitempty"`
 }
 
 type PingOptions struct {
-	Instance bool `json:"instance,omitempty" yaml:"instance,omitempty"`
+	Instances bool `json:"instances,omitempty" yaml:"instances,omitempty"`
 }
 
 type PingResource struct {

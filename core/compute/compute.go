@@ -620,7 +620,7 @@ func PurgeState(instance model.Instance, client *client.Client) error {
 	for _, f := range files {
 		if _, err := os.Stat(f); err == nil {
 			if rmErr := os.Remove(f); rmErr != nil {
-				return errors.Wrap(rmErr, "Failed to purge state")
+				return errors.Wrap(rmErr, constants.PurgeStateError)
 			}
 		}
 	}

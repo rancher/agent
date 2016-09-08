@@ -47,7 +47,6 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 	}
 	retcode := -1
 	output := []byte{}
-	// go doc shows that the following function may not run in window
 	for i := 0; i < 3; i++ {
 		command := exec.Command("nsenter", cmd...)
 		command.Env = envs

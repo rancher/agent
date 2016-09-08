@@ -122,7 +122,7 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		}
 	}
 	pong.Resources = append(pong.Resources, containers...)
-	pong.Option.Instance = true
+	pong.Options.Instances = true
 	return nil
 }
 

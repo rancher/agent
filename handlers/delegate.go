@@ -44,24 +44,24 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	}
 
 	if container.ID == "" {
-		logrus.Infof("Can not call [%v], container not exist", instance.UUID)
-		return errors.New(constants.DelegateRequestError)
+		logrus.Errorf("Can not call [%v], container not exist", instance.UUID)
+		return nil
 	}
 
 	inspect, _ := h.dockerClient.ContainerInspect(context.Background(), container.ID)
 	running := inspect.State.Running
 	if !running {
-		logrus.Error(fmt.Errorf("Can not call [%v], container not running", container.ID))
-		return errors.New(constants.DelegateRequestError)
+		logrus.Errorf("Can not call [%v], container not running", container.ID)
+		return nil
 	}
 	progress := utils.GetProgress(event, cli)
 	exitCode, output, data, err := delegate.NsExec(inspect.State.Pid, delegateEvent)
 	if err != nil {
-		return errors.Wrap(err, constants.DelegateRequestError)
+		logrus.Error(err)
 	}
 	if exitCode == 0 {
 		return replyWithParent(data, delegateEvent, event, cli)
 	}
 	progress.Update(fmt.Sprintf("Update fail, exitCode %v, output data %v", exitCode, output))
-	return errors.New(constants.DelegateRequestError)
+	return nil
 }

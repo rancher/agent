@@ -2,4 +2,4 @@
 
 package hostapi
 
-const execPath string = "hostapi"
+const execPath string = "host-api"

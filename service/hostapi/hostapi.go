@@ -33,14 +33,16 @@ func StartUp() {
 			"-cattle-url", config.APIURL(""),
 			"-cattle-state-dir", config.ContainerStateDir(),
 		}
+		logrus.Info(execPath)
 		command := exec.Command(execPath, args...)
 		command.Env = env
 		command.SysProcAttr = constants.SysAttr
 		command.Stderr = os.Stderr
 		command.Stdout = os.Stdout
-		command.Start()
-		err = command.Wait()
-		if err != nil {
+		if err := command.Start(); err != nil {
+			logrus.Error(err)
+		}
+		if err := command.Wait(); err != nil {
 			logrus.Error(err)
 		}
 		time.Sleep(time.Duration(5) * time.Second)
