@@ -1,18 +1,18 @@
 package storage
 
 import (
-	"github.com/rancher/agent/model"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
 	"os"
 	"strings"
-	"github.com/rancher/agent/core/marshaller"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 )
 
 func isManagedVolume(volume model.Volume) bool {
@@ -88,7 +88,6 @@ func isBuild(image model.Image) bool {
 	}
 	return false
 }
-
 
 func pathToVolume(volume model.Volume) string {
 	return strings.Replace(volume.URI, "file://", "", -1)

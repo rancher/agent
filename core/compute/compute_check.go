@@ -1,11 +1,11 @@
 package compute
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/docker/engine-api/client"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
 )
 
 func IsInstanceActive(instance model.Instance, host model.Host, client *client.Client) (bool, error) {

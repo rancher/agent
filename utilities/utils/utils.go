@@ -334,7 +334,7 @@ func ParseRepoTag(name string) model.RepoTag {
 	if n < 0 {
 		return model.RepoTag{
 			Repo: name,
-			Tag: "latest",
+			Tag:  "latest",
 			UUID: name + ":latest",
 		}
 	}
@@ -342,13 +342,13 @@ func ParseRepoTag(name string) model.RepoTag {
 	if strings.Index(tag, "/") < 0 {
 		return model.RepoTag{
 			Repo: name[:n],
-			Tag: tag,
+			Tag:  tag,
 			UUID: name,
 		}
 	}
 	return model.RepoTag{
 		Repo: name,
-		Tag: "latest",
+		Tag:  "latest",
 		UUID: name + ":latest",
 	}
 }

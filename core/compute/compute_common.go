@@ -1,29 +1,29 @@
 package compute
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/docker/engine-api/types/container"
-	"github.com/docker/go-connections/nat"
 	"fmt"
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/core/progress"
-	"strings"
-	"github.com/rancher/agent/core/storage"
-	"os"
-	"strconv"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
-	"github.com/pkg/errors"
-	"golang.org/x/net/context"
-	configuration "github.com/rancher/agent/utilities/config"
-	urls "net/url"
-	"github.com/docker/engine-api/types/network"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
+	"github.com/docker/go-connections/nat"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/progress"
+	"github.com/rancher/agent/core/storage"
+	"github.com/rancher/agent/model"
+	configuration "github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
+	urls "net/url"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
-imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
+	imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
 	logrus.Info("Creating docker container from config")
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {

@@ -1,13 +1,13 @@
 package storage
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/config"
-	"golang.org/x/net/context"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
 	"os"
 )
 

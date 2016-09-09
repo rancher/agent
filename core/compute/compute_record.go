@@ -1,17 +1,17 @@
 package compute
 
 import (
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/utilities/constants"
-	"path"
-	"os"
-	"github.com/rancher/agent/model"
+	"fmt"
 	"github.com/docker/engine-api/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/config"
-	"fmt"
 	"github.com/rancher/agent/core/marshaller"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
 	"io/ioutil"
+	"os"
+	"path"
 )
 
 func RecordState(client *client.Client, instance model.Instance, dockerID string) error {
