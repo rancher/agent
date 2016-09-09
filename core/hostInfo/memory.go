@@ -2,13 +2,9 @@ package hostInfo
 
 import (
 	"bufio"
-	"github.com/Sirupsen/logrus"
-	"math"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/utilities/constants"
 	"os"
-	"os/exec"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 var KeyMap = map[string]string{
@@ -25,94 +21,40 @@ var KeyMap = map[string]string{
 }
 
 type MemoryInfoGetter interface {
-	GetMemInfoData() []string
+	GetMemInfoData() ([]string, error)
 }
 
 type MemoryCollector struct {
-	dataGetter MemoryInfoGetter
-	unit       float64
+	DataGetter MemoryInfoGetter
+	Unit       float64
 	GOOS       string
 }
 
 type MemoryDataGetter struct{}
 
-func (m MemoryDataGetter) GetMemInfoData() []string {
+func (m MemoryDataGetter) GetMemInfoData() ([]string, error) {
 	file, err := os.Open("/proc/meminfo")
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			data = append(data, scanner.Text())
-		}
+		return data, errors.Wrap(err, constants.GetMemInfoDataError)
 	}
-	return data
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
+	}
+	return data, nil
 }
 
-func (m MemoryCollector) parseLinuxMemInfo() map[string]interface{} {
-	data := map[string]interface{}{}
-	memData := m.dataGetter.GetMemInfoData()
-	for _, line := range memData {
-		lineList := strings.Split(line, ":")
-		keyLower := strings.ToLower(lineList[0])
-		possibleMemValue := strings.Split(strings.TrimSpace(lineList[1]), " ")[0]
-
-		if _, ok := KeyMap[keyLower]; ok {
-			value, _ := strconv.ParseFloat(possibleMemValue, 64)
-			convertMemVal := value / m.unit
-			convertMemVal = math.Floor(convertMemVal*1000) / 1000
-			data[KeyMap[keyLower]] = convertMemVal
-		}
-	}
-	return data
-}
-
-func (m MemoryCollector) parseWindowsMemInfo() map[string]interface{} {
-	data := map[string]interface{}{}
-	keys := map[string]string{
-		"memFree":  "FreePhysicalMemory",
-		"memTotal": "TotalVisibleMemorySize",
-	}
-	for k, v := range keys {
-		value, err := getCommandOutput(v)
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			pattern := "([0-9]+)"
-			possibleMemValue := regexp.MustCompile(pattern).FindString(value)
-			memValue, _ := strconv.ParseFloat(possibleMemValue, 64)
-			data[k] = memValue / 1024
-		}
-	}
-	return data
-}
-
-func getCommandOutput(key string) (string, error) {
-	command := exec.Command("PowerShell", "wmic", "os", "get", key)
-	output, err := command.Output()
-	if err == nil {
-		ret := strings.Split(string(output), "\n")[1]
-		return ret, nil
-	}
-	return "", err
-}
-
-func (m MemoryCollector) GetData() map[string]interface{} {
-	if m.GOOS == "linux" {
-		return m.parseLinuxMemInfo()
-	} else if m.GOOS == "windows" {
-		return m.parseWindowsMemInfo()
-	}
-	return nil
+func (m MemoryCollector) GetData() (map[string]interface{}, error) {
+	return m.parseMemInfo()
 }
 
 func (m MemoryCollector) KeyName() string {
 	return "memoryInfo"
 }
 
-func (m MemoryCollector) GetLabels(prefix string) map[string]string {
-	return map[string]string{}
+func (m MemoryCollector) GetLabels(prefix string) (map[string]string, error) {
+	return map[string]string{}, nil
 }

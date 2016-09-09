@@ -1,15 +1,15 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"path"
 	"runtime"
 	"strconv"
@@ -62,7 +62,7 @@ func physicalHostUUIDFile() string {
 	return DefaultValue("PHYSICAL_HOST_UUID_FILE", defValue)
 }
 
-func PhysicalHostUUID(forceWrite bool) string {
+func PhysicalHostUUID(forceWrite bool) (string, error) {
 	return GetUUIDFromFile("PHYSICAL_HOST_UUID", physicalHostUUIDFile(), forceWrite)
 }
 
@@ -73,58 +73,56 @@ func Home() string {
 	return DefaultValue("HOME", "/var/lib/cattle")
 }
 
-func getUUIDFromFile(uuidFilePath string) string {
+func getUUIDFromFile(uuidFilePath string) (string, error) {
 	uuid := ""
 
-	if fileBuffer, err := ioutil.ReadFile(uuidFilePath); err == nil {
-		uuid = string(fileBuffer)
+	fileBuffer, err := ioutil.ReadFile(uuidFilePath)
+	if err != nil && !os.IsNotExist(err) {
+		return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
 	}
+	uuid = string(fileBuffer)
 	if uuid == "" {
-		if newUUID, err := goUUID.NewV4(); err == nil {
-			uuid = newUUID.String()
-			file, _ := os.Create(uuidFilePath)
-			file.WriteString(uuid)
+		newUUID, err := goUUID.NewV4()
+		if err != nil {
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+		}
+		uuid = newUUID.String()
+		file, err := os.Create(uuidFilePath)
+		if err != nil {
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+		}
+		if _, err := file.WriteString(uuid); err != nil {
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
 		}
 	}
-	return uuid
+	return uuid, nil
 }
 
-func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) string {
+func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) (string, error) {
 	uuid := DefaultValue(envName, "")
 	if uuid != "" {
 		if forceWrite {
 			_, err := os.Open(uuidFilePath)
 			if err == nil {
 				os.Remove(uuidFilePath)
+			} else if !os.IsNotExist(err) {
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
 			}
-			file, _ := os.Create(uuidFilePath)
-			file.WriteString(uuid)
+			file, err := os.Create(uuidFilePath)
+			if err != nil {
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
+			}
+			if _, err := file.WriteString(uuid); err != nil {
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
+			}
 		}
-		return uuid
+		return uuid, nil
 	}
 	return getUUIDFromFile(uuidFilePath)
 }
 
-func setupLogger() bool {
-	return DefaultValue("LOGGER", "true") == "true"
-}
-
 func DoPing() bool {
 	return DefaultValue("PING_ENABLED", "true") == "true"
-}
-
-func Hostname() string {
-	var hostname string
-	if runtime.GOOS == "windows" {
-		hostname, _ = os.Hostname()
-	} else {
-		hostname = getFQDNLinux()
-	}
-	return DefaultValue("HOSTNAME", hostname)
-}
-
-func workers() string {
-	return DefaultValue("WORKERS", "50")
 }
 
 func SetSecretKey(value string) {
@@ -147,103 +145,37 @@ func SetAPIURL(value string) {
 	constants.ConfigOverride["URL"] = value
 }
 
-func apiAuth() (string, string) {
-	return AccessKey(), SecretKey()
-}
-
-func isMultiProc() bool {
-	return multiStyle() == "proc"
-}
-
-func isMultiStyle() bool {
-	return multiStyle() == "thread"
-}
-
-//TODO don't know how to implement it
-func isEventlet() bool {
-	// mock
-	return false
-}
-
-func multiStyle() string {
-	return DefaultValue("AGENT_MULTI", "")
-}
-
-func queueDepth() int {
-	ret, _ := strconv.Atoi(DefaultValue("queueDepth", "5"))
-	return ret
-}
-
-func stopTimeout() int {
-	ret, _ := strconv.Atoi(DefaultValue("stopTimeout", "60"))
-	return ret
-}
-
-func log() string {
-	return DefaultValue("AGENT_LOG_FILE", "agent.log")
-}
-
-func debug() bool {
-	return DefaultValue("DEBUG", "false") == "false"
-}
-
 func agentIP() string {
 	return DefaultValue("AGENT_IP", "")
-}
-
-func agentPort() string {
-	return DefaultValue("agentPort", "")
 }
 
 func Sh() string {
 	return DefaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/config.sh", Home()))
 }
 
-func PhysicalHost() map[string]interface{} {
-	return map[string]interface{}{
-		"uuid": PhysicalHostUUID(false),
-		"type": "physicalHost",
-		"kind": "physicalHost",
-		"name": Hostname(),
+func PhysicalHost() (model.PingResource, error) {
+	uuid, err := PhysicalHostUUID(false)
+	if err != nil {
+		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError)
 	}
-}
-
-func APIProxyListenHost() string {
-	return DefaultValue("API_PROXY_LISTEN_HOST", "0.0.0.0")
-}
-
-func agentInstanceCattleHome() string {
-	return DefaultValue("agentInstanceCattleHome", "/var/lib/cattle")
+	hostname, err := Hostname()
+	if err != nil {
+		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError)
+	}
+	return model.PingResource{
+		UUID: uuid,
+		Type: "physicalHost",
+		Kind: "physicalHost",
+		Name: hostname,
+	}, nil
 }
 
 func ContainerStateDir() string {
 	return path.Join(StateDir(), "containers")
 }
 
-func lockDir() string {
-	return DefaultValue("lockDir", path.Join(Home(), "locks"))
-}
-
-func clientCertsDir() string {
-	return DefaultValue("CLIENT_CERTS_DIR", path.Join(Home(), "client_certs"))
-}
-
-func stamp() string {
-	return DefaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
-}
-
 func UpdatePyagent() bool {
 	return DefaultValue("CONFIG_UPDATE_PYAGENT", "true") == "true"
-}
-
-func maxDroppedPing() int {
-	ret, _ := strconv.Atoi(DefaultValue("maxDroppedPing", "10"))
-	return ret
-}
-
-func maxDroppedRequests() int {
-	ret, _ := strconv.Atoi(DefaultValue("maxDroppedRequests", "1000"))
-	return ret
 }
 
 func CadvisorOpts() string {
@@ -258,36 +190,13 @@ func HostAPIPort() string {
 	return DefaultValue("HOST_API_PORT", "9345")
 }
 
-func consoleAgentPort() int {
-	ret, _ := strconv.Atoi(DefaultValue("CONSOLE_AGENT_PORT", "9346"))
-	return ret
-}
-
 func JwtPublicKeyFile() string {
 	path := path.Join(Home(), "etc", "cattle", "api.crt")
 	return DefaultValue("CONSOLE_HOST_API_PUBLIC_KEY", path)
 }
 
-func HostAPIConfigFile() string {
-	path := path.Join(Home(), "etc", "cattle", "host-api.conf")
-	return DefaultValue("HOST_API_CONFIG_FILE", path)
-}
-
 func HostProxy() string {
 	return DefaultValue("HOST_API_PROXY", "")
-}
-
-func eventReadTimeout() string {
-	return DefaultValue("EVENT_READ_TIMEOUT", "60")
-}
-
-func eventletBackdoor() int {
-	val := DefaultValue("eventletBackdoor", "")
-	if val != "" {
-		ret, _ := strconv.Atoi(val)
-		return ret
-	}
-	return 0
 }
 
 func CadvisorWrapper() string {
@@ -315,7 +224,7 @@ func DockerHostIP() string {
 	return DefaultValue("DOCKER_HOST_IP", agentIP())
 }
 
-func DockerUUID() string {
+func DockerUUID() (string, error) {
 	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), false)
 }
 
@@ -344,17 +253,4 @@ func DefaultValue(name string, df string) string {
 		return result
 	}
 	return df
-}
-
-func getFQDNLinux() string {
-	cmd := exec.Command("/bin/hostname", "-f")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		return ""
-	}
-	fqdn := out.String()
-	fqdn = fqdn[:len(fqdn)-1]
-	return fqdn
 }

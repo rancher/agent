@@ -5,5 +5,6 @@ package constants
 import "syscall"
 
 var SysAttr = &syscall.SysProcAttr{
-	Setpgid: true,
+	Setpgid:   true,
+	Pdeathsig: syscall.SIGKILL,
 }

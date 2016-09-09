@@ -2,9 +2,10 @@ package delegate
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"os"
@@ -15,16 +16,19 @@ import (
 	"time"
 )
 
-func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{}) {
+func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{}, error) {
 	script := path.Join(config.Home(), "events", strings.Split(event.Name, ";")[0])
 	cmd := []string{"-F", "-m", "-u", "-i", "-n", "-p", "-t", strconv.Itoa(pid), "--", script}
-	input, _ := marshaller.ToString(event)
+	input, err := marshaller.ToString(event)
+	if err != nil {
+		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
+	}
 	data := map[string]interface{}{}
 
 	envmap := map[string]string{}
 	file, fileErr := os.Open(fmt.Sprintf("/proc/%v/environ", pid))
 	if fileErr != nil {
-		logrus.Error(fileErr)
+		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
 	}
 	for _, line := range strings.Split(utils.ReadBuffer(file), "\x00") {
 		if len(line) == 0 {
@@ -43,16 +47,12 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{})
 	}
 	retcode := -1
 	output := []byte{}
-	// go doc shows that the following function may not run in window
 	for i := 0; i < 3; i++ {
 		command := exec.Command("nsenter", cmd...)
 		command.Env = envs
-		logrus.Infof("input string %v", string(input))
 		command.Stdin = strings.NewReader(string(input))
 		buffer, err := command.Output()
-		if err != nil {
-			logrus.Error(err)
-		} else {
+		if err == nil {
 			retcode, output = 0, buffer
 			break
 		}
@@ -64,15 +64,12 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{})
 		existCMD.Wait()
 		if err1 == nil {
 			break
-		} else {
-			logrus.Error(err1)
 		}
 
 		time.Sleep(time.Duration(1) * time.Second)
-
 	}
 	if retcode != 0 {
-		return retcode, string(output), map[string]interface{}{}
+		return retcode, string(output), map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
 	}
 	text := []string{}
 	for _, line := range strings.Split(string(output), "\n") {
@@ -83,5 +80,5 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{})
 		}
 		text = append(text, line)
 	}
-	return retcode, strings.Join(text, ""), data
+	return retcode, strings.Join(text, ""), data, nil
 }

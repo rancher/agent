@@ -13,7 +13,7 @@ type CadvisorGetter interface {
 }
 
 type CadvisorAPIClient struct {
-	dataGetter CadvisorGetter
+	DataGetter CadvisorGetter
 }
 
 type CadvisorDataGetter struct {
@@ -33,7 +33,7 @@ func (c CadvisorAPIClient) GetLatestStat() map[string]interface{} {
 }
 
 func (c CadvisorAPIClient) GetStats() []interface{} {
-	containers, err := c.dataGetter.GetContainers()
+	containers, err := c.DataGetter.GetContainers()
 	if err != nil {
 		logrus.Error(err)
 	}

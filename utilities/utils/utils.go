@@ -4,99 +4,52 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/engine-api/types/filters"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
 	"net/http"
-	urls "net/url"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func unwrap(obj interface{}) interface{} {
-	switch obj.(type) {
-	case []map[string]interface{}:
-		ret := []map[string]interface{}{}
-		obj := []map[string]interface{}{}
-		for _, o := range obj {
-			ret = append(ret, unwrap(o).(map[string]interface{}))
-		}
-		return ret
-	case map[string]interface{}:
-		ret := map[string]interface{}{}
-		obj := map[string]interface{}{}
-		for key, value := range obj {
-			ret[key] = unwrap(value)
-		}
-		return ret
-	default:
-		return obj
-	}
-}
-
-func GetInstanceAndHost(event *revents.Event) (*model.Instance, *model.Host) {
+func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
 
 	data := event.Data
 	var ihm model.InstanceHostMap
-	mapstructure.Decode(data["instanceHostMap"], &ihm)
+	if err := mapstructure.Decode(data["instanceHostMap"], &ihm); err != nil {
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
+	}
 
 	var instance model.Instance
-	mapstructure.Decode(ihm.Instance, &instance)
+	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
+	}
 	var host model.Host
-	mapstructure.Decode(ihm.Host, &host)
-
-	clusterConnection, ok := GetFieldsIfExist(data, "field", "clusterConnection")
-	if ok {
-		host.Data["clusterConnection"] = InterfaceToString(clusterConnection)
-		if strings.HasPrefix(InterfaceToString(clusterConnection), "http") {
-			caCrt, ok1 := GetFieldsIfExist(event.Data, "field", "caCrt")
-			clientCrt, ok2 := GetFieldsIfExist(event.Data, "field", "clientCrt")
-			clientKey, ok3 := GetFieldsIfExist(event.Data, "field", "clientKey")
-			// what if we miss certs/key? do we have to panic or ignore it?
-			if ok1 && ok2 && ok3 {
-				host.Data["caCrt"] = InterfaceToString(caCrt)
-				host.Data["clientCrt"] = InterfaceToString(clientCrt)
-				host.Data["clientKey"] = InterfaceToString(clientKey)
-			} else {
-				logrus.Infof("Missing certs/key [%v]for clusterConnection for connection ",
-					clusterConnection)
-			}
-		}
+	if err := mapstructure.Decode(ihm.Host, &host); err != nil {
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
 	}
-	return &instance, &host
+
+	return instance, host, nil
 }
 
-func IsNoOp(data map[string]interface{}) bool {
-	b, ok := GetFieldsIfExist(data, "processData", "containerNoOpEvent")
-	if ok {
-		return InterfaceToBool(b)
-	}
-	return false
-}
-
-func IsTrue(instance *model.Instance, field string) bool {
-	value, ok := GetFieldsIfExist(instance.Data, "fields", field)
-	if ok {
-		return InterfaceToBool(value)
-	}
-	return false
+func IsNoOp(data model.ProcessData) bool {
+	return data.ContainerNoOpEvent
 }
 
 func AddLabel(config *container.Config, key string, value string) {
@@ -112,7 +65,7 @@ func SearchInList(slice []string, target string) bool {
 	return false
 }
 
-func IsNonrancherContainer(instance *model.Instance) bool {
+func IsNonrancherContainer(instance model.Instance) bool {
 	return instance.NativeContainer
 }
 
@@ -133,8 +86,8 @@ func CheckOutput(strs []string) {
 
 }
 
-func HasLabel(instance *model.Instance) bool {
-	_, ok := instance.Labels["io.rancher.container.cattle_url"]
+func HasLabel(instance model.Instance) bool {
+	_, ok := instance.Labels[constants.CattelURLLabel]
 	return ok
 }
 
@@ -150,17 +103,6 @@ func ReadBuffer(reader io.ReadCloser) string {
 		}
 	}
 	return s
-}
-
-func IsStrSet(m map[string]interface{}, key string) bool {
-	ok := false
-	switch m[key].(type) {
-	case string:
-		ok = len(InterfaceToString(m[key])) > 0
-	case []string:
-		ok = len(m[key].([]string)) > 0
-	}
-	return m[key] != nil && ok
 }
 
 func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
@@ -214,14 +156,6 @@ func InterfaceToString(v interface{}) string {
 		return value
 	}
 	return ""
-}
-
-func InterfaceToInt(v interface{}) int {
-	value, ok := v.(int)
-	if ok {
-		return value
-	}
-	return 0
 }
 
 func InterfaceToBool(v interface{}) bool {
@@ -285,7 +219,7 @@ func SafeSplit(s string) []string {
 	return result
 }
 
-func HasService(instance *model.Instance, kind string) bool {
+func HasService(instance model.Instance, kind string) bool {
 	if instance.Nics != nil && len(instance.Nics) > 0 {
 		for _, nic := range instance.Nics {
 			if nic.DeviceNumber != 0 {
@@ -307,73 +241,67 @@ func HasService(instance *model.Instance, kind string) bool {
 func AddLinkEnv(name string, link model.Link, result map[string]string, inIP string) {
 	result[strings.ToUpper(fmt.Sprintf("%s_NAME", toEnvName(name)))] = fmt.Sprintf("/cattle/%s", name)
 
-	if ports, ok := GetFieldsIfExist(link.Data, "fields", "ports"); ok {
-		for _, port := range ports.([]interface{}) {
-			port := port.(map[string]interface{})
-			protocol := port["protocol"]
-			ip := strings.ToLower(name)
-			if inIP != "" {
-				ip = inIP
-			}
-			// different with python agent
-			dst := port["privatePort"]
-			src := port["privatePort"]
+	ports := link.Data.Fields.Ports
+	for _, port := range ports {
+		protocol := port.Protocol
+		ip := strings.ToLower(name)
+		if inIP != "" {
+			ip = inIP
+		}
+		dst := port.PrivatePort
+		src := port.PrivatePort
 
-			fullPort := fmt.Sprintf("%v://%v:%v", protocol, ip, dst)
-			data := make(map[string]string)
-			data["NAME"] = fmt.Sprintf("/cattle/%v", name)
-			data["PORT"] = fullPort
-			data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
-			data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
-			data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = InterfaceToString(dst)
-			data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = InterfaceToString(protocol)
-			for key, value := range data {
-				result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
-			}
+		fullPort := fmt.Sprintf("%v://%v:%v", protocol, ip, dst)
+		data := make(map[string]string)
+		data["NAME"] = fmt.Sprintf("/cattle/%v", name)
+		data["PORT"] = fullPort
+		data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
+		data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
+		data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = dst
+		data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = protocol
+		for key, value := range data {
+			result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
 		}
 	}
+
 }
 
 func CopyLinkEnv(name string, link model.Link, result map[string]string) {
 	targetInstance := link.TargetInstance
-	if envs, ok := GetFieldsIfExist(targetInstance.Data, "dockerInspect", "Config", "Env"); ok {
-		ignores := make(map[string]bool)
-		for _, env := range envs.([]interface{}) {
-			env := InterfaceToString(env)
-			logrus.Info(env)
-			parts := strings.SplitN(env, "=", 2)
-			if len(parts) == 1 {
-				continue
-			}
-			if strings.HasPrefix(parts[1], "/cattle/") {
-				envName := toEnvName(parts[1][len("/cattle/"):])
-				ignores[envName+"_NAME"] = true
-				ignores[envName+"_PORT"] = true
-				ignores[envName+"_ENV"] = true
+	envs := targetInstance.Data.DockerInspect.Config.Env
+	ignores := make(map[string]bool)
+	for _, env := range envs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 1 {
+			continue
+		}
+		if strings.HasPrefix(parts[1], "/cattle/") {
+			envName := toEnvName(parts[1][len("/cattle/"):])
+			ignores[envName+"_NAME"] = true
+			ignores[envName+"_PORT"] = true
+			ignores[envName+"_ENV"] = true
+		}
+	}
+	for _, env := range envs {
+		shouldIgnore := false
+		for ignore := range ignores {
+			if strings.HasPrefix(env, ignore) {
+				shouldIgnore = true
+				break
 			}
 		}
-		for _, env := range envs.([]interface{}) {
-			env := InterfaceToString(env)
-			shouldIgnore := false
-			for ignore := range ignores {
-				if strings.HasPrefix(env, ignore) {
-					shouldIgnore = true
-					break
-				}
-			}
-			if shouldIgnore {
-				continue
-			}
-			parts := strings.SplitN(env, "=", 2)
-			if len(parts) == 1 {
-				continue
-			}
-			key, value := parts[0], parts[1]
-			if key == "HOME" || key == "PATH" {
-				continue
-			}
-			result[fmt.Sprintf("%s_ENV_%s", toEnvName(name), key)] = value
+		if shouldIgnore {
+			continue
 		}
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) == 1 {
+			continue
+		}
+		key, value := parts[0], parts[1]
+		if key == "HOME" || key == "PATH" {
+			continue
+		}
+		result[fmt.Sprintf("%s_ENV_%s", toEnvName(name), key)] = value
 	}
 }
 
@@ -385,7 +313,7 @@ func toEnvName(name string) string {
 	return strings.ToUpper(name)
 }
 
-func FindIPAndMac(instance *model.Instance) (string, string, string) {
+func FindIPAndMac(instance model.Instance) (string, string, string) {
 	for _, nic := range instance.Nics {
 		for _, ip := range nic.IPAddresses {
 			if ip.Role != "primary" {
@@ -398,84 +326,82 @@ func FindIPAndMac(instance *model.Instance) (string, string, string) {
 	return "", "", ""
 }
 
-func ParseRepoTag(name string) map[string]string {
+func ParseRepoTag(name string) model.RepoTag {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}
 	n := strings.Index(name, ":")
 	if n < 0 {
-		return map[string]string{
-			"repo": name,
-			"tag":  "latest",
-			"uuid": name + ":latest",
+		return model.RepoTag{
+			Repo: name,
+			Tag: "latest",
+			UUID: name + ":latest",
 		}
 	}
 	tag := name[n+1:]
 	if strings.Index(tag, "/") < 0 {
-		return map[string]string{
-			"repo": name[:n],
-			"tag":  tag,
-			"uuid": name,
+		return model.RepoTag{
+			Repo: name[:n],
+			Tag: tag,
+			UUID: name,
 		}
 	}
-	return map[string]string{
-		"repo": name,
-		"tag":  "latest",
-		"uuid": name + ":latest",
+	return model.RepoTag{
+		Repo: name,
+		Tag: "latest",
+		UUID: name + ":latest",
 	}
 }
 
-func GetContainer(client *engineCli.Client, instance *model.Instance, byAgent bool) *types.Container {
-	if instance == nil {
-		return nil
-	}
-
+func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) (types.Container, error) {
 	// First look for UUID label directly
 	args := filters.NewArgs()
 	args.Add("label", fmt.Sprintf("%s=%s", constants.UUIDLabel, instance.UUID))
 	options := types.ContainerListOptions{All: true, Filter: args}
 	labeledContainers, err := client.ContainerList(context.Background(), options)
 	if err == nil && len(labeledContainers) > 0 {
-		return &labeledContainers[0]
+		return labeledContainers[0], nil
+	} else if err != nil {
+		return types.Container{}, errors.Wrap(err, constants.GetContainerError)
 	}
 
 	// Next look by UUID using fallback method
 	options = types.ContainerListOptions{All: true}
 	containerList, err := client.ContainerList(context.Background(), options)
 	if err != nil {
-		return nil
+		return types.Container{}, errors.Wrap(err, constants.GetContainerError)
 	}
-	container := FindFirst(containerList, func(c *types.Container) bool {
+
+	if container, ok := FindFirst(containerList, func(c types.Container) bool {
 		if GetUUID(c) == instance.UUID {
 			return true
 		}
 		return false
-	})
-
-	if container != nil {
-		return container
+	}); ok {
+		return container, nil
 	}
+
 	if externalID := instance.ExternalID; externalID != "" {
-		container = FindFirst(containerList, func(c *types.Container) bool {
+		if container, ok := FindFirst(containerList, func(c types.Container) bool {
 			return IDFilter(externalID, c)
-		})
-	}
-
-	if container != nil {
-		return container
+		}); ok {
+			return container, nil
+		}
 	}
 
 	if byAgent {
 		agentID := instance.AgentID
-		container = FindFirst(containerList, func(c *types.Container) bool {
+		if container, ok := FindFirst(containerList, func(c types.Container) bool {
 			return AgentIDFilter(strconv.Itoa(agentID), c)
-		})
+		}); ok {
+			return container, nil
+		}
 	}
 
-	return container
+	return types.Container{}, model.ContainerNotFoundError{}
 }
 
-func GetUUID(container *types.Container) string {
+func GetUUID(container types.Container) string {
 	if uuid, ok := container.Labels[constants.UUIDLabel]; ok {
 		return uuid
 	}
@@ -491,21 +417,21 @@ func GetUUID(container *types.Container) string {
 	return names[0]
 }
 
-func FindFirst(containers []types.Container, f func(*types.Container) bool) *types.Container {
+func FindFirst(containers []types.Container, f func(types.Container) bool) (types.Container, bool) {
 	for _, c := range containers {
-		if f(&c) {
-			return &c
+		if f(c) {
+			return c, true
 		}
 	}
-	return nil
+	return types.Container{}, false
 }
 
-func IDFilter(id string, container *types.Container) bool {
+func IDFilter(id string, container types.Container) bool {
 	return container.ID == id
 }
 
-func AgentIDFilter(id string, container *types.Container) bool {
-	containerID, ok := container.Labels["io.rancher.container.agent_id"]
+func AgentIDFilter(id string, container types.Container) bool {
+	containerID, ok := container.Labels[constants.AgentIDLabel]
 	if ok {
 		return containerID == id
 	}
@@ -531,51 +457,49 @@ func SemverTrunk(version string, vals int) string {
 	return version
 }
 
-func GetKernelVersion() string {
-	if runtime.GOOS == "linux" {
-		file, err := os.Open("/proc/version")
-		defer file.Close()
-		data := []string{}
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			scanner := bufio.NewScanner(file)
-			scanner.Split(bufio.ScanLines)
-			for scanner.Scan() {
-				data = append(data, scanner.Text())
-			}
-		}
-		version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
-		return version
+func GetKernelVersion() (string, error) {
+	file, err := os.Open("/proc/version")
+	defer file.Close()
+	data := []string{}
+	if err != nil {
+		return "", errors.Wrap(err, constants.GetKernelVersionError)
 	}
-	return ""
-}
-
-func GetLoadAverage() []string {
-	if runtime.GOOS == "linux" {
-		file, err := os.Open("/proc/loadavg")
-		defer file.Close()
-		data := []string{}
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			scanner := bufio.NewScanner(file)
-			scanner.Split(bufio.ScanLines)
-			for scanner.Scan() {
-				data = append(data, scanner.Text())
-			}
-		}
-		loads := strings.Split(data[0], " ")
-		return loads[:3]
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
 	}
-	return []string{}
+	version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
+	return version, nil
 }
 
-func GetInfo() types.Info {
-	return docker.Info
+func GetWindowsKernelVersion() (string, error) {
+	command := exec.Command("PowerShell", "wmic", "os", "get", "Version")
+	output, err := command.Output()
+	if err == nil {
+		ret := strings.Split(string(output), "\n")[1]
+		return ret, nil
+	}
+	return "", err
 }
 
-func NameFilter(name string, container *types.Container) bool {
+func GetLoadAverage() ([]string, error) {
+	file, err := os.Open("/proc/loadavg")
+	defer file.Close()
+	data := []string{}
+	if err != nil {
+		return []string{}, errors.Wrap(err, constants.GetLoadAverageError)
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
+	}
+	loads := strings.Split(data[0], " ")
+	return loads[:3], nil
+}
+
+func NameFilter(name string, container types.Container) bool {
 	names := container.Names
 	if names == nil || len(names) == 0 {
 		return false
@@ -598,48 +522,56 @@ func RemoveContainer(client *engineCli.Client, containerID string) error {
 		}
 		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
-	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); !engineCli.IsErrNotFound(err) {
-		return errors.Wrap(err, "failed to remove container")
+	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); !engineCli.IsErrContainerNotFound(err) {
+		return errors.Wrap(err, constants.RemoveContainerError)
 	}
 	return nil
 }
 
-func AddContainer(state string, container *types.Container, containers []map[string]interface{}) []map[string]interface{} {
-	labels := container.Labels
-	containerData := map[string]interface{}{
-		"type":            "instance",
-		"uuid":            GetUUID(container),
-		"state":           state,
-		"systemContainer": getSysContainer(container),
-		"dockerId":        container.ID,
-		"image":           container.Image,
-		"labels":          labels,
-		"created":         container.Created,
+func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client) ([]model.PingResource, error) {
+	sysCon, err := getSysContainer(container, dockerClient)
+	if err != nil {
+		return []model.PingResource{}, errors.Wrap(err, constants.AddContainerError)
 	}
-	return append(containers, containerData)
+	containerData := model.PingResource{
+		Type:            "instance",
+		UUID:            GetUUID(container),
+		State:           state,
+		SystemContainer: sysCon,
+		DockerID:        container.ID,
+		Image:           container.Image,
+		Labels:          container.Labels,
+		Created:         container.Created,
+	}
+	return append(containers, containerData), nil
 }
 
-func getSysContainer(container *types.Container) string {
+func getSysContainer(container types.Container, client *engineCli.Client) (string, error) {
 	image := container.Image
-	systemImages := getAgentImage()
+	systemImages, err := getAgentImage(client)
+	if err != nil {
+		return "", errors.Wrap(err, constants.GetSysContainerError)
+	}
 	if HasKey(systemImages, image) {
-		return InterfaceToString(systemImages[image])
+		return InterfaceToString(systemImages[image]), nil
 	}
 	label, ok := container.Labels["io.rancher.container.system"]
 	if ok {
-		return label
+		return label, nil
 	}
-	return ""
+	return "", nil
 }
 
-func getAgentImage() map[string]interface{} {
-	client := docker.DefaultClient
+func getAgentImage(client *engineCli.Client) (map[string]interface{}, error) {
 	args := filters.NewArgs()
-	args.Add("label", constants.SystemLables)
-	images, _ := client.ImageList(context.Background(), types.ImageListOptions{Filters: args})
+	args.Add("label", constants.SystemLabels)
+	images, err := client.ImageList(context.Background(), types.ImageListOptions{Filters: args})
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetAgentImageError)
+	}
 	systemImage := map[string]interface{}{}
 	for _, image := range images {
-		labelValue := image.Labels[constants.SystemLables]
+		labelValue := image.Labels[constants.SystemLabels]
 		for _, l := range image.RepoTags {
 			if strings.HasSuffix(l, ":latest") {
 				alias := l[:len(l)-7]
@@ -647,58 +579,47 @@ func getAgentImage() map[string]interface{} {
 			}
 		}
 	}
-	return systemImage
+	return systemImage, nil
 }
 
 func Get(url string) (map[string]interface{}, error) {
 	resp, err := http.Get(url)
 	if err == nil {
 		defer resp.Body.Close()
-		data, _ := ioutil.ReadAll(resp.Body)
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, constants.GetCadvisorError)
+		}
 		var result map[string]interface{}
 		err1 := json.Unmarshal(data, &result)
 		if err1 != nil {
-			logrus.Error(err1)
+			return nil, errors.Wrap(err, constants.GetCadvisorError)
 		}
 		return result, nil
 	}
-	return nil, err
+	return nil, errors.Wrap(err, constants.GetCadvisorError)
 }
 
-func GetInfoDriver() string {
-	return GetInfo().Driver
+func IsContainerNotFoundError(e error) bool {
+	_, ok := e.(model.ContainerNotFoundError)
+	return ok
 }
 
-func DockerVersionRequest() (types.Version, error) {
-	client := docker.DefaultClient
-	return client.ServerVersion(context.Background())
+func IsImageNoOp(imageData model.ImageData) bool {
+	return imageData.ProcessData.ContainerNoOpEvent
 }
 
-func GetURLPort(url string) string {
-	parse, err := urls.Parse(url)
-	if err != nil {
-		return ""
+func IsPathExist(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
 	}
-	host := parse.Host
-	parts := strings.Split(host, ":")
-	if len(parts) == 2 {
-		return parts[1]
-	}
-	port := ""
-	if parse.Scheme == "http" {
-		port = "80"
-	} else if parse.Scheme == "https" {
-		port = "443"
-	}
-	return port
+	return false
 }
 
-func GetWindowsKernelVersion() (string, error) {
-	command := exec.Command("PowerShell", "wmic", "os", "get", "Version")
-	output, err := command.Output()
-	if err == nil {
-		ret := strings.Split(string(output), "\n")[1]
-		return ret, nil
+func GetProgress(request *revents.Event, cli *client.RancherClient) *progress.Progress {
+	progress := progress.Progress{
+		Request: request,
+		Client:  cli,
 	}
-	return "", err
+	return &progress
 }

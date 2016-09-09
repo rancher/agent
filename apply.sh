@@ -36,7 +36,7 @@ stage()
         cat ./dist/websocket/cacert.orig ${CURL_CA_BUNDLE} > ./dist/websocket/cacert.pem
     fi
 
-    cp -rf apply.sh agent $TEMP
+    cp -rf apply.sh bin/agent $TEMP
 
     find $TEMP -name "*.sh" -exec chmod +x {} \;
     find $TEMP \( -name host-api -o -name cadvisor -o -name nsenter -o -name socat \) -exec chmod +x {} \;
@@ -48,6 +48,7 @@ stage()
     rm -rf ${OLD}
 
     echo $RANDOM > $STAMP
+
 }
 
 conf()
@@ -91,7 +92,7 @@ start(){
     info Executing $MAIN
     cleanup
 
-   $CATTLE_HOME/config.sh host-config
+    $CATTLE_HOME/config.sh host-config
 
    if [ "$CATTLE_RUN_FIO" == "true" ]; then
        run_fio

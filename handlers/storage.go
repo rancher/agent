@@ -1,96 +1,140 @@
 package handlers
 
 import (
+	engineCli "github.com/docker/engine-api/client"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/compute"
-	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
-func ImageActivate(event *revents.Event, cli *client.RancherClient) error {
+type StorageHandler struct {
+	dockerClient *engineCli.Client
+}
+
+func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	var imageStoragePoolMap model.ImageStoragePoolMap
-	mapstructure.Decode(event.Data["imageStoragePoolMap"], &imageStoragePoolMap)
+	if err := mapstructure.Decode(event.Data["imageStoragePoolMap"], &imageStoragePoolMap); err != nil {
+		return errors.Wrap(err, constants.ImageActivateError)
+	}
 	image := imageStoragePoolMap.Image
 	storagePool := imageStoragePoolMap.StoragePool
 
-	progress := progress.Progress{Request: event, Client: cli}
+	progress := utils.GetProgress(event, cli)
 
 	if image.ID >= 0 && event.Data["processData"] != nil {
 		image.ProcessData = event.Data["processData"].(map[string]interface{})
 	}
-	if storage.IsImageActive(&image, &storagePool) {
-		return reply(utils.GetResponseData(event), event, cli)
+
+	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); ok {
+		resp, err := utils.GetResponseData(event, h.dockerClient)
+		if err != nil {
+			return errors.Wrap(err, constants.ImageActivateError)
+		}
+		return reply(resp, event, cli)
+	} else if err != nil {
+		return errors.Wrap(err, constants.ImageActivateError)
 	}
 
-	err := storage.DoImageActivate(&image, &storagePool, &progress)
+	err := storage.DoImageActivate(image, storagePool, progress, h.dockerClient)
 	if err != nil {
-		return errors.Wrap(err, "Failed to activate image")
+		return errors.Wrap(err, constants.ImageActivateError)
 	}
 
-	if !storage.IsImageActive(&image, &storagePool) {
-		return errors.New("operation failed")
+	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); !ok || err != nil {
+		return errors.Wrap(err, constants.ImageActivateError)
 	}
 
-	return reply(utils.GetResponseData(event), event, cli)
+	return h.reply(event, cli, constants.ImageActivateError)
 }
 
-func VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
+func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	if err != nil {
+		return errors.Wrap(err, constants.VolumeActivateError)
+	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
-	progress := progress.Progress{Request: event, Client: cli}
+	progress := utils.GetProgress(event, cli)
 
-	if storage.IsVolumeActive(&volume, &storagePool) {
-		return reply(utils.GetResponseData(event), event, cli)
+	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); ok {
+		resp, err := utils.GetResponseData(event, h.dockerClient)
+		if err != nil {
+			return errors.Wrap(err, constants.VolumeActivateError)
+		}
+		return reply(resp, event, cli)
+	} else if err != nil {
+		return errors.Wrap(err, constants.VolumeActivateError)
 	}
 
-	if err := storage.DoVolumeActivate(&volume, &storagePool, &progress); err != nil {
-		return errors.Wrap(err, "Failed to active volume")
+	if err := storage.DoVolumeActivate(volume, storagePool, progress, h.dockerClient); err != nil {
+		return errors.Wrap(err, constants.VolumeActivateError)
 	}
-	if !storage.IsVolumeActive(&volume, &storagePool) {
-		return errors.New("operation failed")
+	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); !ok || err != nil {
+		return errors.Wrap(err, constants.VolumeActivateError)
 	}
-	return reply(utils.GetResponseData(event), event, cli)
+	return h.reply(event, cli, constants.VolumeActivateError)
 }
 
-func VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
+func (h *StorageHandler) VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	if err != nil {
+		return errors.Wrap(err, constants.VolumeDeactivateError)
+	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
-	progress := progress.Progress{}
+	progress := utils.GetProgress(event, cli)
 
-	if storage.IsVolumeInactive(&volume, &storagePool) {
-		return reply(utils.GetResponseData(event), event, cli)
+	if storage.IsVolumeInactive(volume, storagePool) {
+		return h.reply(event, cli, constants.VolumeDeactivateError)
 	}
 
-	if err := storage.DoVolumeDeactivate(&volume, &storagePool, &progress); err != nil {
-		return errors.Wrap(err, "Failed to deactivate volume")
+	if err := storage.DoVolumeDeactivate(volume, storagePool, progress); err != nil {
+		return errors.Wrap(err, constants.VolumeDeactivateError)
 	}
-	if !storage.IsVolumeInactive(&volume, &storagePool) {
-		return errors.New("operation failed")
+	if !storage.IsVolumeInactive(volume, storagePool) {
+		return errors.New(constants.VolumeDeactivateError)
 	}
-	return reply(utils.GetResponseData(event), event, cli)
+	return h.reply(event, cli, constants.VolumeDeactivateError)
 }
 
-func VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
+func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	if err != nil {
+		return errors.Wrap(err, constants.VolumeRemoveError)
+	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
-	progress := progress.Progress{Request: event, Client: cli}
+	progress := utils.GetProgress(event, cli)
 
 	if volume.DeviceNumber == 0 {
-		compute.PurgeState(volume.Instance)
+		if err := compute.PurgeState(volume.Instance, h.dockerClient); err != nil {
+			return errors.Wrap(err, constants.VolumeRemoveError)
+		}
 	}
-	if !storage.IsVolumeRemoved(&volume, &storagePool) {
-		storage.DoVolumeRemove(&volume, &storagePool, &progress)
+	if ok, err := storage.IsVolumeRemoved(volume, storagePool, h.dockerClient); err == nil && !ok {
+		rmErr := storage.DoVolumeRemove(volume, storagePool, progress, h.dockerClient)
+		if rmErr != nil {
+			return errors.Wrap(rmErr, constants.VolumeRemoveError)
+		}
+	} else if err != nil {
+		return errors.Wrap(err, constants.VolumeRemoveError)
 	}
-	return reply(utils.GetResponseData(event), event, cli)
+	return h.reply(event, cli, constants.VolumeRemoveError)
+}
+
+func (h *StorageHandler) reply(event *revents.Event, cli *client.RancherClient, errMSG string) error {
+	resp, err := utils.GetResponseData(event, h.dockerClient)
+	if err != nil {
+		return errors.Wrap(err, errMSG)
+	}
+	return reply(resp, event, cli)
 }

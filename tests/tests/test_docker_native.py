@@ -82,7 +82,7 @@ def test_native_container_activate_removed(agent):
 
     def post(req, resp, valid_resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        # assert not instance_data['dockerInspect']
+        assert not instance_data['dockerInspect']
         assert not instance_data['dockerContainer']
         fields = instance_data['+fields']
         assert not fields['dockerIp']

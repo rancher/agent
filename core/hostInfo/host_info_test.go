@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -46,38 +47,37 @@ type MockBadCadviosr struct{}
 
 type MockNonIntelCPUInfoGetter struct{}
 
-func (m MockNonIntelCPUInfoGetter) GetCPUInfoData() []string {
+func (m MockNonIntelCPUInfoGetter) GetCPUInfoData() ([]string, error) {
 	file, err := os.Open("./test_events/cpuinfo")
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			data = append(data, scanner.Text())
-		}
+		return data, err
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
 	}
 	for i, line := range data {
 		if strings.HasPrefix(line, "model name") {
 			data[i] = "model name : AMD Opteron 250\n"
 		}
 	}
-	return data
+	return data, nil
 }
 
-func (m MockOSCollector) GetOS() map[string]interface{} {
-	data := map[string]interface{}{}
+func (m MockOSCollector) GetOS(infoData model.InfoData) (map[string]string, error) {
+	data := map[string]string{}
 
 	data["operatingSystem"] = "Linux"
 	data["kernelVersion"] = "3.19.0-28-generic"
 
-	return data
+	return data, nil
 }
 
-func (m MockOSCollector) GetDockerVersion(verbose bool) map[string]interface{} {
-	data := map[string]interface{}{}
+func (m MockOSCollector) GetDockerVersion(infoData model.InfoData, verbose bool) map[string]string {
+	data := map[string]string{}
 	verResp := types.Version{
 		KernelVersion: "4.0.3-boot2docker",
 		Arch:          "amd64",
@@ -99,10 +99,6 @@ func (m MockOSCollector) GetDockerVersion(verbose bool) map[string]interface{} {
 	return data
 }
 
-func (m MockOSCollector) GetWindowsOS() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
 func (m MockCadvisorGetter) GetContainers() (map[string]interface{}, error) {
 	return loadJSON("./test_events/cadvisor_stats")
 }
@@ -111,61 +107,57 @@ func (m MockCadvisorGetter) GetMachineStats() (map[string]interface{}, error) {
 	return loadJSON("./test_events/cadvisor_machine")
 }
 
-func (m MockCPUInfoGetter) GetCPULoadAverage() map[string]interface{} {
+func (m MockCPUInfoGetter) GetCPULoadAverage() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"loadAvg": []string{"1.60693359375", "1.73193359375", "1.79248046875"},
-	}
+	}, nil
 }
 
-func (m MockNonIntelCPUInfoGetter) GetCPULoadAverage() map[string]interface{} {
+func (m MockNonIntelCPUInfoGetter) GetCPULoadAverage() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"loadAvg": []string{"1.60693359375", "1.73193359375", "1.79248046875"},
-	}
+	}, nil
 }
 
-func (m MockCPUInfoGetter) GetCPUInfoData() []string {
+func (m MockCPUInfoGetter) GetCPUInfoData() ([]string, error) {
 	file, err := os.Open("./test_events/cpuinfo")
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			data = append(data, scanner.Text())
-		}
+		return []string{}, err
 	}
-	return data
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
+	}
+
+	return data, nil
 }
 
-func (m MockMemoryInfoGetter) GetMemInfoData() []string {
+func (m MockMemoryInfoGetter) GetMemInfoData() ([]string, error) {
 	file, err := os.Open("./test_events/meminfo")
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			data = append(data, scanner.Text())
-		}
+		return data, err
 	}
-	return data
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		data = append(data, scanner.Text())
+	}
+	return data, nil
 }
 
-func (m MockDiskInfoGetter) GetDockerStorageInfo() map[string]interface{} {
+func (m MockDiskInfoGetter) GetDockerStorageInfo(infoData model.InfoData) map[string]interface{} {
 	data := map[string]interface{}{}
 
-	info, err := getMockClientInfo()
-	if err != nil {
-		logrus.Error(err)
-	} else {
-		for _, item := range info.DriverStatus {
-			data[item[0]] = item[1]
-		}
+	info := getMockClientInfo()
+	for _, item := range info.DriverStatus {
+		data[item[0]] = item[1]
 	}
+
 	return data
 }
 
@@ -185,11 +177,8 @@ func (m MockBadCadviosr) Get(url string) (map[string]interface{}, error) {
 	return nil, errors.New("BAD ERROR")
 }
 
-func getMockClientInfo() (types.Info, error) {
-	info, err := docker.DefaultClient.Info(context.Background())
-	if err != nil {
-		return info, err
-	}
+func getMockClientInfo() types.Info {
+	info, _ := docker.GetClient(constants.DefaultVersion).Info(context.Background())
 	info.Driver = "devicemapper"
 	info.DriverStatus = [][2]string{
 		[2]string{"Pool Name", "docker-8:1-130861-pool"},
@@ -209,178 +198,205 @@ func getMockClientInfo() (types.Info, error) {
 		[2]string{"Metadata loop file", "/mnt/sda1/var/lib/docker/devicemapper/devicemapper/metadata"},
 		[2]string{"Library Version", "1.02.82-git (2013-10-04)"},
 	}
-	return info, nil
+	return info
 }
 
 var mockCadvisorAPIClient = CadvisorAPIClient{
-	dataGetter: MockCadvisorGetter{
+	DataGetter: MockCadvisorGetter{
 		URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2")},
 }
 
 var mockCadvisorAPIClientBad = CadvisorAPIClient{
-	dataGetter: MockBadCadviosr{},
+	DataGetter: MockBadCadviosr{},
 }
 
 var mockCollectors = []Collector{
 	CPUCollector{
-		cadvisor:   mockCadvisorAPIClient,
-		dataGetter: MockCPUInfoGetter{},
+		Cadvisor:   mockCadvisorAPIClient,
+		DataGetter: MockCPUInfoGetter{},
 		GOOS:       "linux",
 	},
 	DiskCollector{
-		cadvisor:            mockCadvisorAPIClient,
-		dockerStorageDriver: "devicemapper",
-		unit:                1048576,
-		dataGetter:          MockDiskInfoGetter{},
+		Cadvisor:            mockCadvisorAPIClient,
+		DockerStorageDriver: "devicemapper",
+		Unit:                1048576,
+		DataGetter:          MockDiskInfoGetter{},
 	},
 	IopsCollector{
 		GOOS: "linux",
 	},
 	MemoryCollector{
-		unit:       1024.00,
-		dataGetter: MockMemoryInfoGetter{},
+		Unit:       1024.00,
+		DataGetter: MockMemoryInfoGetter{},
 		GOOS:       "linux",
 	},
 	OSCollector{
-		dataGetter: MockOSCollector{},
+		DataGetter: MockOSCollector{},
 		GOOS:       "linux",
 	},
 }
 
 var mockCollectorsBadCadvisor = []Collector{
 	CPUCollector{
-		cadvisor:   mockCadvisorAPIClientBad,
-		dataGetter: MockCPUInfoGetter{},
+		Cadvisor:   mockCadvisorAPIClientBad,
+		DataGetter: MockCPUInfoGetter{},
 		GOOS:       "linux",
 	},
 	DiskCollector{
-		cadvisor:            mockCadvisorAPIClientBad,
-		dockerStorageDriver: "devicemapper",
-		unit:                1048576,
-		dataGetter:          MockDiskInfoGetter{},
+		Cadvisor:            mockCadvisorAPIClientBad,
+		DockerStorageDriver: "devicemapper",
+		Unit:                1048576,
+		DataGetter:          MockDiskInfoGetter{},
 	},
 	IopsCollector{
 		GOOS: "linux",
 	},
 	MemoryCollector{
-		unit:       1024.00,
-		dataGetter: MockMemoryInfoGetter{},
+		Unit:       1024.00,
+		DataGetter: MockMemoryInfoGetter{},
 		GOOS:       "linux",
 	},
 	OSCollector{
-		dataGetter: MockOSCollector{},
+		DataGetter: MockOSCollector{},
 		GOOS:       "linux",
 	},
 }
 
 var mockNonCadvisorNonIntelCPUInfoMock = []Collector{
 	CPUCollector{
-		cadvisor:   mockCadvisorAPIClientBad,
-		dataGetter: MockNonIntelCPUInfoGetter{},
+		Cadvisor:   mockCadvisorAPIClientBad,
+		DataGetter: MockNonIntelCPUInfoGetter{},
 		GOOS:       "linux",
 	},
 	DiskCollector{
-		cadvisor:            mockCadvisorAPIClientBad,
-		dockerStorageDriver: "devicemapper",
-		unit:                1048576,
-		dataGetter:          DiskDataGetter{},
+		Cadvisor:            mockCadvisorAPIClientBad,
+		DockerStorageDriver: "devicemapper",
+		Unit:                1048576,
+		DataGetter:          DiskDataGetter{},
 	},
 	IopsCollector{
 		GOOS: "linux",
 	},
 	MemoryCollector{
-		unit:       1024.00,
-		dataGetter: MockMemoryInfoGetter{},
+		Unit:       1024.00,
+		DataGetter: MockMemoryInfoGetter{},
 		GOOS:       "linux",
 	},
 	OSCollector{
-		dataGetter: MockOSCollector{},
+		DataGetter: MockOSCollector{},
 		GOOS:       "linux",
+	},
+}
+var Cadvisor = CadvisorAPIClient{
+	DataGetter: CadvisorDataGetter{
+		URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2"),
 	},
 }
 
 var mockNonLinux = []Collector{
 	CPUCollector{
-		cadvisor:   Cadvisor,
-		dataGetter: CPUDataGetter{},
+		Cadvisor:   Cadvisor,
+		DataGetter: CPUDataGetter{},
 		GOOS:       "nonlinux",
 	},
 	DiskCollector{
-		cadvisor:            Cadvisor,
-		dockerStorageDriver: utils.GetInfoDriver(),
-		unit:                1048576,
-		dataGetter:          DiskDataGetter{},
+		Cadvisor:   Cadvisor,
+		Unit:       1048576,
+		DataGetter: DiskDataGetter{},
 	},
 	IopsCollector{
 		GOOS: "nonlinux",
 	},
 	MemoryCollector{
-		unit:       1024.00,
-		dataGetter: MemoryDataGetter{},
+		Unit:       1024.00,
+		DataGetter: MemoryDataGetter{},
 		GOOS:       "nonlinux",
 	},
 	OSCollector{
-		dataGetter: OSDataGetter{},
+		DataGetter: OSDataGetter{},
 		GOOS:       "nonlinux",
 	},
 }
 
-func MockHostLabels(prefix string) map[string]string {
+func MockHostLabels(prefix string) (map[string]string, error) {
 	labels := map[string]string{}
 	for _, collector := range mockCollectors {
-		for key, value := range collector.GetLabels(prefix) {
+		ls, err := collector.GetLabels(prefix)
+		if err != nil {
+			return map[string]string{}, err
+		}
+		for key, value := range ls {
 			labels[key] = value
 		}
 	}
-	return labels
+	return labels, nil
 }
 
-func MockCollectData(number int) map[string]interface{} {
+func MockCollectData(name string) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
-	switch number {
-	case 1:
+	switch name {
+	case "BadCadvisor":
 		for _, collector := range mockCollectorsBadCadvisor {
-			data[collector.KeyName()] = collector.GetData()
+			collectData, err := collector.GetData()
+			if err != nil {
+				return map[string]interface{}{}, err
+			}
+			data[collector.KeyName()] = collectData
 		}
-	case 2:
+	case "Mock":
 		for _, collector := range mockCollectors {
-			data[collector.KeyName()] = collector.GetData()
+			collectData, err := collector.GetData()
+			if err != nil {
+				return map[string]interface{}{}, err
+			}
+			data[collector.KeyName()] = collectData
 		}
-	case 3:
+	case "NonIntelCPU":
 		for _, collector := range mockNonCadvisorNonIntelCPUInfoMock {
-			data[collector.KeyName()] = collector.GetData()
+			collectData, err := collector.GetData()
+			if err != nil {
+				return map[string]interface{}{}, err
+			}
+			data[collector.KeyName()] = collectData
 		}
-	case 4:
+	case "NonLinux":
 		for _, collector := range mockNonLinux {
-			data[collector.KeyName()] = collector.GetData()
+			collectData, err := collector.GetData()
+			if err != nil {
+				return map[string]interface{}{}, err
+			}
+			data[collector.KeyName()] = collectData
 		}
 	}
-	return data
+	return data, nil
 }
 
-var Labels = MockHostLabels("io.rancher.host")
+//var Labels = MockHostLabels("io.rancher.host")
 
-var HostData = MockCollectData(2)
-
-var BadHostData = MockCollectData(1)
-
-var NonIntelHostData = MockCollectData(3)
-
-var NonLinuxHostData = MockCollectData(4)
+//var HostData = MockCollectData(2)
+//
+//var BadHostData = MockCollectData(1)
+//
+//var NonIntelHostData = MockCollectData(3)
+//
+//var NonLinuxHostData = MockCollectData(4)
 
 func (s *ComputeTestSuite) TestHostLabel(c *check.C) {
 	expected := map[string]string{
 		"io.rancher.host.docker_version":       "1.6",
 		"io.rancher.host.linux_kernel_version": "3.19",
 	}
-	hostLabels := MockHostLabels("io.rancher.host")
+	hostLabels, err := MockHostLabels("io.rancher.host")
+	if err != nil {
+		c.Fatal(err)
+	}
 	delete(hostLabels, "io.rancher.host.kvm")
 	c.Assert(hostLabels, check.DeepEquals, expected)
 }
 
 func (s *ComputeTestSuite) TestCadvisorTime(c *check.C) {
 	cadvisorClient := CadvisorAPIClient{
-		dataGetter: CadvisorDataGetter{
+		DataGetter: CadvisorDataGetter{
 			URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2"),
 		},
 	}
@@ -408,6 +424,10 @@ func (s *ComputeTestSuite) TestCollectDataMeminfo(c *check.C) {
 		"swapFree",
 	}
 	obtainedKeys := []string{}
+	HostData, err := MockCollectData("Mock")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(HostData["memoryInfo"]) {
 		obtainedKeys = append(obtainedKeys, key)
 	}
@@ -423,6 +443,10 @@ func (s *ComputeTestSuite) TestCollectDataOSInfo(c *check.C) {
 		"kernelVersion",
 	}
 	obtainedKeys := []string{}
+	HostData, err := MockCollectData("Mock")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(HostData["osInfo"]) {
 		obtainedKeys = append(obtainedKeys, key)
 	}
@@ -430,14 +454,14 @@ func (s *ComputeTestSuite) TestCollectDataOSInfo(c *check.C) {
 	sort.Strings(obtainedKeys)
 	c.Assert(obtainedKeys, check.DeepEquals, expectKeys)
 
-	version, err := utils.GetFieldsIfExist(HostData, "osInfo", "dockerVersion")
-	if !err {
+	version, ok := utils.GetFieldsIfExist(HostData, "osInfo", "dockerVersion")
+	if !ok {
 		c.Fatal("No dockerVersion found")
 	}
 	c.Assert(utils.InterfaceToString(version), check.Equals,
 		"Docker version 1.6.0, build 4749651")
-	operatingSystem, err := utils.GetFieldsIfExist(HostData, "osInfo", "operatingSystem")
-	if !err {
+	operatingSystem, ok := utils.GetFieldsIfExist(HostData, "osInfo", "operatingSystem")
+	if !ok {
 		c.Fatal("No os found")
 	}
 	c.Assert(utils.InterfaceToString(operatingSystem), check.Equals, "Linux")
@@ -451,6 +475,10 @@ func (s *ComputeTestSuite) TestCollectDataDiskInfo(c *check.C) {
 		"dockerStorageDriverStatus",
 	}
 	obtainedKeys := []string{}
+	HostData, err := MockCollectData("Mock")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(HostData["diskInfo"]) {
 		obtainedKeys = append(obtainedKeys, key)
 	}
@@ -488,6 +516,10 @@ func (s *ComputeTestSuite) TestCollectDataBadCadvisorStat(c *check.C) {
 		"cpuCoresPercentages",
 	}
 	obtainedCPUKeys := []string{}
+	BadHostData, err := MockCollectData("BadCadvisor")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(BadHostData["cpuInfo"]) {
 		obtainedCPUKeys = append(obtainedCPUKeys, key)
 	}
@@ -524,6 +556,10 @@ func (s *ComputeTestSuite) TestCollectDataCPUInfo(c *check.C) {
 		"cpuCoresPercentages",
 	}
 	obtainedKeys := []string{}
+	HostData, err := MockCollectData("Mock")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(HostData["cpuInfo"]) {
 		obtainedKeys = append(obtainedKeys, key)
 	}
@@ -545,6 +581,10 @@ func (s *ComputeTestSuite) TestCollectDataCPUInfo(c *check.C) {
 }
 
 func (s *ComputeTestSuite) TestCollectDataCPUFreqFallBack(c *check.C) {
+	NonIntelHostData, err := MockCollectData("NonIntelCPU")
+	if err != nil {
+		c.Fatal(err)
+	}
 	mhz, ok := utils.GetFieldsIfExist(NonIntelHostData, "cpuInfo", "mhz")
 	if !ok {
 		c.Fatal("No mhz found")
@@ -553,6 +593,8 @@ func (s *ComputeTestSuite) TestCollectDataCPUFreqFallBack(c *check.C) {
 	c.Assert(mhz, check.Equals, 2334.915)
 }
 
+// remove this test bc Non linux host like windows should also return host data
+/*
 func (s *ComputeTestSuite) TestNonLinuxHost(c *check.C) {
 	expectKeys := []string{
 		"memoryInfo",
@@ -562,6 +604,10 @@ func (s *ComputeTestSuite) TestNonLinuxHost(c *check.C) {
 		"iopsInfo",
 	}
 	obtainedKeys := []string{}
+	NonLinuxHostData, err := MockCollectData("NonLinux")
+	if err != nil {
+		c.Fatal(err)
+	}
 	for key := range utils.InterfaceToMap(NonLinuxHostData) {
 		obtainedKeys = append(obtainedKeys, key)
 	}
@@ -583,6 +629,7 @@ func (s *ComputeTestSuite) TestNonLinuxHost(c *check.C) {
 	c.Assert(ok3, check.Equals, true)
 	c.Assert(ok4, check.Equals, true)
 }
+*/
 
 func loadJSON(path string) (map[string]interface{}, error) {
 	file, err := ioutil.ReadFile(path)
