@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
@@ -72,6 +73,7 @@ func initializeHandlers() *Handler {
 	client := docker.GetClient(constants.DefaultVersion)
 	info := types.Info{}
 	version := types.Version{}
+	systemImages := map[string]string{}
 	// initialize the info and version so we don't have to call docker API every time a ping request comes
 	for i := 0; i < 10; i++ {
 		in, err := client.Info(context.Background())
@@ -85,6 +87,14 @@ func initializeHandlers() *Handler {
 		v, err := client.ServerVersion(context.Background())
 		if err == nil {
 			version = v
+			break
+		}
+		time.Sleep(time.Duration(1) * time.Second)
+	}
+	for i := 0; i < 10; i++ {
+		ret, err := utils.GetAgentImage(client)
+		if err == nil {
+			systemImages = ret
 			break
 		}
 		time.Sleep(time.Duration(1) * time.Second)
@@ -142,6 +152,7 @@ func initializeHandlers() *Handler {
 	pingHandler := PingHandler{
 		dockerClient: client,
 		collectors:   Collectors,
+		SystemImage:  systemImages,
 	}
 	configHandler := ConfigUpdateHandler{}
 	handler := Handler{

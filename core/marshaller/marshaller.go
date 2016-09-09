@@ -23,11 +23,11 @@ func ToString(v interface{}) ([]byte, error) {
 func StructToMap(v interface{}) (map[string]interface{}, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.StructToMapError)
+		return map[string]interface{}{}, errors.Wrap(err, constants.StructToMapError+"failed to marshal data")
 	}
 	event := map[string]interface{}{}
 	if err := json.Unmarshal(b, &event); err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.StructToMapError)
+		return map[string]interface{}{}, errors.Wrap(err, constants.StructToMapError+"failed to unmarshal data")
 	}
 	return event, nil
 }

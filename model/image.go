@@ -65,7 +65,7 @@ type DockerImage struct {
 }
 
 type RepoTag struct {
-	Repo	string
-	Tag     string
-	UUID    string
+	Repo string
+	Tag  string
+	UUID string
 }

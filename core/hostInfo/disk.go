@@ -31,7 +31,7 @@ func (d DiskCollector) GetData() (map[string]interface{}, error) {
 
 	mfs, err := d.getMachineFilesystemsCadvisor(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.DiskGetDataError)
+		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info from cadvisor")
 	}
 	for key, value := range mfs {
 		data["fileSystems"].(map[string]interface{})[key] = value

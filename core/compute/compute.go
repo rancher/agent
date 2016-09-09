@@ -23,7 +23,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 	imageTag, err := getImageTag(instance)
 	if err != nil {
-		return errors.Wrap(err, constants.DoInstanceActivateError)
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
 	name := instance.UUID
 	instanceName := instance.Name
@@ -34,7 +34,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 			if inspectErr != nil && client.IsErrContainerNotFound(inspectErr) {
 				name = id
 			} else if inspectErr != nil {
-				return errors.Wrap(inspectErr, constants.DoInstanceActivateError)
+				return errors.Wrap(inspectErr, constants.DoInstanceActivateError+"failed to inspect container")
 			}
 		}
 	}
@@ -59,7 +59,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	setupPublishPorts(&hostConfig, instance)
 
 	if err := setupDNSSearch(&hostConfig, instance); err != nil {
-		return errors.Wrap(err, constants.DoInstanceActivateError)
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up DNS search")
 	}
 
 	setupLinks(&hostConfig, instance)
@@ -71,7 +71,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	setupVolumes(&config, instance, &hostConfig, dockerClient, progress)
 
 	if err := setupNetworking(instance, host, &config, &hostConfig, dockerClient); err != nil {
-		return errors.Wrap(err, constants.DoInstanceActivateError)
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up networking")
 	}
 
 	flagSystemContainer(instance, &config)
@@ -93,7 +93,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	container, err := utils.GetContainer(dockerClient, instance, false)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
-			return errors.Wrap(err, constants.DoInstanceActivateError)
+			return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get container")
 		}
 	}
 	containerID := container.ID
@@ -101,7 +101,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	if len(containerID) == 0 {
 		newID, err := createContainer(dockerClient, &config, &hostConfig, imageTag, instance, name, progress)
 		if err != nil {
-			return errors.Wrap(err, constants.DoInstanceActivateError)
+			return errors.Wrap(err, constants.DoInstanceActivateError+"failed to create container")
 		}
 		containerID = newID
 		created = true
@@ -112,14 +112,14 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	if startErr := dockerClient.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); startErr != nil {
 		if created {
 			if err := utils.RemoveContainer(dockerClient, containerID); err != nil {
-				return errors.Wrap(err, constants.DoInstanceActivateError)
+				return errors.Wrap(err, constants.DoInstanceActivateError+"failed to remove container")
 			}
 		}
-		return errors.Wrap(startErr, constants.DoInstanceActivateError)
+		return errors.Wrap(startErr, constants.DoInstanceActivateError+"failed to start container")
 	}
 
 	if err := RecordState(dockerClient, instance, containerID); err != nil {
-		return errors.Wrap(err, constants.DoInstanceActivateError)
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to record state")
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 	dockerImage := params.Image.Data.DockerImage
 	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
 	if err != nil && !client.IsErrImageNotFound(err) {
-		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError)
+		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to inspect image")
 	}
 	if params.Mode == "cached" {
 		return existing, nil
@@ -137,24 +137,24 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 	if params.Complete {
 		_, err := dockerClient.ImageRemove(context.Background(), dockerImage.FullName+params.Tag, types.ImageRemoveOptions{Force: true})
 		if err != nil && !client.IsErrImageNotFound(err) {
-			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError)
+			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to remove image")
 		}
 		return types.ImageInspect{}, nil
 	}
 	if err := storage.PullImage(params.Image, progress, dockerClient); err != nil {
-		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError)
+		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to pull image")
 	}
 
 	if len(params.Tag) > 0 {
 		imageInfo := utils.ParseRepoTag(dockerImage.FullName)
 		repoTag := fmt.Sprintf("%s:%s", imageInfo.Repo, imageInfo.Tag+params.Tag)
 		if err := dockerClient.ImageTag(context.Background(), dockerImage.FullName, repoTag); err != nil && !client.IsErrImageNotFound(err) {
-			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError)
+			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to tag image")
 		}
 	}
 	inspect, _, err2 := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
 	if err2 != nil && !client.IsErrImageNotFound(err) {
-		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError)
+		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to inspect image")
 	}
 	return inspect, nil
 }
@@ -166,22 +166,22 @@ func DoInstanceDeactivate(instance model.Instance, progress *progress.Progress, 
 	t := time.Duration(timeout) * time.Second
 	container, err := utils.GetContainer(client, instance, false)
 	if err != nil {
-		return errors.Wrap(err, constants.DoInstanceDeactivateError)
+		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to get container")
 	}
 	client.ContainerStop(context.Background(), container.ID, &t)
 	container, err = utils.GetContainer(client, instance, false)
 	if err != nil {
-		return errors.Wrap(err, constants.DoInstanceDeactivateError)
+		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to get container")
 	}
 	if ok, err := isStopped(client, container); err != nil {
-		return errors.Wrap(err, constants.DoInstanceDeactivateError)
+		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to check whether container is stopped")
 	} else if !ok {
 		if killErr := client.ContainerKill(context.Background(), container.ID, "KILL"); killErr != nil {
-			return errors.Wrap(killErr, constants.DoInstanceDeactivateError)
+			return errors.Wrap(killErr, constants.DoInstanceDeactivateError+"failed to kill container")
 		}
 	}
 	if ok, err := isStopped(client, container); err != nil {
-		return errors.Wrap(err, constants.DoInstanceDeactivateError)
+		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to check whether container is stopped")
 	} else if !ok {
 		return fmt.Errorf("Failed to stop container %v", instance.UUID)
 	}
@@ -195,7 +195,7 @@ func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.C
 		logrus.Infof("container id %v not found", request.ID)
 		return nil
 	} else if stopErr != nil {
-		return errors.Wrap(stopErr, constants.DoInstanceForceStopError)
+		return errors.Wrap(stopErr, constants.DoInstanceForceStopError+"failed to stop container")
 	}
 	logrus.Infof("container id %v is forced to be stopped", request.ID)
 	return nil
@@ -205,7 +205,7 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 	containerID := inspect.ID
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
-		return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError)
+		return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to list containers")
 	}
 	result, find := utils.FindFirst(containerList, func(c types.Container) bool {
 		return utils.IDFilter(containerID, c)
@@ -223,7 +223,7 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 		logrus.Infof("start inspecting container with id [%s]", result.ID)
 		inspectResp, err := dockerClient.ContainerInspect(context.Background(), result.ID)
 		if err != nil {
-			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError)
+			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to inspect container")
 		}
 		logrus.Infof("container with id [%s] inspected", result.ID)
 		return inspectResp, nil
@@ -237,10 +237,10 @@ func DoInstanceRemove(instance model.Instance, progress *progress.Progress, dock
 		if utils.IsContainerNotFoundError(err) {
 			return nil
 		}
-		return errors.Wrap(err, constants.DoInstanceRemoveError)
+		return errors.Wrap(err, constants.DoInstanceRemoveError+"failed to get container")
 	}
 	if err := utils.RemoveContainer(dockerClient, container.ID); err != nil {
-		return errors.Wrap(err, constants.DoInstanceRemoveError)
+		return errors.Wrap(err, constants.DoInstanceRemoveError+"failed to remove container")
 	}
 	return nil
 }

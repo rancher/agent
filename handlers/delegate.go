@@ -39,7 +39,7 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	container, err := utils.GetContainer(h.dockerClient, instance, true)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
-			return errors.Wrap(err, constants.DelegateRequestError)
+			return errors.Wrap(err, constants.DelegateRequestError+"failed to get network agent container")
 		}
 	}
 

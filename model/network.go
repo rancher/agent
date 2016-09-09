@@ -58,6 +58,6 @@ type LinkFields struct {
 	InstanceNames []string
 	Ports         []struct {
 		Protocol    string
-		PrivatePort string
+		PrivatePort interface{}
 	}
 }

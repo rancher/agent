@@ -1,18 +1,18 @@
 package storage
 
 import (
-	"github.com/rancher/agent/model"
+	"github.com/docker/engine-api/client"
+	"github.com/docker/engine-api/types"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
 	"os"
 	"strings"
-	"github.com/rancher/agent/core/marshaller"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 )
 
 func isManagedVolume(volume model.Volume) bool {
@@ -34,7 +34,7 @@ func imageBuild(image model.Image, progress *progress.Progress, dockerClient *cl
 		if err == nil {
 			opts.FileObj = file
 			if buildErr := doBuild(opts, progress, dockerClient); buildErr != nil {
-				return errors.Wrap(buildErr, constants.ImageBuildError)
+				return errors.Wrap(buildErr, constants.ImageBuildError+"failed to build image")
 			}
 		}
 		if file != "" {
@@ -48,7 +48,7 @@ func imageBuild(image model.Image, progress *progress.Progress, dockerClient *cl
 		}
 		opts.Remote = remote
 		if buildErr := doBuild(opts, progress, dockerClient); buildErr != nil {
-			return errors.Wrap(buildErr, constants.ImageBuildError)
+			return errors.Wrap(buildErr, constants.ImageBuildError+"failed to build image")
 		}
 	}
 	return nil
@@ -66,7 +66,7 @@ func doBuild(opts model.BuildOptions, progress *progress.Progress, client *clien
 	}
 	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
 	if err != nil {
-		return errors.Wrap(err, constants.DoBuildError)
+		return errors.Wrap(err, constants.DoBuildError+"failed to build image")
 	}
 	buffer := utils.ReadBuffer(response.Body)
 	statusList := strings.Split(buffer, "\r\n")
@@ -88,7 +88,6 @@ func isBuild(image model.Image) bool {
 	}
 	return false
 }
-
 
 func pathToVolume(volume model.Volume) string {
 	return strings.Replace(volume.URI, "file://", "", -1)

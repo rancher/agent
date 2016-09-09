@@ -17,6 +17,7 @@ import (
 type PingHandler struct {
 	dockerClient *engineCli.Client
 	collectors   []hostInfo.Collector
+	SystemImage  map[string]string
 }
 
 func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) error {
@@ -28,13 +29,13 @@ func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) erro
 		Resources: []model.PingResource{},
 	}
 	if config.DoPing() {
-		if err := ping.DoPingAction(event, &resp, h.dockerClient, h.collectors); err != nil {
-			return errors.Wrap(err, constants.PingError)
+		if err := ping.DoPingAction(event, &resp, h.dockerClient, h.collectors, h.SystemImage); err != nil {
+			return errors.Wrap(err, constants.PingError+"failed to do ping action")
 		}
 	}
 	data, err := marshaller.StructToMap(resp)
 	if err != nil {
-		return errors.Wrap(err, constants.PingError)
+		return errors.Wrap(err, constants.PingError+"failed to marshall response data")
 	}
 	return reply(data, event, cli)
 }

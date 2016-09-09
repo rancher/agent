@@ -14,7 +14,7 @@ func (m MemoryCollector) parseMemInfo() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	memData, err := m.DataGetter.GetMemInfoData()
 	if err != nil {
-		return data, errors.Wrap(err, constants.ParseMemInfoError)
+		return data, errors.Wrap(err, constants.ParseMemInfoError+"failed to get meminfo data")
 	}
 	for _, line := range memData {
 		lineList := strings.Split(line, ":")

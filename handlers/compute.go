@@ -25,7 +25,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 	instance, host, err := utils.GetInstanceAndHost(event)
 
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceActivateError)
+		return errors.Wrap(err, constants.InstanceActivateError+"failed to marshall instance and host data")
 	}
 
 	progress := utils.GetProgress(event, cli)
@@ -36,15 +36,15 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 
 	if ok, err := compute.IsInstanceActive(instance, host, h.dockerClient); ok {
 		if err := compute.RecordState(h.dockerClient, instance, ""); err != nil {
-			return errors.Wrap(err, constants.InstanceActivateError)
+			return errors.Wrap(err, constants.InstanceActivateError+"failed to record state")
 		}
 		return h.reply(event, cli, constants.InstanceActivateError)
 	} else if err != nil {
-		return errors.Wrap(err, constants.InstanceActivateError)
+		return errors.Wrap(err, constants.InstanceActivateError+"failed to check whether instance is activated")
 	}
 
 	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClient, h.infoData); err != nil {
-		return errors.Wrap(err, constants.InstanceActivateError)
+		return errors.Wrap(err, constants.InstanceActivateError+"failed to activate instance")
 	}
 	return h.reply(event, cli, constants.InstanceActivateError)
 }
@@ -53,7 +53,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, _, err := utils.GetInstanceAndHost(event)
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceDeactivateError)
+		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to marshall instance and host data")
 	}
 	progress := utils.GetProgress(event, cli)
 
@@ -62,7 +62,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 	}
 
 	if ok, err := compute.IsInstanceInactive(instance, h.dockerClient); err != nil {
-		return errors.Wrap(err, constants.InstanceDeactivateError)
+		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to check whether instance is activated")
 	} else if ok {
 		return h.reply(event, cli, constants.InstanceDeactivateError)
 	}
@@ -77,7 +77,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 	}
 	err = compute.DoInstanceDeactivate(instance, progress, h.dockerClient, timeout.(int))
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceDeactivateError)
+		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to deactivate instance")
 	}
 
 	return h.reply(event, cli, constants.InstanceDeactivateError)
@@ -88,7 +88,7 @@ func (h *ComputeHandler) InstanceForceStop(event *revents.Event, cli *client.Ran
 	var request model.InstanceForceStop
 	err := mapstructure.Decode(event.Data["instanceForceStop"], &request)
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceForceStopError)
+		return errors.Wrap(err, constants.InstanceForceStopError+"failed to marshall incoming request")
 	}
 	return compute.DoInstanceForceStop(request, h.dockerClient)
 }
@@ -97,15 +97,15 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *client.Ranch
 	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var inspect model.InstanceInspect
 	if err := mapstructure.Decode(event.Data["instanceInspect"], &inspect); err != nil {
-		return errors.Wrap(err, constants.InstanceInspectError)
+		return errors.Wrap(err, constants.InstanceInspectError+"failed to marshall incoming request")
 	}
 	inspectResp, err := compute.DoInstanceInspect(inspect, h.dockerClient)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
-		return errors.Wrap(err, constants.InstanceInspectError)
+		return errors.Wrap(err, constants.InstanceInspectError+"failed to inspect instance")
 	}
 	inspectJSON, err := marshaller.StructToMap(inspectResp)
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceInspectError)
+		return errors.Wrap(err, constants.InstanceInspectError+"failed to marshall response data")
 	}
 	result := map[string]interface{}{event.ResourceType: inspectJSON}
 	return reply(result, event, cli)
@@ -116,7 +116,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 	var instancePull model.InstancePull
 	err := mapstructure.Decode(event.Data["instancePull"], &instancePull)
 	if err != nil {
-		return errors.Wrap(err, constants.InstancePullError)
+		return errors.Wrap(err, constants.InstancePullError+"failed to marshall incoming request")
 	}
 	imageParams := model.ImageParams{
 		Image:    instancePull.Image,
@@ -127,7 +127,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 
 	_, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
 	if pullErr != nil {
-		return errors.Wrap(pullErr, constants.InstancePullError)
+		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}
 	return h.reply(event, cli, constants.InstanceRemoveError)
 }
@@ -135,7 +135,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
 	instance, _, err := utils.GetInstanceAndHost(event)
 	if err != nil {
-		return errors.Wrap(err, constants.InstanceRemoveError)
+		return errors.Wrap(err, constants.InstanceRemoveError+"failed to marshall instance and host data")
 	}
 
 	progress := utils.GetProgress(event, cli)
@@ -147,11 +147,11 @@ func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.Ranche
 	if ok, err := compute.IsInstanceRemoved(instance, h.dockerClient); ok {
 		return reply(map[string]interface{}{}, event, cli)
 	} else if err != nil {
-		return errors.Wrap(err, constants.InstanceRemoveError)
+		return errors.Wrap(err, constants.InstanceRemoveError+"failed to check whether instance is removed")
 	}
 
 	if err := compute.DoInstanceRemove(instance, progress, h.dockerClient); err != nil {
-		return errors.Wrap(err, constants.InstanceRemoveError)
+		return errors.Wrap(err, constants.InstanceRemoveError+"failed to remove instance")
 	}
 	return h.reply(event, cli, constants.InstanceRemoveError)
 }
@@ -159,7 +159,7 @@ func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.Ranche
 func (h *ComputeHandler) reply(event *revents.Event, cli *client.RancherClient, errMSG string) error {
 	resp, err := utils.GetResponseData(event, h.dockerClient)
 	if err != nil {
-		return errors.Wrap(err, errMSG)
+		return errors.Wrap(err, errMSG+"failed to get response data")
 	}
 	return reply(resp, event, cli)
 }
