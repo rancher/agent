@@ -1706,14 +1706,6 @@ def test_ping(agent, pull_images, mocker):
     CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
     CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
 
-    try:
-        file1 = open('/var/lib/cattle/.physical_host_uuid', 'w+')
-        file1.write('physical_host_uuid')
-        file2 = open('/var/lib/cattle/.docker_uuid', 'w+')
-        file2.write('docker_uuid')
-    except IOError as e:
-        raise e
-
     event_test(agent, 'docker/ping', post_func=ping_post_process)
 
 

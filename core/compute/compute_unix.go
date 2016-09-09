@@ -94,7 +94,7 @@ func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {
 func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client) error {
 	portsSupported, hostnameSupported, err := setupNetworkMode(instance, client, config, hostConfig)
 	if err != nil {
-		return errors.Wrap(err, constants.SetupNetworkingError)
+		return errors.Wrap(err, constants.SetupNetworkingError+"failed to setup network mode")
 	}
 	setupMacAndIP(instance, config, portsSupported, hostnameSupported)
 	setupPortsNetwork(instance, config, hostConfig, portsSupported)
@@ -181,7 +181,7 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 			other, err := utils.GetContainer(client, (*instance.NetworkContainer), false)
 			if err != nil {
 				if !utils.IsContainerNotFoundError(err) {
-					return false, false, errors.Wrap(err, constants.SetupNetworkModeError)
+					return false, false, errors.Wrap(err, constants.SetupNetworkModeError+"failed to get container")
 				}
 			}
 			if other.ID != "" {

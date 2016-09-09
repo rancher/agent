@@ -20,7 +20,7 @@ type StorageHandler struct {
 func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.RancherClient) error {
 	var imageStoragePoolMap model.ImageStoragePoolMap
 	if err := mapstructure.Decode(event.Data["imageStoragePoolMap"], &imageStoragePoolMap); err != nil {
-		return errors.Wrap(err, constants.ImageActivateError)
+		return errors.Wrap(err, constants.ImageActivateError+"failed to marshall incoming request")
 	}
 	image := imageStoragePoolMap.Image
 	storagePool := imageStoragePoolMap.StoragePool
@@ -32,22 +32,20 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	}
 
 	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); ok {
-		resp, err := utils.GetResponseData(event, h.dockerClient)
-		if err != nil {
-			return errors.Wrap(err, constants.ImageActivateError)
-		}
-		return reply(resp, event, cli)
+		return h.reply(event, cli, constants.ImageActivateError)
 	} else if err != nil {
-		return errors.Wrap(err, constants.ImageActivateError)
+		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
 	}
 
 	err := storage.DoImageActivate(image, storagePool, progress, h.dockerClient)
 	if err != nil {
-		return errors.Wrap(err, constants.ImageActivateError)
+		return errors.Wrap(err, constants.ImageActivateError+"failed to do image activate")
 	}
 
-	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); !ok || err != nil {
-		return errors.Wrap(err, constants.ImageActivateError)
+	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); !ok && err != nil {
+		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
+	} else if !ok && err == nil {
+		return errors.New(constants.ImageActivateError + "image is not activated")
 	}
 
 	return h.reply(event, cli, constants.ImageActivateError)
@@ -57,27 +55,25 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
 	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
 	if err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError)
+		return errors.Wrap(err, constants.VolumeActivateError+"failed to marshall incoming request")
 	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
 	progress := utils.GetProgress(event, cli)
 
 	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); ok {
-		resp, err := utils.GetResponseData(event, h.dockerClient)
-		if err != nil {
-			return errors.Wrap(err, constants.VolumeActivateError)
-		}
-		return reply(resp, event, cli)
+		return h.reply(event, cli, constants.VolumeActivateError)
 	} else if err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError)
+		return errors.Wrap(err, constants.VolumeActivateError+"failed to check whether volume is activated")
 	}
 
 	if err := storage.DoVolumeActivate(volume, storagePool, progress, h.dockerClient); err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError)
+		return errors.Wrap(err, constants.VolumeActivateError+"failed to activate volume")
 	}
-	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); !ok || err != nil {
+	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); !ok && err != nil {
 		return errors.Wrap(err, constants.VolumeActivateError)
+	} else if !ok && err == nil {
+		return errors.New(constants.VolumeActivateError + "volume is not activated")
 	}
 	return h.reply(event, cli, constants.VolumeActivateError)
 }
@@ -86,7 +82,7 @@ func (h *StorageHandler) VolumeDeactivate(event *revents.Event, cli *client.Ranc
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
 	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
 	if err != nil {
-		return errors.Wrap(err, constants.VolumeDeactivateError)
+		return errors.Wrap(err, constants.VolumeDeactivateError+"failed to marshall incoming request")
 	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
@@ -97,7 +93,7 @@ func (h *StorageHandler) VolumeDeactivate(event *revents.Event, cli *client.Ranc
 	}
 
 	if err := storage.DoVolumeDeactivate(volume, storagePool, progress); err != nil {
-		return errors.Wrap(err, constants.VolumeDeactivateError)
+		return errors.Wrap(err, constants.VolumeDeactivateError+"failed to deactivate volume")
 	}
 	if !storage.IsVolumeInactive(volume, storagePool) {
 		return errors.New(constants.VolumeDeactivateError)
@@ -109,7 +105,7 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
 	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
 	if err != nil {
-		return errors.Wrap(err, constants.VolumeRemoveError)
+		return errors.Wrap(err, constants.VolumeRemoveError+"failed to marshall incoming request")
 	}
 	volume := volumeStoragePoolMap.Volume
 	storagePool := volumeStoragePoolMap.StoragePool
@@ -117,16 +113,16 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 
 	if volume.DeviceNumber == 0 {
 		if err := compute.PurgeState(volume.Instance, h.dockerClient); err != nil {
-			return errors.Wrap(err, constants.VolumeRemoveError)
+			return errors.Wrap(err, constants.VolumeRemoveError+"failed to purge state")
 		}
 	}
 	if ok, err := storage.IsVolumeRemoved(volume, storagePool, h.dockerClient); err == nil && !ok {
 		rmErr := storage.DoVolumeRemove(volume, storagePool, progress, h.dockerClient)
 		if rmErr != nil {
-			return errors.Wrap(rmErr, constants.VolumeRemoveError)
+			return errors.Wrap(rmErr, constants.VolumeRemoveError+"failed to remove volume")
 		}
 	} else if err != nil {
-		return errors.Wrap(err, constants.VolumeRemoveError)
+		return errors.Wrap(err, constants.VolumeRemoveError+"failed to check whether volume is removed")
 	}
 	return h.reply(event, cli, constants.VolumeRemoveError)
 }

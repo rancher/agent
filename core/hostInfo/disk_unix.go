@@ -69,7 +69,7 @@ func (d DiskCollector) getMachineFilesystemsCadvisor(infoData model.InfoData) (m
 	data := map[string]interface{}{}
 	machineInfo, err := d.Cadvisor.DataGetter.GetMachineStats()
 	if err != nil {
-		return data, errors.Wrap(err, constants.GetMachineFilesystemsCadvisorError)
+		return data, errors.Wrap(err, constants.GetMachineFilesystemsCadvisorError+"failed to get machine stats")
 	}
 	if _, ok := machineInfo["filesystems"]; ok {
 		for _, fs := range utils.InterfaceToArray(machineInfo["filesystems"]) {

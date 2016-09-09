@@ -93,6 +93,15 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
 	client := docker.GetClient(constants.DefaultVersion)
+	systemImages := map[string]string{}
+	for i := 0; i < 10; i++ {
+		ret, err := utils.GetAgentImage(client)
+		if err == nil {
+			systemImages = ret
+			break
+		}
+		time.Sleep(time.Duration(1) * time.Second)
+	}
 	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld:latest", types.ImagePullOptions{})
 	if err != nil {
 		c.Fatal(err)
@@ -118,19 +127,13 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	containers := []model.PingResource{}
 
 	container.Labels = map[string]string{}
-	containers, err = utils.AddContainer("running", container, containers, client)
-	if err != nil {
-		c.Fatal()
-	}
+	containers = utils.AddContainer("running", container, containers, client, systemImages)
 	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
 	c.Assert(containers[0].SystemContainer, check.Equals, "")
 
 	containers = []model.PingResource{}
 	container.Labels = map[string]string{}
-	containers, err = utils.AddContainer("running", container, containers, client)
-	if err != nil {
-		c.Fatal(err)
-	}
+	containers = utils.AddContainer("running", container, containers, client, systemImages)
 	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
 	c.Assert(containers[0].SystemContainer, check.Equals, "")
 }

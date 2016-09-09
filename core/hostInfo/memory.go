@@ -37,7 +37,7 @@ func (m MemoryDataGetter) GetMemInfoData() ([]string, error) {
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		return data, errors.Wrap(err, constants.GetMemInfoDataError)
+		return data, errors.Wrap(err, constants.GetMemInfoDataError+"failed to read meminfo file")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
