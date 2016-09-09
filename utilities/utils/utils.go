@@ -326,30 +326,30 @@ func FindIPAndMac(instance model.Instance) (string, string, string) {
 	return "", "", ""
 }
 
-func ParseRepoTag(name string) map[string]string {
+func ParseRepoTag(name string) model.RepoTag {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}
 	n := strings.Index(name, ":")
 	if n < 0 {
-		return map[string]string{
-			"repo": name,
-			"tag":  "latest",
-			"uuid": name + ":latest",
+		return model.RepoTag{
+			Repo: name,
+			Tag: "latest",
+			UUID: name + ":latest",
 		}
 	}
 	tag := name[n+1:]
 	if strings.Index(tag, "/") < 0 {
-		return map[string]string{
-			"repo": name[:n],
-			"tag":  tag,
-			"uuid": name,
+		return model.RepoTag{
+			Repo: name[:n],
+			Tag: tag,
+			UUID: name,
 		}
 	}
-	return map[string]string{
-		"repo": name,
-		"tag":  "latest",
-		"uuid": name + ":latest",
+	return model.RepoTag{
+		Repo: name,
+		Tag: "latest",
+		UUID: name + ":latest",
 	}
 }
 
@@ -607,10 +607,6 @@ func IsContainerNotFoundError(e error) bool {
 
 func IsImageNoOp(imageData model.ImageData) bool {
 	return imageData.ProcessData.ContainerNoOpEvent
-}
-
-func IsInstanceNoOp(processData model.ProcessData) bool {
-	return processData.ContainerNoOpEvent
 }
 
 func IsPathExist(path string) bool {

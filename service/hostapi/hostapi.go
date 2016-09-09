@@ -33,7 +33,6 @@ func StartUp() {
 			"-cattle-url", config.APIURL(""),
 			"-cattle-state-dir", config.ContainerStateDir(),
 		}
-		logrus.Info(execPath)
 		command := exec.Command(execPath, args...)
 		command.Env = env
 		command.SysProcAttr = constants.SysAttr

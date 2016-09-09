@@ -63,3 +63,9 @@ type DockerImage struct {
 	Repository    string `json:"repository"`
 	Tag           string `json:"tag"`
 }
+
+type RepoTag struct {
+	Repo	string
+	Tag     string
+	UUID    string
+}

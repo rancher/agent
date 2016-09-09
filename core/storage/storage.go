@@ -17,36 +17,6 @@ import (
 	"strings"
 )
 
-func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, client *engineCli.Client) (bool, error) {
-	if !isManagedVolume(volume) {
-		return true, nil
-	}
-	version := config.StorageAPIVersion()
-	client.UpdateClientVersion(version)
-	defer client.UpdateClientVersion(constants.DefaultVersion)
-	vol, err := client.VolumeInspect(context.Background(), volume.Name)
-	if engineCli.IsErrVolumeNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, errors.Wrap(err, constants.IsVolumeActiveError)
-	}
-	if vol.Mountpoint != "" {
-		return vol.Mountpoint != "moved", nil
-	}
-	return true, nil
-}
-
-func isManagedVolume(volume model.Volume) bool {
-	driver := volume.Data.Fields.Driver
-	if driver == "" {
-		return false
-	}
-	if volume.Name == "" {
-		return false
-	}
-	return true
-}
-
 func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
 	if !isManagedVolume(volume) {
 		return nil
@@ -169,89 +139,8 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	return nil
 }
 
-func imageBuild(image model.Image, progress *progress.Progress, client *engineCli.Client) error {
-	opts := image.Data.Fields.Build
-
-	if opts.Context != "" {
-		file, err := utils.DownloadFile(opts.Context, config.Builds(), nil, "")
-		if err == nil {
-			opts.FileObj = file
-			if buildErr := doBuild(opts, progress, client); buildErr != nil {
-				return errors.Wrap(buildErr, constants.ImageBuildError)
-			}
-		}
-		if file != "" {
-			// ignore this error because we don't care if that file doesn't exist
-			os.Remove(file)
-		}
-	} else {
-		remote := opts.Remote
-		if strings.HasPrefix(utils.InterfaceToString(remote), "git@github.com:") {
-			remote = strings.Replace(utils.InterfaceToString(remote), "git@github.com:", "git://github.com/", -1)
-		}
-		opts.Remote = remote
-		if buildErr := doBuild(opts, progress, client); buildErr != nil {
-			return errors.Wrap(buildErr, constants.ImageBuildError)
-		}
-	}
-	return nil
-}
-
-func doBuild(opts model.BuildOptions, progress *progress.Progress, client *engineCli.Client) error {
-	remote := opts.Remote
-	if remote == "" {
-		remote = opts.Context
-	}
-	imageBuildOptions := types.ImageBuildOptions{
-		RemoteContext: remote,
-		Remove:        true,
-		Tags:          []string{opts.Tag},
-	}
-	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
-	if err != nil {
-		return errors.Wrap(err, constants.DoBuildError)
-	}
-	buffer := utils.ReadBuffer(response.Body)
-	statusList := strings.Split(buffer, "\r\n")
-	for _, rawStatus := range statusList {
-		if rawStatus != "" {
-			status := marshaller.FromString(rawStatus)
-			if value, ok := utils.GetFieldsIfExist(status, "stream"); ok {
-				progress.Update(utils.InterfaceToString(value))
-			}
-		}
-	}
-	return nil
-}
-
-func isBuild(image model.Image) bool {
-	build := image.Data.Fields.Build
-	if build.Context != "" || build.Remote != "" {
-		return true
-	}
-	return false
-}
-
-func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClient *engineCli.Client) (bool, error) {
-	if utils.IsImageNoOp(image.Data) {
-		return true, nil
-	}
-	parsedTag := utils.ParseRepoTag(image.Data.DockerImage.FullName)
-	_, _, err := dockerClient.ImageInspectWithRaw(context.Background(), parsedTag["uuid"])
-	if err == nil {
-		return true, nil
-	} else if engineCli.IsErrImageNotFound(err) {
-		return false, nil
-	}
-	return false, errors.Wrap(err, constants.IsImageActiveError)
-}
-
 func DoVolumeDeactivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress) error {
 	return errors.New("Not implemented")
-}
-
-func IsVolumeInactive(volume model.Volume, storagePool model.StoragePool) bool {
-	return true
 }
 
 func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client) error {
@@ -299,36 +188,4 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		return errors.Wrap(existErr, constants.DoVolumeRemoveError)
 	}
 	return nil
-}
-
-func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *engineCli.Client) (bool, error) {
-	if volume.DeviceNumber == 0 {
-		container, err := utils.GetContainer(client, volume.Instance, false)
-		if err != nil {
-			if !utils.IsContainerNotFoundError(err) {
-				return false, errors.Wrap(err, constants.IsVolumeRemovedError)
-			}
-		}
-		return container.ID == "", nil
-	} else if isManagedVolume(volume) {
-		ok, err := IsVolumeActive(volume, storagePool, client)
-		if err != nil {
-			return false, errors.Wrap(err, constants.IsVolumeRemovedError)
-		}
-		return !ok, nil
-	}
-	path := pathToVolume(volume)
-	if !volume.Data.Fields.IsHostPath {
-		return true, nil
-	}
-	_, exist := os.Stat(path)
-	if exist != nil {
-		return true, nil
-	}
-	return false, nil
-
-}
-
-func pathToVolume(volume model.Volume) string {
-	return strings.Replace(volume.URI, "file://", "", -1)
 }
