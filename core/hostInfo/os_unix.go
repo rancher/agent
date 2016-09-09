@@ -14,7 +14,7 @@ func (o OSDataGetter) GetOS(infoData model.InfoData) (map[string]string, error) 
 	data["operatingSystem"] = infoData.Info.OperatingSystem
 	kernelVersion, err := utils.GetKernelVersion()
 	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.GetOSError)
+		return map[string]string{}, errors.Wrap(err, constants.GetOSError+"failed to get kernel version")
 	}
 	data["kernelVersion"] = kernelVersion
 

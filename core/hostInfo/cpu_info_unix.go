@@ -20,7 +20,7 @@ func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
 	procs := []string{}
 	fileData, err := c.DataGetter.GetCPUInfoData()
 	if err != nil {
-		return data, errors.Wrap(err, constants.GetCPUInfoError)
+		return data, errors.Wrap(err, constants.GetCPUInfoError+"failed to get cpu info")
 	}
 	for _, line := range fileData {
 		parts := strings.Split(line, ":")
@@ -54,7 +54,7 @@ func (c CPUDataGetter) GetCPUInfoData() ([]string, error) {
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		return data, errors.Wrap(err, constants.GetCPUInfoDataError)
+		return data, errors.Wrap(err, constants.GetCPUInfoDataError+"failed to open cpuinfo file")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)

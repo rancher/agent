@@ -33,16 +33,16 @@ func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error
 	data := event.Data
 	var ihm model.InstanceHostMap
 	if err := mapstructure.Decode(data["instanceHostMap"], &ihm); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instancehostmap")
 	}
 
 	var instance model.Instance
 	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instance data")
 	}
 	var host model.Host
 	if err := mapstructure.Decode(ihm.Host, &host); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError)
+		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall host data")
 	}
 
 	return instance, host, nil
@@ -257,7 +257,7 @@ func AddLinkEnv(name string, link model.Link, result map[string]string, inIP str
 		data["PORT"] = fullPort
 		data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
 		data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
-		data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = dst
+		data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = getStringOrFloat(dst)
 		data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = protocol
 		for key, value := range data {
 			result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
@@ -334,7 +334,7 @@ func ParseRepoTag(name string) model.RepoTag {
 	if n < 0 {
 		return model.RepoTag{
 			Repo: name,
-			Tag: "latest",
+			Tag:  "latest",
 			UUID: name + ":latest",
 		}
 	}
@@ -342,13 +342,13 @@ func ParseRepoTag(name string) model.RepoTag {
 	if strings.Index(tag, "/") < 0 {
 		return model.RepoTag{
 			Repo: name[:n],
-			Tag: tag,
+			Tag:  tag,
 			UUID: name,
 		}
 	}
 	return model.RepoTag{
 		Repo: name,
-		Tag: "latest",
+		Tag:  "latest",
 		UUID: name + ":latest",
 	}
 }
@@ -362,14 +362,14 @@ func GetContainer(client *engineCli.Client, instance model.Instance, byAgent boo
 	if err == nil && len(labeledContainers) > 0 {
 		return labeledContainers[0], nil
 	} else if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError)
+		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
 	}
 
 	// Next look by UUID using fallback method
 	options = types.ContainerListOptions{All: true}
 	containerList, err := client.ContainerList(context.Background(), options)
 	if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError)
+		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
 	}
 
 	if container, ok := FindFirst(containerList, func(c types.Container) bool {
@@ -462,7 +462,7 @@ func GetKernelVersion() (string, error) {
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		return "", errors.Wrap(err, constants.GetKernelVersionError)
+		return "", errors.Wrap(err, constants.GetKernelVersionError+"failed to open process version file")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
@@ -488,7 +488,7 @@ func GetLoadAverage() ([]string, error) {
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		return []string{}, errors.Wrap(err, constants.GetLoadAverageError)
+		return []string{}, errors.Wrap(err, constants.GetLoadAverageError+"failed to open load average file")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
@@ -523,16 +523,13 @@ func RemoveContainer(client *engineCli.Client, containerID string) error {
 		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
 	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); !engineCli.IsErrContainerNotFound(err) {
-		return errors.Wrap(err, constants.RemoveContainerError)
+		return errors.Wrap(err, constants.RemoveContainerError+"failed to remove container")
 	}
 	return nil
 }
 
-func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client) ([]model.PingResource, error) {
-	sysCon, err := getSysContainer(container, dockerClient)
-	if err != nil {
-		return []model.PingResource{}, errors.Wrap(err, constants.AddContainerError)
-	}
+func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client, systemImages map[string]string) []model.PingResource {
+	sysCon := getSysContainer(container, dockerClient, systemImages)
 	containerData := model.PingResource{
 		Type:            "instance",
 		UUID:            GetUUID(container),
@@ -543,33 +540,29 @@ func AddContainer(state string, container types.Container, containers []model.Pi
 		Labels:          container.Labels,
 		Created:         container.Created,
 	}
-	return append(containers, containerData), nil
+	return append(containers, containerData)
 }
 
-func getSysContainer(container types.Container, client *engineCli.Client) (string, error) {
+func getSysContainer(container types.Container, client *engineCli.Client, systemImages map[string]string) string {
 	image := container.Image
-	systemImages, err := getAgentImage(client)
-	if err != nil {
-		return "", errors.Wrap(err, constants.GetSysContainerError)
-	}
-	if HasKey(systemImages, image) {
-		return InterfaceToString(systemImages[image]), nil
+	if _, ok := systemImages[image]; ok {
+		return systemImages[image]
 	}
 	label, ok := container.Labels["io.rancher.container.system"]
 	if ok {
-		return label, nil
+		return label
 	}
-	return "", nil
+	return ""
 }
 
-func getAgentImage(client *engineCli.Client) (map[string]interface{}, error) {
+func GetAgentImage(client *engineCli.Client) (map[string]string, error) {
 	args := filters.NewArgs()
 	args.Add("label", constants.SystemLabels)
 	images, err := client.ImageList(context.Background(), types.ImageListOptions{Filters: args})
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.GetAgentImageError)
+		return map[string]string{}, errors.Wrap(err, constants.GetAgentImageError+"failed to list images")
 	}
-	systemImage := map[string]interface{}{}
+	systemImage := map[string]string{}
 	for _, image := range images {
 		labelValue := image.Labels[constants.SystemLabels]
 		for _, l := range image.RepoTags {
@@ -622,4 +615,12 @@ func GetProgress(request *revents.Event, cli *client.RancherClient) *progress.Pr
 		Client:  cli,
 	}
 	return &progress
+}
+
+//weird method to convert an interface to string
+func getStringOrFloat(v interface{}) string {
+	if f, ok := v.(float64); ok {
+		return strconv.FormatFloat(f, 'f', -1, 64)
+	}
+	return v.(string)
 }

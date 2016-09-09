@@ -1,13 +1,13 @@
 package storage
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/docker/engine-api/client"
-	"github.com/rancher/agent/utilities/config"
-	"golang.org/x/net/context"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
 	"os"
 )
 
@@ -53,14 +53,14 @@ func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client 
 		container, err := utils.GetContainer(client, volume.Instance, false)
 		if err != nil {
 			if !utils.IsContainerNotFoundError(err) {
-				return false, errors.Wrap(err, constants.IsVolumeRemovedError)
+				return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to get container")
 			}
 		}
 		return container.ID == "", nil
 	} else if isManagedVolume(volume) {
 		ok, err := IsVolumeActive(volume, storagePool, client)
 		if err != nil {
-			return false, errors.Wrap(err, constants.IsVolumeRemovedError)
+			return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to check whether volume is activated")
 		}
 		return !ok, nil
 	}
