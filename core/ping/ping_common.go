@@ -27,12 +27,12 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 
 	physicalHost, err := config.PhysicalHost()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError)
+		return errors.Wrap(err, constants.AddResourceError+"failed to get physical host")
 	}
 
 	hostname, err := config.Hostname()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError)
+		return errors.Wrap(err, constants.AddResourceError+"failed to get hostname")
 	}
 	labels, err := getHostLabels(collectors)
 	if err != nil {
@@ -40,7 +40,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	}
 	uuid, err := config.DockerUUID()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError)
+		return errors.Wrap(err, constants.AddResourceError+"failed to get docker UUID")
 	}
 	compute := model.PingResource{
 		Type:             "host",
@@ -79,13 +79,13 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	return nil
 }
 
-func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client) error {
+func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, systemImages map[string]string) error {
 	if !pingIncludeInstance(ping) {
 		return nil
 	}
 	uuid, err := config.DockerUUID()
 	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError)
+		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
 	}
 	pong.Resources = append(pong.Resources, model.PingResource{
 		Type: "hostUuid",
@@ -94,19 +94,13 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	containers := []model.PingResource{}
 	running, nonrunning, err := getAllContainerByState(dockerClient)
 	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError)
+		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
 	}
 	for _, container := range running {
-		containers, err = utils.AddContainer("running", container, containers, dockerClient)
-		if err != nil {
-			return errors.Wrap(err, constants.AddInstanceError)
-		}
+		containers = utils.AddContainer("running", container, containers, dockerClient, systemImages)
 	}
 	for _, container := range nonrunning {
-		containers, err = utils.AddContainer("stopped", container, containers, dockerClient)
-		if err != nil {
-			return errors.Wrap(err, constants.AddInstanceError)
-		}
+		containers = utils.AddContainer("stopped", container, containers, dockerClient, systemImages)
 	}
 	pong.Resources = append(pong.Resources, containers...)
 	pong.Options.Instances = true
@@ -145,7 +139,7 @@ func getAllContainerByState(dockerClient *client.Client) (map[string]types.Conta
 	nonrunningContainers := map[string]types.Container{}
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
-		return map[string]types.Container{}, map[string]types.Container{}, errors.Wrap(err, constants.GetAllContainerByStateError)
+		return map[string]types.Container{}, map[string]types.Container{}, errors.Wrap(err, constants.GetAllContainerByStateError+"failed to list containers")
 	}
 	for _, c := range containerList {
 		if c.Status != "" && c.Status != "Created" {

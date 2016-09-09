@@ -10,9 +10,11 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
+	"os"
 	"runtime"
 	"time"
 )
@@ -72,11 +74,14 @@ func initializeHandlers() *Handler {
 	client := docker.GetClient(constants.DefaultVersion)
 	info := types.Info{}
 	version := types.Version{}
+	systemImages := map[string]string{}
+	flags := [3]bool{}
 	// initialize the info and version so we don't have to call docker API every time a ping request comes
 	for i := 0; i < 10; i++ {
 		in, err := client.Info(context.Background())
 		if err == nil {
 			info = in
+			flags[0] = true
 			break
 		}
 		time.Sleep(time.Duration(1) * time.Second)
@@ -85,9 +90,24 @@ func initializeHandlers() *Handler {
 		v, err := client.ServerVersion(context.Background())
 		if err == nil {
 			version = v
+			flags[1] = true
 			break
 		}
 		time.Sleep(time.Duration(1) * time.Second)
+	}
+	for i := 0; i < 10; i++ {
+		ret, err := utils.GetAgentImage(client)
+		if err == nil {
+			systemImages = ret
+			flags[2] = true
+			break
+		}
+		time.Sleep(time.Duration(1) * time.Second)
+	}
+	// if we can't get the initialization data the program should exit
+	if !flags[0] || !flags[1] || !flags[2] {
+		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
+		os.Exit(1)
 	}
 	Cadvisor := hostInfo.CadvisorAPIClient{
 		DataGetter: hostInfo.CadvisorDataGetter{
@@ -142,6 +162,7 @@ func initializeHandlers() *Handler {
 	pingHandler := PingHandler{
 		dockerClient: client,
 		collectors:   Collectors,
+		SystemImage:  systemImages,
 	}
 	configHandler := ConfigUpdateHandler{}
 	handler := Handler{

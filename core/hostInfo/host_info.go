@@ -31,7 +31,7 @@ func HostLabels(prefix string, collectors []Collector) (map[string]string, error
 	for _, collector := range collectors {
 		lmap, err := collector.GetLabels(prefix)
 		if err != nil {
-			return map[string]string{}, errors.Wrap(err, constants.HostLabelsError)
+			return map[string]string{}, errors.Wrap(err, constants.HostLabelsError+"failed to collect labels from collectors")
 		}
 		for key, value := range lmap {
 			labels[key] = value

@@ -40,7 +40,7 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	osData, err := o.DataGetter.GetOS(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.OSGetDataError)
+		return data, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
 	}
 
 	for key, value := range o.DataGetter.GetDockerVersion(infoData, true) {
@@ -55,7 +55,7 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 	osData, err := o.DataGetter.GetOS(o.InfoData)
 	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError)
+		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
 	}
 	labels := map[string]string{
 		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.DataGetter.GetDockerVersion(o.InfoData, false)["dockerVersion"],

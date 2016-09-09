@@ -21,14 +21,14 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 	cmd := []string{"-F", "-m", "-u", "-i", "-n", "-p", "-t", strconv.Itoa(pid), "--", script}
 	input, err := marshaller.ToString(event)
 	if err != nil {
-		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
+		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"failed to marshall data")
 	}
 	data := map[string]interface{}{}
 
 	envmap := map[string]string{}
 	file, fileErr := os.Open(fmt.Sprintf("/proc/%v/environ", pid))
 	if fileErr != nil {
-		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
+		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"failed to open environ files")
 	}
 	for _, line := range strings.Split(utils.ReadBuffer(file), "\x00") {
 		if len(line) == 0 {
@@ -69,7 +69,7 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 		time.Sleep(time.Duration(1) * time.Second)
 	}
 	if retcode != 0 {
-		return retcode, string(output), map[string]interface{}{}, errors.Wrap(err, constants.NsExecError)
+		return retcode, string(output), map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"exit code is not zero")
 	}
 	text := []string{}
 	for _, line := range strings.Split(string(output), "\n") {

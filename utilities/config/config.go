@@ -78,21 +78,21 @@ func getUUIDFromFile(uuidFilePath string) (string, error) {
 
 	fileBuffer, err := ioutil.ReadFile(uuidFilePath)
 	if err != nil && !os.IsNotExist(err) {
-		return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+		return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to read uuid file")
 	}
 	uuid = string(fileBuffer)
 	if uuid == "" {
 		newUUID, err := goUUID.NewV4()
 		if err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to generate uuid")
 		}
 		uuid = newUUID.String()
 		file, err := os.Create(uuidFilePath)
 		if err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to create uuid file")
 		}
 		if _, err := file.WriteString(uuid); err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError)
+			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to write uuid to file")
 		}
 	}
 	return uuid, nil
@@ -106,14 +106,14 @@ func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) (stri
 			if err == nil {
 				os.Remove(uuidFilePath)
 			} else if !os.IsNotExist(err) {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to open uuid file")
 			}
 			file, err := os.Create(uuidFilePath)
 			if err != nil {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to create uuid file")
 			}
 			if _, err := file.WriteString(uuid); err != nil {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError)
+				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to write uuid to file")
 			}
 		}
 		return uuid, nil
@@ -156,11 +156,11 @@ func Sh() string {
 func PhysicalHost() (model.PingResource, error) {
 	uuid, err := PhysicalHostUUID(false)
 	if err != nil {
-		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError)
+		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError+"failed to get physical host uuid")
 	}
 	hostname, err := Hostname()
 	if err != nil {
-		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError)
+		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError+"failed to get hostname")
 	}
 	return model.PingResource{
 		UUID: uuid,

@@ -1,29 +1,29 @@
 package compute
 
 import (
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/docker/engine-api/types/container"
-	"github.com/docker/go-connections/nat"
 	"fmt"
-	"github.com/rancher/agent/utilities/utils"
-	"github.com/rancher/agent/core/progress"
-	"strings"
-	"github.com/rancher/agent/core/storage"
-	"os"
-	"strconv"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
-	"github.com/pkg/errors"
-	"golang.org/x/net/context"
-	configuration "github.com/rancher/agent/utilities/config"
-	urls "net/url"
-	"github.com/docker/engine-api/types/network"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/engine-api/types/container"
+	"github.com/docker/engine-api/types/network"
+	"github.com/docker/go-connections/nat"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/progress"
+	"github.com/rancher/agent/core/storage"
+	"github.com/rancher/agent/model"
+	configuration "github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/utils"
+	"golang.org/x/net/context"
+	urls "net/url"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
-imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
+	imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
 	logrus.Info("Creating docker container from config")
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
@@ -35,7 +35,7 @@ imageTag string, instance model.Instance, name string, progress *progress.Progre
 		}
 		_, err := DoInstancePull(params, progress, dockerClient)
 		if err != nil {
-			return "", errors.Wrap(err, constants.CreateContainerError)
+			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull instance")
 		}
 	}
 	config.Image = imageTag
@@ -45,15 +45,15 @@ imageTag string, instance model.Instance, name string, progress *progress.Progre
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
 		if err := storage.PullImage(instance.Image, progress, dockerClient); err != nil {
-			return "", errors.Wrap(err, constants.CreateContainerError)
+			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
 		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
 		if err1 != nil {
-			return "", errors.Wrap(err1, constants.CreateContainerError)
+			return "", errors.Wrap(err1, constants.CreateContainerError+"failed to create container")
 		}
 		return containerResponse.ID, nil
 	} else if err != nil {
-		return "", errors.Wrap(err, constants.CreateContainerError)
+		return "", errors.Wrap(err, constants.CreateContainerError+"failed to create container")
 	}
 	return containerResponse.ID, nil
 }
@@ -61,7 +61,7 @@ imageTag string, instance model.Instance, name string, progress *progress.Progre
 func getImageTag(instance model.Instance) (string, error) {
 	dockerImage := instance.Image.Data.DockerImage
 	if dockerImage.FullName == "" {
-		return "", errors.New(constants.StartContainerNoImageError)
+		return "", errors.New(constants.StartContainerNoImageError + "the full name of docker image is empty")
 	}
 	return dockerImage.FullName, nil
 }
@@ -146,7 +146,7 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 			container, err := utils.GetContainer(client, (*vfs), false)
 			if err != nil {
 				if !utils.IsContainerNotFoundError(err) {
-					return errors.Wrap(err, constants.SetupVolumesError)
+					return errors.Wrap(err, constants.SetupVolumesError+"failed to get container")
 				}
 			}
 			if container.ID != "" {
@@ -163,10 +163,10 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 			storagePool := model.StoragePool{}
 			if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
 				if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
-					return errors.Wrap(err, constants.SetupVolumesError)
+					return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
 				}
 			} else if err != nil {
-				return errors.Wrap(err, constants.SetupVolumesError)
+				return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
 			}
 		}
 	}
@@ -296,13 +296,15 @@ func isStopped(client *client.Client, container types.Container) (bool, error) {
 	return !ok, nil
 }
 
-func isRunning(client *client.Client, container types.Container) (bool, error) {
+func isRunning(dockerClient *client.Client, container types.Container) (bool, error) {
 	if container.ID == "" {
 		return false, nil
 	}
-	inspect, err := client.ContainerInspect(context.Background(), container.ID)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.ID)
 	if err == nil {
 		return inspect.State.Running, nil
+	} else if client.IsErrContainerNotFound(err) {
+		return false, nil
 	}
 	return false, err
 }

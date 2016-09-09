@@ -25,7 +25,7 @@ func (c CPUCollector) GetData() (map[string]interface{}, error) {
 
 	cInfo, err := c.getCPUInfo()
 	if err != nil {
-		return data, errors.Wrap(err, constants.CPUGetDataError)
+		return data, errors.Wrap(err, constants.CPUGetDataError+"failed to get cpu info")
 	}
 	for key, value := range c.getCPUPercentage() {
 		data[key] = value
@@ -35,7 +35,7 @@ func (c CPUCollector) GetData() (map[string]interface{}, error) {
 	}
 	loadAvg, err := c.DataGetter.GetCPULoadAverage()
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.CPUGetDataError)
+		return map[string]interface{}{}, errors.Wrap(err, constants.CPUGetDataError+"failed to get cpu load average")
 	}
 	for key, value := range loadAvg {
 		data[key] = value
