@@ -254,3 +254,7 @@ func DefaultValue(name string, df string) string {
 	}
 	return df
 }
+
+func Stamp() string {
+	return DefaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
+}

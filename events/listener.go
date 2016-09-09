@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/agent/service/cadvisor"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"os"
 	"runtime"
@@ -52,15 +51,14 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 
 func checkTS(timestamps *time.Time) bool {
 	stampFile := config.Stamp()
-	if !utils.IsPathExist(stampFile) {
+	stats, err := os.Stat(stampFile)
+	if err != nil {
 		return true
 	}
-	// ignore the err cause the file exists
-	stats, _ := os.Stat(stampFile)
 	ts := stats.ModTime()
 	// check whether timestamps has been initialized
 	if timestamps.IsZero() {
-		timestamps = &ts
+		*timestamps = ts
 	}
 	return timestamps.Equal(ts)
 }
