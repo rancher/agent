@@ -14,9 +14,9 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"golang.org/x/net/context"
+	"os"
 	"runtime"
 	"time"
-	"os"
 )
 
 type Handler struct {
