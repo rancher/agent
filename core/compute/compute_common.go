@@ -22,7 +22,7 @@ import (
 	"strings"
 )
 
-func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
+func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkConfig *network.NetworkingConfig,
 	imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
@@ -41,13 +41,13 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	dockerImage := utils.ParseRepoTag(imageTag)
 	config.Image = dockerImage.UUID
 
-	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
+	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
 		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
-		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
+		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
 		if err1 != nil {
 			return "", errors.Wrap(err1, constants.CreateContainerError+"failed to create container")
 		}
