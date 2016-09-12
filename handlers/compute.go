@@ -55,7 +55,6 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to marshall instance and host data")
 	}
-	progress := utils.GetProgress(event, cli)
 
 	if noOp, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent"); ok {
 		instance.ProcessData.ContainerNoOpEvent = utils.InterfaceToBool(noOp)
@@ -75,7 +74,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 	case float64:
 		timeout = int(timeout.(float64))
 	}
-	err = compute.DoInstanceDeactivate(instance, progress, h.dockerClient, timeout.(int))
+	err = compute.DoInstanceDeactivate(instance, h.dockerClient, timeout.(int))
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to deactivate instance")
 	}
@@ -90,7 +89,12 @@ func (h *ComputeHandler) InstanceForceStop(event *revents.Event, cli *client.Ran
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceForceStopError+"failed to marshall incoming request")
 	}
-	return compute.DoInstanceForceStop(request, h.dockerClient)
+	err = compute.DoInstanceForceStop(request, h.dockerClient)
+	if err != nil {
+		return errors.Wrap(err, constants.InstanceForceStopError+"failed to force stop container")
+	}
+	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been deactivated", event.ResourceID, request.ID)
+	return nil
 }
 
 func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *client.RancherClient) error {
@@ -103,6 +107,7 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *client.Ranch
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return errors.Wrap(err, constants.InstanceInspectError+"failed to inspect instance")
 	}
+	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
 	inspectJSON, err := marshaller.StructToMap(inspectResp)
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceInspectError+"failed to marshall response data")
@@ -125,10 +130,11 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 		Tag:      instancePull.Tag,
 	}
 
-	_, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
+	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
 	if pullErr != nil {
 		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}
+	logrus.Info("rancher id [%v]: Image with docker id [%v] has been pulled", event.ResourceID, inspect.ID)
 	return h.reply(event, cli, constants.InstanceRemoveError)
 }
 
@@ -137,8 +143,6 @@ func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.Ranche
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to marshall instance and host data")
 	}
-
-	progress := utils.GetProgress(event, cli)
 
 	if noOp, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent"); ok {
 		instance.ProcessData.ContainerNoOpEvent = utils.InterfaceToBool(noOp)
@@ -150,7 +154,7 @@ func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.Ranche
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to check whether instance is removed")
 	}
 
-	if err := compute.DoInstanceRemove(instance, progress, h.dockerClient); err != nil {
+	if err := compute.DoInstanceRemove(instance, h.dockerClient); err != nil {
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to remove instance")
 	}
 	return h.reply(event, cli, constants.InstanceRemoveError)

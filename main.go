@@ -1,9 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/events"
-	"os"
 )
 
 func main() {

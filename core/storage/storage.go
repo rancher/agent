@@ -52,12 +52,10 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 		Driver:     driver,
 		DriverOpts: opts,
 	}
-	logrus.Infof("start creating volume with options [%+v]", options)
-	newVolume, err1 := client.VolumeCreate(context.Background(), options)
+	_, err1 := client.VolumeCreate(context.Background(), options)
 	if err1 != nil {
 		return errors.Wrap(err1, constants.DoVolumeActivateError+"failed to create volume")
 	}
-	logrus.Info(fmt.Sprintf("volume [%s] created", newVolume.Name))
 	return nil
 }
 
