@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
@@ -22,7 +23,9 @@ func (p *Progress) Update(msg string) {
 		TransitioningMessage:  msg,
 		TransitioningProgress: 0,
 	}
-
+	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
+	empty := "empty"
+	logrus.Infof("Reply: %v, %v, %v:%v, data: %v %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, empty, transition)
 	err := publishReply(resp, p.Client)
 	if err != nil {
 		logrus.Error(err)

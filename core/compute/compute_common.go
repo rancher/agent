@@ -24,7 +24,6 @@ import (
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
 	imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
-	logrus.Info("Creating docker container from config")
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
 		params := model.ImageParams{
@@ -41,7 +40,6 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	config.Image = imageTag
 
 	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
-	logrus.Info(fmt.Sprintf("creating container with name %s", name))
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
 		if err := storage.PullImage(instance.Image, progress, dockerClient); err != nil {

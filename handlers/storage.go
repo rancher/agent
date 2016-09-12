@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -47,7 +48,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	} else if !ok && err == nil {
 		return errors.New(constants.ImageActivateError + "image is not activated")
 	}
-
+	logrus.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ID, image.Name)
 	return h.reply(event, cli, constants.ImageActivateError)
 }
 
@@ -75,6 +76,7 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 	} else if !ok && err == nil {
 		return errors.New(constants.VolumeActivateError + "volume is not activated")
 	}
+	logrus.Infof("rancher id [%v]: Volume with name [%v] has been activated", event.ID, volume.Name)
 	return h.reply(event, cli, constants.VolumeActivateError)
 }
 
@@ -124,6 +126,7 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 	} else if err != nil {
 		return errors.Wrap(err, constants.VolumeRemoveError+"failed to check whether volume is removed")
 	}
+	logrus.Infof("rancher id [%v]: Volume with name [%v] has been removed", event.ID, volume.Name)
 	return h.reply(event, cli, constants.VolumeRemoveError)
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
@@ -50,7 +51,10 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	if replyData == nil {
 		replyData = make(map[string]interface{})
 	}
-
+	uuid, err := getUUID()
+	if err != nil {
+		return errors.Wrap(err, "can not aasign uuid to reply event")
+	}
 	reply := &client.Publish{
 		ResourceId:    event.ResourceID,
 		PreviousIds:   []string{event.ID},
@@ -58,12 +62,17 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		Name:          event.ReplyTo,
 		Data:          replyData,
 		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: getUUID()},
+		Resource:      client.Resource{Id: uuid},
 		PreviousNames: []string{event.Name},
 	}
 
-	logrus.Infof("Reply: %+v", reply)
-	err := publishReply(reply, cli)
+	empty := "empty"
+	if len(replyData) > 0 {
+		empty = "not empty"
+	}
+	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+
+	err = publishReply(reply, cli)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
 	}
@@ -176,15 +185,23 @@ func initializeHandlers() *Handler {
 }
 
 func replyWithParent(replyData map[string]interface{}, event *revents.Event, parent *revents.Event, cli *client.RancherClient) error {
+	childUUID, err := getUUID()
+	if err != nil {
+		return errors.Wrap(err, "can not aasign uuid to reply event")
+	}
 	child := map[string]interface{}{
 		"resourceId":    event.ResourceID,
 		"previousIds":   []string{event.ID},
 		"resourceType":  event.ResourceType,
 		"name":          event.ReplyTo,
 		"data":          replyData,
-		"id":            getUUID(),
+		"id":            childUUID,
 		"time":          time.Now().UnixNano() / int64(time.Millisecond),
 		"previousNames": []string{event.Name},
+	}
+	parentUUID, err := getUUID()
+	if err != nil {
+		return errors.Wrap(err, "can not aasign uuid to reply event")
 	}
 	reply := &client.Publish{
 		ResourceId:    parent.ResourceID,
@@ -193,29 +210,31 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 		Name:          parent.ReplyTo,
 		Data:          child,
 		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: getUUID()},
+		Resource:      client.Resource{Id: parentUUID},
 		PreviousNames: []string{parent.Name},
 	}
 	if parent.ReplyTo == "" {
 		return nil
 	}
-	logrus.Infof("Reply: %+v", reply)
-	err := publishReply(reply, cli)
+	empty := "empty"
+	if len(replyData) > 0 {
+		empty = "not empty"
+	}
+	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	err = publishReply(reply, cli)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
 	}
 	return nil
 }
 
-func getUUID() string {
-	uuid := ""
-	newUUID, err1 := goUUID.NewV4()
-	if err1 != nil {
-		logrus.Error(err1)
-	} else {
-		uuid = newUUID.String()
+func getUUID() (string, error) {
+	newUUID, err := goUUID.NewV4()
+	if err != nil {
+		return "", errors.Wrap(err, "can't generate uuid")
 	}
-	return uuid
+	return newUUID.String(), nil
+
 }
 
 func publishReply(reply *client.Publish, apiClient *client.RancherClient) error {
