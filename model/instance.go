@@ -37,7 +37,7 @@ type Instance struct {
 	UUID                        string      `json:"uuid"`
 	Volumes                     []Volume
 	ZoneID                      int `json:"zoneId"`
-	ExternalID                  string
+	ExternalID                  string `json:"externalId"`
 	AgentID                     int
 	InstanceLinks               []Link
 	NetworkContainer            *Instance

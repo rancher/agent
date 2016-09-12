@@ -75,7 +75,8 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 		}
 		in, _ := GetFieldsIfExist(update, "instance")
 		instanceMap := InterfaceToMap(in)
-		instanceMap["externalId"] = container.ID
+		// in this case agent can't find the container so externalID will be populated from instance data
+		instanceMap["externalId"] = instance.ExternalID
 		return update, nil
 	}
 
