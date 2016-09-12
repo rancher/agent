@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func DoInstanceActivate(instance model.Instance, host model.Host, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData, rancherID string) error {
+func DoInstanceActivate(instance model.Instance, host model.Host, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData) error {
 	if utils.IsNoOp(instance.ProcessData) {
 		return nil
 	}
@@ -116,7 +116,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(startErr, constants.DoInstanceActivateError+"failed to start container")
 	}
 
-	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", rancherID, containerID)
+	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", instance.ID, containerID)
 
 	if err := RecordState(dockerClient, instance, containerID); err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to record state")
@@ -159,7 +159,7 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 	return inspect, nil
 }
 
-func DoInstanceDeactivate(instance model.Instance, client *client.Client, timeout int, rancherID string) error {
+func DoInstanceDeactivate(instance model.Instance, client *client.Client, timeout int) error {
 	if utils.IsNoOp(instance.ProcessData) {
 		return nil
 	}
@@ -185,11 +185,11 @@ func DoInstanceDeactivate(instance model.Instance, client *client.Client, timeou
 	} else if !ok {
 		return fmt.Errorf("Failed to stop container %v", instance.UUID)
 	}
-	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been deactivated", rancherID, container.ID)
+	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been deactivated", instance.ID, container.ID)
 	return nil
 }
 
-func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.Client, rancherID string) error {
+func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.Client) error {
 	time := time.Duration(10)
 	if stopErr := dockerClient.ContainerStop(context.Background(), request.ID, &time); client.IsErrContainerNotFound(stopErr) {
 		logrus.Infof("container id %v not found", request.ID)
@@ -197,11 +197,10 @@ func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.C
 	} else if stopErr != nil {
 		return errors.Wrap(stopErr, constants.DoInstanceForceStopError+"failed to stop container")
 	}
-	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been force stopped", rancherID, request.ID)
 	return nil
 }
 
-func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Client, rancherID string) (types.ContainerJSON, error) {
+func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Client) (types.ContainerJSON, error) {
 	containerID := inspect.ID
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
@@ -224,13 +223,12 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 		if err != nil {
 			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to inspect container")
 		}
-		logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", rancherID, result.ID)
 		return inspectResp, nil
 	}
 	return types.ContainerJSON{}, fmt.Errorf("container with id [%v] not found", containerID)
 }
 
-func DoInstanceRemove(instance model.Instance, dockerClient *client.Client, rancherID string) error {
+func DoInstanceRemove(instance model.Instance, dockerClient *client.Client) error {
 	container, err := utils.GetContainer(dockerClient, instance, false)
 	if err != nil {
 		if utils.IsContainerNotFoundError(err) {
@@ -241,6 +239,6 @@ func DoInstanceRemove(instance model.Instance, dockerClient *client.Client, ranc
 	if err := utils.RemoveContainer(dockerClient, container.ID); err != nil {
 		return errors.Wrap(err, constants.DoInstanceRemoveError+"failed to remove container")
 	}
-	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been removed", rancherID, container.ID)
+	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been removed", instance.ID, container.ID)
 	return nil
 }
