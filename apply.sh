@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e -x
+set -e
 
 trap cleanup EXIT
 
@@ -19,7 +19,7 @@ cleanup()
 
 source ${CATTLE_HOME:-/var/lib/cattle}/common/scripts.sh
 
-DEST=$CATTLE_HOME/go-agent
+DEST=$CATTLE_HOME/pyagent
 MAIN=$DEST/agent
 STAMP=$CATTLE_HOME/.pyagent-stamp
 OLD=$(mktemp -d ${DEST}.XXXXXXXX)
@@ -48,7 +48,6 @@ stage()
     rm -rf ${OLD}
 
     echo $RANDOM > $STAMP
-
 }
 
 conf()
@@ -81,9 +80,10 @@ run_fio() {
     popd
 }
 
-start(){
+start()
+{
     export PATH=${CATTLE_HOME}/bin:$PATH
-    chmod -R 777 $DEST
+
     chmod +x $MAIN
     if [ "$CATTLE_PYPY" = "true" ] && which pypy >/dev/null; then
         MAIN="pypy $MAIN"
