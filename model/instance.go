@@ -169,6 +169,7 @@ type Resources struct {
 }
 
 type InstanceFields struct {
+	ImageUUID          string `json:"imageUuid"`
 	PublishAllPorts    bool
 	DataVolumes        []string
 	Privileged         bool

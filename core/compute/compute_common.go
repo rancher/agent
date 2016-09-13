@@ -57,11 +57,11 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 }
 
 func getImageTag(instance model.Instance) (string, error) {
-	dockerImage := instance.Image.Data.DockerImage
-	if dockerImage.FullName == "" {
+	dockerImage := instance.Data.Fields.ImageUUID
+	if dockerImage == "" {
 		return "", errors.New(constants.StartContainerNoImageError + "the full name of docker image is empty")
 	}
-	return dockerImage.FullName, nil
+	return dockerImage, nil
 }
 
 func initializeMaps(config *container.Config, hostConfig *container.HostConfig) {
