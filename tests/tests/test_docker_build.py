@@ -17,7 +17,8 @@ def _test_docker_build_from_remote(agent, remote=None,
             'remote': remote,
             'context': context,
         })
-        instance.image.data.dockerImage.fullName = image_uuid
+        instance.image.uuid = image_uuid
+        instance.data.fields.imageUuid = image_uuid
         instance.image.data['fields'] = JsonObject({
             'build': {
                 'remote': remote,
@@ -30,7 +31,7 @@ def _test_docker_build_from_remote(agent, remote=None,
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         image = docker_inspect['Config']['Image']
-        assert image_uuid == image
+        assert image_uuid + ":latest" == image
         instance_activate_common_validation(resp)
 
     event_test(agent, 'docker/instance_activate', diff=False,
