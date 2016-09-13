@@ -37,7 +37,8 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull instance")
 		}
 	}
-	config.Image = imageTag
+	dockerImage := utils.ParseRepoTag(imageTag)
+	config.Image = dockerImage.UUID
 
 	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
 	// if image doesn't exist
