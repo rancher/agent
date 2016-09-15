@@ -17,7 +17,6 @@ def _test_docker_build_from_remote(agent, remote=None,
             'remote': remote,
             'context': context,
         })
-        instance.image.uuid = image_uuid
         instance.data.fields.imageUuid = image_uuid
         instance.image.data['fields'] = JsonObject({
             'build': {

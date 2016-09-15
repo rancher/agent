@@ -59,16 +59,16 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 	return nil
 }
 
-func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client) error {
-	return DoImageActivate(image, model.StoragePool{}, progress, client)
+func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
+	return DoImageActivate(image, model.StoragePool{}, progress, client, imageUUID)
 }
 
-func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
+func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
 	if utils.IsImageNoOp(image.Data) {
 		return nil
 	}
-	dockerImage := utils.ParseRepoTag(image.UUID)
-	imageUUID := dockerImage.UUID
+	dockerImage := utils.ParseRepoTag(imageUUID)
+	realImageUUID := dockerImage.UUID
 	if isBuild(image) {
 		return imageBuild(image, progress, client)
 	}
@@ -94,18 +94,18 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	}
 
 	if progress == nil {
-		_, err := client.ImagePull(context.Background(), imageUUID,
+		_, err := client.ImagePull(context.Background(), realImageUUID,
 			types.ImagePullOptions{
 				RegistryAuth: tokenInfo.IdentityToken,
 			})
 		if err != nil && !engineCli.IsErrImageNotFound(err) {
 			return errors.Wrap(err, fmt.Sprintf("Image [%s] failed to pull",
-				imageUUID))
+				realImageUUID))
 		}
 	} else {
 		lastMessage := ""
 		message := ""
-		reader, err := client.ImagePull(context.Background(), imageUUID,
+		reader, err := client.ImagePull(context.Background(), realImageUUID,
 			types.ImagePullOptions{
 				RegistryAuth: tokenInfo.IdentityToken,
 			})
@@ -118,7 +118,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 			if rawStatus != "" {
 				status := marshaller.FromString(rawStatus)
 				if utils.HasKey(status, "Error") {
-					return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
+					return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
 				}
 				if utils.HasKey(status, "status") {
 					message = utils.InterfaceToString(status["status"])

@@ -12,10 +12,11 @@ type OptionConfig struct {
 }
 
 type ImageParams struct {
-	Image    Image
-	Tag      string
-	Mode     string
-	Complete bool
+	Image     Image
+	Tag       string
+	Mode      string
+	Complete  bool
+	ImageUUID string
 }
 
 type Method func(map[string]string, []string) (interface{}, error)

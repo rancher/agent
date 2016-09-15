@@ -126,7 +126,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 }
 
 func DoInstancePull(params model.ImageParams, progress *progress.Progress, dockerClient *client.Client) (types.ImageInspect, error) {
-	dockerImage := utils.ParseRepoTag(params.Image.UUID)
+	dockerImage := utils.ParseRepoTag(params.ImageUUID)
 	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.UUID)
 	if err != nil && !client.IsErrImageNotFound(err) {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to inspect image")
@@ -135,13 +135,13 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 		return existing, nil
 	}
 	if params.Complete {
-		_, err := dockerClient.ImageRemove(context.Background(), dockerImage.UUID, types.ImageRemoveOptions{Force: true})
+		_, err := dockerClient.ImageRemove(context.Background(), dockerImage.UUID+params.Tag, types.ImageRemoveOptions{Force: true})
 		if err != nil && !client.IsErrImageNotFound(err) {
 			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to remove image")
 		}
 		return types.ImageInspect{}, nil
 	}
-	if err := storage.PullImage(params.Image, progress, dockerClient); err != nil {
+	if err := storage.PullImage(params.Image, progress, dockerClient, params.ImageUUID); err != nil {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to pull image")
 	}
 
