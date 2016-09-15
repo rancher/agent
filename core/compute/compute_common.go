@@ -242,6 +242,26 @@ func setupLegacyCommand(config *container.Config, fields model.InstanceFields, c
 }
 
 func setupNetworkingConfig(networkConfig *network.NetworkingConfig, instance model.Instance) {
+	kind := instance.Nics[0].Network.Kind
+	if kind == "dockerHost" {
+		endpoint := network.EndpointSettings{
+			NetworkID: "3e419f53974f29bc41374ba3f2444d22c16465d2578a1a4f05492e8b5aa2b06",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["MyTransparentNetwork"] = &endpoint
+	} else if kind == "dockerNone" {
+		endpoint := network.EndpointSettings{
+			NetworkID: "5f10ecf9ae8848a40c2605c4fad87259894ac5214e6012da0a903afc39fec032",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["none"] = &endpoint
+	} else {
+		endpoint := network.EndpointSettings{
+			NetworkID: "4b7c2cc63f6fa11d656a3c01ddc72724364650472f9dd58c411fecc507fb1535",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["nat"] = &endpoint
+	}
 
 }
 

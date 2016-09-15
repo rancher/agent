@@ -201,7 +201,6 @@ func getIPFromExec(containerID string, client *client.Client) (string, error) {
 	scanner := bufio.NewScanner(hijack.Reader)
 	for scanner.Scan() {
 		output := scanner.Text()
-		fmt.Println(output)
 		if strings.Contains(output, "IPv4 Address") {
 			ip = regexp.MustCompile("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$").FindString(output)
 		}
