@@ -38,8 +38,7 @@ func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClien
 	if utils.IsImageNoOp(image.Data) {
 		return true, nil
 	}
-	parsedTag := utils.ParseRepoTag(image.Data.DockerImage.FullName)
-	_, _, err := dockerClient.ImageInspectWithRaw(context.Background(), parsedTag.UUID)
+	_, _, err := dockerClient.ImageInspectWithRaw(context.Background(), image.Name)
 	if err == nil {
 		return true, nil
 	} else if client.IsErrImageNotFound(err) {

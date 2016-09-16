@@ -59,15 +59,16 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 	return nil
 }
 
-func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client) error {
-	return DoImageActivate(image, model.StoragePool{}, progress, client)
+func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
+	return DoImageActivate(image, model.StoragePool{}, progress, client, imageUUID)
 }
 
-func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
+func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
 	if utils.IsImageNoOp(image.Data) {
 		return nil
 	}
-
+	dockerImage := utils.ParseRepoTag(imageUUID)
+	realImageUUID := dockerImage.UUID
 	if isBuild(image) {
 		return imageBuild(image, progress, client)
 	}
@@ -81,11 +82,6 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	if auth.ServerAddress == "https://docker.io" {
 		auth.ServerAddress = "https://index.docker.io"
 	}
-	data := image.Data.DockerImage
-	temp := data.QualifiedName
-	if strings.HasPrefix(temp, "docker.io/") {
-		temp = "index." + temp
-	}
 	/*
 			Always pass insecure_registry=True to prevent docker-py
 		        from pre-verifying the registry. Let the docker daemon handle
@@ -98,18 +94,18 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	}
 
 	if progress == nil {
-		_, err := client.ImagePull(context.Background(), data.FullName,
+		_, err := client.ImagePull(context.Background(), realImageUUID,
 			types.ImagePullOptions{
 				RegistryAuth: tokenInfo.IdentityToken,
 			})
 		if err != nil && !engineCli.IsErrImageNotFound(err) {
 			return errors.Wrap(err, fmt.Sprintf("Image [%s] failed to pull",
-				data.FullName))
+				realImageUUID))
 		}
 	} else {
 		lastMessage := ""
 		message := ""
-		reader, err := client.ImagePull(context.Background(), data.FullName,
+		reader, err := client.ImagePull(context.Background(), realImageUUID,
 			types.ImagePullOptions{
 				RegistryAuth: tokenInfo.IdentityToken,
 			})
@@ -122,7 +118,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 			if rawStatus != "" {
 				status := marshaller.FromString(rawStatus)
 				if utils.HasKey(status, "Error") {
-					return fmt.Errorf("Image [%s] failed to pull: %s", data.FullName, message)
+					return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
 				}
 				if utils.HasKey(status, "status") {
 					message = utils.InterfaceToString(status["status"])

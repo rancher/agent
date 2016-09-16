@@ -27,22 +27,24 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
 		params := model.ImageParams{
-			Image:    instance.Image,
-			Tag:      "",
-			Mode:     "all",
-			Complete: false,
+			Image:     instance.Image,
+			Tag:       "",
+			Mode:      "all",
+			Complete:  false,
+			ImageUUID: instance.Data.Fields.ImageUUID,
 		}
 		_, err := DoInstancePull(params, progress, dockerClient)
 		if err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull instance")
 		}
 	}
-	config.Image = imageTag
+	dockerImage := utils.ParseRepoTag(imageTag)
+	config.Image = dockerImage.UUID
 
 	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
-		if err := storage.PullImage(instance.Image, progress, dockerClient); err != nil {
+		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
 		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
@@ -57,11 +59,11 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 }
 
 func getImageTag(instance model.Instance) (string, error) {
-	dockerImage := instance.Image.Data.DockerImage
-	if dockerImage.FullName == "" {
+	dockerImage := instance.Data.Fields.ImageUUID
+	if dockerImage == "" {
 		return "", errors.New(constants.StartContainerNoImageError + "the full name of docker image is empty")
 	}
-	return dockerImage.FullName, nil
+	return dockerImage, nil
 }
 
 func initializeMaps(config *container.Config, hostConfig *container.HostConfig) {

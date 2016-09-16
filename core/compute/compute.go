@@ -126,8 +126,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 }
 
 func DoInstancePull(params model.ImageParams, progress *progress.Progress, dockerClient *client.Client) (types.ImageInspect, error) {
-	dockerImage := params.Image.Data.DockerImage
-	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
+	dockerImage := utils.ParseRepoTag(params.ImageUUID)
+	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.UUID)
 	if err != nil && !client.IsErrImageNotFound(err) {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to inspect image")
 	}
@@ -135,24 +135,23 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 		return existing, nil
 	}
 	if params.Complete {
-		_, err := dockerClient.ImageRemove(context.Background(), dockerImage.FullName+params.Tag, types.ImageRemoveOptions{Force: true})
+		_, err := dockerClient.ImageRemove(context.Background(), dockerImage.UUID+params.Tag, types.ImageRemoveOptions{Force: true})
 		if err != nil && !client.IsErrImageNotFound(err) {
 			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to remove image")
 		}
 		return types.ImageInspect{}, nil
 	}
-	if err := storage.PullImage(params.Image, progress, dockerClient); err != nil {
+	if err := storage.PullImage(params.Image, progress, dockerClient, params.ImageUUID); err != nil {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to pull image")
 	}
 
 	if len(params.Tag) > 0 {
-		imageInfo := utils.ParseRepoTag(dockerImage.FullName)
-		repoTag := fmt.Sprintf("%s:%s", imageInfo.Repo, imageInfo.Tag+params.Tag)
-		if err := dockerClient.ImageTag(context.Background(), dockerImage.FullName, repoTag); err != nil && !client.IsErrImageNotFound(err) {
+		repoTag := fmt.Sprintf("%s:%s", dockerImage.Repo, dockerImage.Tag+params.Tag)
+		if err := dockerClient.ImageTag(context.Background(), dockerImage.UUID, repoTag); err != nil && !client.IsErrImageNotFound(err) {
 			return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to tag image")
 		}
 	}
-	inspect, _, err2 := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.FullName)
+	inspect, _, err2 := dockerClient.ImageInspectWithRaw(context.Background(), dockerImage.UUID)
 	if err2 != nil && !client.IsErrImageNotFound(err) {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to inspect image")
 	}

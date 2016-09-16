@@ -38,7 +38,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
 	}
 
-	err := storage.DoImageActivate(image, storagePool, progress, h.dockerClient)
+	err := storage.DoImageActivate(image, storagePool, progress, h.dockerClient, image.Name)
 	if err != nil {
 		return errors.Wrap(err, constants.ImageActivateError+"failed to do image activate")
 	}
