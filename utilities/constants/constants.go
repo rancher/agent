@@ -10,6 +10,7 @@ const PullImageLabels = "io.rancher.container.pull_image"
 const UUIDLabel = "io.rancher.container.uuid"
 const CattelURLLabel = "io.rancher.container.cattle_url"
 const AgentIDLabel = "io.rancher.container.agent_id"
+const RancherAgentImage = "io.rancher.host.rancher_agent_image"
 
 const DefaultVersion = "1.22"
 const TempName = "work"

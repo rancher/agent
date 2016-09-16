@@ -13,6 +13,7 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
 	"net"
+	"os"
 )
 
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -38,6 +39,8 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	if err != nil {
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
 	}
+	rancherImage := os.Getenv("RANCHER_AGENT_IMAGE")
+	labels[constants.RancherAgentImage] = rancherImage
 	uuid, err := config.DockerUUID()
 	if err != nil {
 		return errors.Wrap(err, constants.AddResourceError+"failed to get docker UUID")
