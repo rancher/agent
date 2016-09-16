@@ -36,8 +36,6 @@ func StartUp() {
 		command := exec.Command(execPath, args...)
 		command.Env = env
 		command.SysProcAttr = constants.SysAttr
-		command.Stderr = os.Stderr
-		command.Stdout = os.Stdout
 		if err := command.Start(); err != nil {
 			logrus.Error(err)
 		}
