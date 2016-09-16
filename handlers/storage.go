@@ -46,7 +46,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); !ok && err != nil {
 		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
 	} else if !ok && err == nil {
-		return errors.New(constants.ImageActivateError + "image is not activated")
+		return errors.New(constants.ImageActivateError + "failed to activate image")
 	}
 	logrus.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ResourceID, image.Name)
 	return h.reply(event, cli, constants.ImageActivateError)
