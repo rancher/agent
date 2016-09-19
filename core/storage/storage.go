@@ -93,39 +93,28 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 		logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
 	}
 
-	if progress == nil {
-		_, err := client.ImagePull(context.Background(), realImageUUID,
-			types.ImagePullOptions{
-				RegistryAuth: tokenInfo.IdentityToken,
-			})
-		if err != nil && !engineCli.IsErrImageNotFound(err) {
-			return errors.Wrap(err, fmt.Sprintf("Image [%s] failed to pull",
-				realImageUUID))
-		}
-	} else {
-		lastMessage := ""
-		message := ""
-		reader, err := client.ImagePull(context.Background(), realImageUUID,
-			types.ImagePullOptions{
-				RegistryAuth: tokenInfo.IdentityToken,
-			})
-		if err != nil && !engineCli.IsErrImageNotFound(err) {
-			return errors.Wrap(err, "Failed to pull image")
-		}
-		buffer := utils.ReadBuffer(reader)
-		statusList := strings.Split(buffer, "\r\n")
-		for _, rawStatus := range statusList {
-			if rawStatus != "" {
-				status := marshaller.FromString(rawStatus)
-				if utils.HasKey(status, "Error") {
-					return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
-				}
-				if utils.HasKey(status, "status") {
-					message = utils.InterfaceToString(status["status"])
-				}
+	lastMessage := ""
+	message := ""
+	reader, err := client.ImagePull(context.Background(), realImageUUID,
+		types.ImagePullOptions{
+			RegistryAuth: tokenInfo.IdentityToken,
+		})
+	if err != nil {
+		return errors.Wrap(err, "Failed to pull image")
+	}
+	buffer := utils.ReadBuffer(reader)
+	statusList := strings.Split(buffer, "\r\n")
+	for _, rawStatus := range statusList {
+		if rawStatus != "" {
+			status := marshaller.FromString(rawStatus)
+			if utils.HasKey(status, "error") {
+				return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
+			}
+			if utils.HasKey(status, "status") {
+				message = utils.InterfaceToString(status["status"])
 			}
 		}
-		if lastMessage != message {
+		if lastMessage != message && progress != nil {
 			progress.Update(message)
 			lastMessage = message
 		}
