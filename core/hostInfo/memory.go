@@ -48,7 +48,11 @@ func (m MemoryDataGetter) GetMemInfoData() ([]string, error) {
 }
 
 func (m MemoryCollector) GetData() (map[string]interface{}, error) {
-	return m.parseMemInfo()
+	data, err := m.parseMemInfo()
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.MemoryGetDataError+"failed to get data")
+	}
+	return data, nil
 }
 
 func (m MemoryCollector) KeyName() string {
