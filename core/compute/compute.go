@@ -25,8 +25,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	if err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
-	name := instance.UUID
 	instanceName := instance.Name
+	name := fmt.Sprintf("r-%s-%s", instanceName, instance.UUID)
 	if len(instanceName) > 0 {
 		if str := constants.NameRegexCompiler.FindString(instanceName); str != "" {
 			id := fmt.Sprintf("r-%s", instanceName)
