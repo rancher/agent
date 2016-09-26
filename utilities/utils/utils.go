@@ -14,7 +14,7 @@ import (
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
