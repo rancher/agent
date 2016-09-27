@@ -26,7 +26,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
 	instanceName := instance.Name
-	name := fmt.Sprintf("r-%s-%s", instanceName, instance.UUID)
+	name := fmt.Sprintf("r-%s", instance.UUID)
 	if len(instanceName) > 0 {
 		if str := constants.NameRegexCompiler.FindString(instanceName); str != "" {
 			id := fmt.Sprintf("r-%s", instanceName)
@@ -35,6 +35,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 				name = id
 			} else if inspectErr != nil {
 				return errors.Wrap(inspectErr, constants.DoInstanceActivateError+"failed to inspect container")
+			} else {
+				name = fmt.Sprintf("r-%s-%s", instance.Name, instance.UUID)
 			}
 		}
 	}
