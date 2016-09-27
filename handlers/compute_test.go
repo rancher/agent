@@ -6,11 +6,13 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/config"
 	//"github.com/rancher/agent/utilities/constants"
+	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/event-subscriber/locks"
+	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 	"io/ioutil"
@@ -192,8 +194,8 @@ func marshalEvent(event interface{}, c *check.C) []byte {
 
 func testEvent(rawEvent []byte, c *check.C) *client.Publish {
 	apiClient, mockPublish := newTestClient()
-	workers := make(chan *revents.Worker, 1)
-	worker := &revents.Worker{}
+	workers := make(chan *Worker, 1)
+	worker := &Worker{}
 	worker.DoWork(rawEvent, GetHandlers(), apiClient, workers)
 	return mockPublish.publishedResponse
 }
@@ -237,4 +239,65 @@ func (m *mockPublishOperations) ById(id string) (*client.Publish, error) { // go
 
 func (m *mockPublishOperations) Delete(existing *client.Publish) error {
 	return fmt.Errorf("Mock not implemented.")
+}
+
+type Worker struct {
+}
+
+func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]revents.EventHandler, apiClient *client.RancherClient,
+	workers chan *Worker) {
+	defer func() { workers <- w }()
+
+	event := &revents.Event{}
+	err := json.Unmarshal(rawEvent, &event)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Error unmarshalling event")
+		return
+	}
+
+	if event.Name != "ping" {
+		logrus.WithFields(logrus.Fields{
+			"event": string(rawEvent[:]),
+		}).Debug("Processing event.")
+	}
+
+	unlocker := locks.Lock(event.ResourceID)
+	if unlocker == nil {
+		logrus.WithFields(logrus.Fields{
+			"resourceId": event.ResourceID,
+		}).Debug("Resource locked. Dropping event")
+		return
+	}
+	defer unlocker.Unlock()
+
+	if fn, ok := eventHandlers[event.Name]; ok {
+		err = fn(event, apiClient)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"eventName":  event.Name,
+				"eventId":    event.ID,
+				"resourceId": event.ResourceID,
+				"err":        err,
+			}).Error("Error processing event")
+
+			reply := &client.Publish{
+				Name:                 event.ReplyTo,
+				PreviousIds:          []string{event.ID},
+				Transitioning:        "error",
+				TransitioningMessage: err.Error(),
+			}
+			_, err := apiClient.Publish.Create(reply)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"err": err,
+				}).Error("Error sending error-reply")
+			}
+		}
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"eventName": event.Name,
+		}).Warn("No event handler registered for event")
+	}
 }

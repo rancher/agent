@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 )
 
 type PingHandler struct {
