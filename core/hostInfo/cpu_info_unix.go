@@ -4,14 +4,16 @@ package hostInfo
 
 import (
 	"bufio"
+	"github.com/Sirupsen/logrus"
+	linuxproc "github.com/c9s/goprocinfo/linux"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
-	"math"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
@@ -69,32 +71,24 @@ func (c CPUCollector) getCPUPercentage() map[string]interface{} {
 	data := map[string]interface{}{}
 	cpuCoresPercentages := []string{}
 
-	stats := c.Cadvisor.GetStats()
-
-	if len(stats) >= 2 {
-		statLatest := stats[len(stats)-1].(map[string]interface{})
-		statPrev := stats[len(stats)-2].(map[string]interface{})
-
-		timeDiff := c.Cadvisor.TimestampDiff(utils.InterfaceToString(statLatest["timestamp"]), utils.InterfaceToString(statPrev["timestamp"].(string)))
-		latestUsage, _ := utils.GetFieldsIfExist(statLatest, "cpu", "usage", "per_cpu_usage")
-		prevUsage, _ := utils.GetFieldsIfExist(statPrev, "cpu", "usage", "per_cpu_usage")
-		for i, cu := range utils.InterfaceToArray(latestUsage) {
-			coreUsage := utils.InterfaceToString(cu)
-			core, _ := strconv.ParseFloat(coreUsage, 64)
-			pu := utils.InterfaceToString(utils.InterfaceToArray(prevUsage)[i])
-			prev, _ := strconv.ParseFloat(pu, 64)
-			cpuUsage := core - prev
-			percentage := (cpuUsage / float64(timeDiff)) * 100
-			percentage = percentage * 1000 // round to 3
-			if percentage > 100000 {
-				percentage = 100
-			} else {
-				percentage = math.Floor(percentage) / 1000
-			}
-			cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(percentage, 'f', -1, 64))
-		}
-		data["cpuCoresPercentages"] = cpuCoresPercentages
+	stats, err := getStats()
+	if err != nil {
+		logrus.Error(err)
+		return nil
 	}
+	per1 := []float64{}
+	per2 := []float64{}
+	for _, cpuStats := range stats[0].CPUStats {
+		per1 = append(per1, float64((cpuStats.User+cpuStats.System)/(cpuStats.User+cpuStats.System+cpuStats.Idle)*100))
+	}
+	for _, cpuStats := range stats[1].CPUStats {
+		per2 = append(per1, float64((cpuStats.User+cpuStats.System)/(cpuStats.User+cpuStats.System+cpuStats.Idle)*100.00))
+	}
+	for i := range per1 {
+		diff := per1[i] - per2[i]
+		cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(diff, 'f', -1, 64))
+	}
+	data["cpuCoresPercentages"] = cpuCoresPercentages
 	return data
 }
 
@@ -106,4 +100,27 @@ func (c CPUDataGetter) GetCPULoadAverage() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"loadAvg": loadAvg,
 	}, nil
+}
+
+func timestampDiff(timeCurrent, timePrev string) float64 {
+	timeCurConv, _ := time.Parse(time.RFC3339, timeCurrent[0:26])
+	timePrevConv, _ := time.Parse(time.RFC3339, timePrev[0:26])
+	diff := timeCurConv.Sub(timePrevConv)
+	return float64(diff)
+}
+
+func getStats() ([2]*linuxproc.Stat, error) {
+	ret := [2]*linuxproc.Stat{}
+	statsPrev, err := linuxproc.ReadStat("/proc/stat")
+	if err != nil {
+		return ret, err
+	}
+	time.Sleep(1 * time.Second)
+	statsLatest, err := linuxproc.ReadStat("/proc/stat")
+	if err != nil {
+		return ret, err
+	}
+	ret[0] = statsLatest
+	ret[1] = statsPrev
+	return ret, nil
 }
