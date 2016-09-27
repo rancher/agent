@@ -56,14 +56,13 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		return errors.Wrap(err, "can not aasign uuid to reply event")
 	}
 	reply := &client.Publish{
-		ResourceId:    event.ResourceID,
-		PreviousIds:   []string{event.ID},
-		ResourceType:  event.ResourceType,
-		Name:          event.ReplyTo,
-		Data:          replyData,
-		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: uuid},
-		PreviousNames: []string{event.Name},
+		ResourceId:   event.ResourceID,
+		PreviousIds:  []string{event.ID},
+		ResourceType: event.ResourceType,
+		Name:         event.ReplyTo,
+		Data:         replyData,
+		Time:         time.Now().UnixNano() / int64(time.Millisecond),
+		Resource:     client.Resource{Id: uuid},
 	}
 
 	empty := "empty"
@@ -204,14 +203,13 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 		return errors.Wrap(err, "can not aasign uuid to reply event")
 	}
 	reply := &client.Publish{
-		ResourceId:    parent.ResourceID,
-		PreviousIds:   []string{parent.ID},
-		ResourceType:  parent.ResourceType,
-		Name:          parent.ReplyTo,
-		Data:          child,
-		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: parentUUID},
-		PreviousNames: []string{parent.Name},
+		ResourceId:   parent.ResourceID,
+		PreviousIds:  []string{parent.ID},
+		ResourceType: parent.ResourceType,
+		Name:         parent.ReplyTo,
+		Data:         child,
+		Time:         time.Now().UnixNano() / int64(time.Millisecond),
+		Resource:     client.Resource{Id: parentUUID},
 	}
 	if parent.ReplyTo == "" {
 		return nil
