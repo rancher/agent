@@ -18,6 +18,8 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"github.com/rancher/event-subscriber/locks"
+	"github.com/gorilla/websocket"
 )
 
 type Handler struct {
@@ -237,10 +239,25 @@ func getUUID() (string, error) {
 
 }
 
+var WebConn *websocket.Conn
+
 func publishReply(reply *client.Publish, apiClient *client.RancherClient) error {
-	_, err := apiClient.Publish.Create(reply)
-	if err != nil {
-		logrus.Error(err)
+	unlock := locks.Lock(WebConn)
+	for {
+		if unlock != nil {
+			break
+		}
+		time.Sleep(500*time.Millisecond)
 	}
-	return err
+	defer unlock.Unlock()
+	err := WebConn.WriteJSON(reply)
+	if err != nil {
+		return errors.Wrap(err, "Can not write publish data to websocket")
+	}
+	publish := client.Publish{}
+	err = WebConn.ReadJSON(&publish)
+	if err != nil {
+		return errors.Wrap(err, "Can not read publish data from websocket")
+	}
+	return nil
 }
