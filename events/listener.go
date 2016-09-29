@@ -10,10 +10,6 @@ import (
 	"os"
 	"runtime"
 	"time"
-	"github.com/gorilla/websocket"
-	"strings"
-	"net/http"
-	"encoding/base64"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -49,25 +45,9 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	if err != nil {
 		return err
 	}
-	err = setPublishWebConn(eventURL, accessKey, secretKey)
-	if err != nil {
-		return err
-	}
+	handlers.WebConn = router.GetWebSocketConn()
 	err = router.StartWithoutCreate(nil)
 	return err
-}
-
-func setPublishWebConn(url string, accessKey string, secretKey string) error {
-	dial := strings.Replace(url+"/publish", "http", "ws", -1)
-	dialer := &websocket.Dialer{}
-	headers := http.Header{}
-	headers.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(accessKey+":"+secretKey)))
-	ws, _, err := dialer.Dial(dial, headers)
-	if err != nil {
-		return err
-	}
-	handlers.WebConn = ws
-	return nil
 }
 
 func checkTS(timestamps *time.Time) bool {
