@@ -3,7 +3,7 @@ import:
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
 - package: github.com/rancher/event-subscriber
-  version: 83dd12545ffa9b2f6730da14ba526b867029a062
+  version: a7f845943d2b96e65d7f0d87ad6a9325ad9db2dd
 
 - package: github.com/rancher/go-rancher
   version: 09693a8743ba5ee58c58c1b1e8a4abd17af00d45
