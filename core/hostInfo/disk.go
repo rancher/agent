@@ -7,18 +7,10 @@ import (
 )
 
 type DiskCollector struct {
-	Unit                float64
-	Cadvisor            CadvisorAPIClient
-	DataGetter          DiskInfoGetter
+	Unit                uint64
 	InfoData            model.InfoData
 	DockerStorageDriver string
 }
-
-type DiskInfoGetter interface {
-	GetDockerStorageInfo(infoData model.InfoData) map[string]interface{}
-}
-
-type DiskDataGetter struct{}
 
 func (d DiskCollector) GetData() (map[string]interface{}, error) {
 	infoData := d.InfoData
@@ -29,14 +21,18 @@ func (d DiskCollector) GetData() (map[string]interface{}, error) {
 		"dockerStorageDriver":       infoData.Info.Driver,
 	}
 
-	mfs, err := d.getMachineFilesystemsCadvisor(infoData)
+	mfs, err := d.getMachineFilesystems(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info from cadvisor")
+		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info")
 	}
 	for key, value := range mfs {
 		data["fileSystems"].(map[string]interface{})[key] = value
 	}
-	for key, value := range d.getMountPointsCadvisor() {
+	mp, err := d.getMountPoints()
+	if err != nil {
+		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get mountpoint info")
+	}
+	for key, value := range mp {
 		data["mountPoints"].(map[string]interface{})[key] = value
 	}
 

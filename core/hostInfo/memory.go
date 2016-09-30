@@ -1,54 +1,40 @@
 package hostInfo
 
 import (
-	"bufio"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
-	"os"
+	"github.com/shirou/gopsutil/mem"
 )
 
-var KeyMap = map[string]string{
-	"memtotal":     "memTotal",
-	"memfree":      "memFree",
-	"memavailable": "memAvailable",
-	"buffers":      "buffers",
-	"cached":       "cached",
-	"swapcached":   "swapCached",
-	"active":       "active",
-	"inactive":     "inactive",
-	"swaptotal":    "swapTotal",
-	"swapfree":     "swapFree",
-}
-
-type MemoryInfoGetter interface {
-	GetMemInfoData() ([]string, error)
-}
-
 type MemoryCollector struct {
-	DataGetter MemoryInfoGetter
-	Unit       float64
-	GOOS       string
+	Unit float64
 }
 
-type MemoryDataGetter struct{}
-
-func (m MemoryDataGetter) GetMemInfoData() ([]string, error) {
-	file, err := os.Open("/proc/meminfo")
-	defer file.Close()
-	data := []string{}
+func (m MemoryCollector) getMemInfoData() (map[string]interface{}, error) {
+	data := map[string]interface{}{}
+	memData, err := mem.VirtualMemory()
 	if err != nil {
-		return data, errors.Wrap(err, constants.GetMemInfoDataError+"failed to read meminfo file")
+		return map[string]interface{}{}, err
 	}
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		data = append(data, scanner.Text())
+	swapData, err := mem.SwapMemory()
+	if err != nil {
+		return map[string]interface{}{}, err
 	}
+	data["memTotal"] = m.convertUnits(memData.Total)
+	data["memFree"] = m.convertUnits(memData.Free)
+	data["memAvailable"] = m.convertUnits(memData.Available)
+	data["buffers"] = m.convertUnits(memData.Buffers)
+	data["cached"] = m.convertUnits(memData.Cached)
+	data["swapCached"] = m.convertUnits(swapData.Used)
+	data["active"] = m.convertUnits(memData.Active)
+	data["inactive"] = m.convertUnits(memData.Inactive)
+	data["swaptotal"] = m.convertUnits(swapData.Total)
+	data["swapfree"] = m.convertUnits(swapData.Free)
 	return data, nil
 }
 
 func (m MemoryCollector) GetData() (map[string]interface{}, error) {
-	data, err := m.parseMemInfo()
+	data, err := m.getMemInfoData()
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, constants.MemoryGetDataError+"failed to get data")
 	}
@@ -61,4 +47,8 @@ func (m MemoryCollector) KeyName() string {
 
 func (m MemoryCollector) GetLabels(prefix string) (map[string]string, error) {
 	return map[string]string{}, nil
+}
+
+func (m MemoryCollector) convertUnits(metric uint64) uint64 {
+	return metric / uint64(m.Unit*m.Unit)
 }

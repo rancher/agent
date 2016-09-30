@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
@@ -16,7 +15,6 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"os"
-	"runtime"
 	"time"
 )
 
@@ -117,37 +115,20 @@ func initializeHandlers() *Handler {
 		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
-	Cadvisor := hostInfo.CadvisorAPIClient{
-		DataGetter: hostInfo.CadvisorDataGetter{
-			URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2"),
-		},
-	}
 	Collectors := []hostInfo.Collector{
-		hostInfo.CPUCollector{
-			Cadvisor:   Cadvisor,
-			DataGetter: hostInfo.CPUDataGetter{},
-			GOOS:       runtime.GOOS,
-		},
+		hostInfo.CPUCollector{},
 		hostInfo.DiskCollector{
-			Cadvisor:   Cadvisor,
-			Unit:       1048576,
-			DataGetter: hostInfo.DiskDataGetter{},
+			Unit: 1048576,
 			InfoData: model.InfoData{
 				Info:    info,
 				Version: version,
 			},
 		},
-		hostInfo.IopsCollector{
-			GOOS: runtime.GOOS,
-		},
+		hostInfo.IopsCollector{},
 		hostInfo.MemoryCollector{
-			Unit:       1024.00,
-			DataGetter: hostInfo.MemoryDataGetter{},
-			GOOS:       runtime.GOOS,
+			Unit: 1024.00,
 		},
 		hostInfo.OSCollector{
-			DataGetter: hostInfo.OSDataGetter{},
-			GOOS:       runtime.GOOS,
 			InfoData: model.InfoData{
 				Info:    info,
 				Version: version,

@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
@@ -472,32 +471,6 @@ func GetKernelVersion() (string, error) {
 	}
 	version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
 	return version, nil
-}
-
-func GetWindowsKernelVersion() (string, error) {
-	command := exec.Command("PowerShell", "wmic", "os", "get", "Version")
-	output, err := command.Output()
-	if err == nil {
-		ret := strings.Split(string(output), "\n")[1]
-		return ret, nil
-	}
-	return "", err
-}
-
-func GetLoadAverage() ([]string, error) {
-	file, err := os.Open("/proc/loadavg")
-	defer file.Close()
-	data := []string{}
-	if err != nil {
-		return []string{}, errors.Wrap(err, constants.GetLoadAverageError+"failed to open load average file")
-	}
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		data = append(data, scanner.Text())
-	}
-	loads := strings.Split(data[0], " ")
-	return loads[:3], nil
 }
 
 func NameFilter(name string, container types.Container) bool {

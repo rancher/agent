@@ -6,7 +6,6 @@ import (
 )
 
 type IopsCollector struct {
-	GOOS string
 }
 
 func (i IopsCollector) GetData() (map[string]interface{}, error) {
