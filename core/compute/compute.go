@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"time"
+	"strings"
 )
 
 func DoInstanceActivate(instance model.Instance, host model.Host, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData) error {
@@ -25,21 +26,18 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	if err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
+
 	instanceName := instance.Name
-	name := fmt.Sprintf("r-%s", instance.UUID)
-	if len(instanceName) > 0 {
-		if str := constants.NameRegexCompiler.FindString(instanceName); str != "" {
-			id := fmt.Sprintf("r-%s", instanceName)
-			_, inspectErr := dockerClient.ContainerInspect(context.Background(), id)
-			if inspectErr != nil && client.IsErrContainerNotFound(inspectErr) {
-				name = id
-			} else if inspectErr != nil {
-				return errors.Wrap(inspectErr, constants.DoInstanceActivateError+"failed to inspect container")
-			} else {
-				name = fmt.Sprintf("r-%s-%s", instance.Name, instance.UUID)
-			}
-		}
+	parts := strings.Split(instance.UUID, "-")
+	if len(parts) == 0 {
+		return errors.Wrap(err, constants.DoInstanceActivateError+"Failed to parse UUID")
 	}
+	name := fmt.Sprintf("r-%s", instance.UUID)
+	if str := constants.NameRegexCompiler.FindString(instanceName); str != "" {
+		// container name is valid
+		name = fmt.Sprintf("r-%s-%s", instanceName, parts[0])
+	}
+
 	config := container.Config{
 		OpenStdin: true,
 	}
