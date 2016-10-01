@@ -224,6 +224,10 @@ func DockerHostIP() string {
 	return DefaultValue("DOCKER_HOST_IP", agentIP())
 }
 
+func SetDockerUUID() (string, error) {
+	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), true)
+}
+
 func DockerUUID() (string, error) {
 	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), false)
 }

@@ -20,6 +20,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	config.SetAPIURL(eventURL)
 
 	config.PhysicalHostUUID(true)
+	config.SetDockerUUID()
 
 	logrus.Info("launching hostapi")
 	go hostapi.StartUp()
