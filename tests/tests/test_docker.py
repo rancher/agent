@@ -479,8 +479,8 @@ def test_instance_activate_links_no_service(agent):
         inspect = docker_client().inspect_container(id)
         instance_activate_common_validation(resp)
 
-        assert {'/target_mysql:/r-test/mysql',
-                '/target_redis:/r-test/redis'} == \
+        assert {'/target_mysql:/r-test-c861f990/mysql',
+                '/target_redis:/r-test-c861f990/redis'} == \
             set(inspect['HostConfig']['Links'])
 
     event_test(agent, 'docker/instance_activate_links_no_service',
@@ -1807,11 +1807,11 @@ def test_instance_force_stop(agent):
 @if_docker
 def test_instance_remove(agent):
     instance_only_activate(agent)
-    container = get_container('/r-test')
+    container = get_container('/r-test-c861f990')
     assert container is not None
 
     def post(req, resp, valid_resp):
-        c = get_container('/r-test')
+        c = get_container('/r-test-c861f990')
         assert c is None
         del valid_resp['data']
         del resp['links']
@@ -1821,7 +1821,7 @@ def test_instance_remove(agent):
 
     # Test finding and removing by externalId instead of uuid
     instance_only_activate(agent)
-    container = get_container('/r-test')
+    container = get_container('/r-test-c861f990')
     assert container is not None
 
     def pre(req):
@@ -1830,7 +1830,7 @@ def test_instance_remove(agent):
         req['data']['instanceHostMap']['instance']['uuid'] = 'wont be found'
 
     def post(req, resp, valid_resp):
-        c = get_container('/r-test')
+        c = get_container('/r-test-c861f990')
         assert c is None
         del valid_resp['data']
         del resp['links']
