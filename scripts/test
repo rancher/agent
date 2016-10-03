@@ -1,7 +1,37 @@
 #!/bin/bash
 set -e
 
+cleanup()
+{
+    local exit=$?
+    kill $PID || true
+    wait $PID || true
+    exit $exit
+}
+
 cd $(dirname $0)/..
+
+if grep -q overlay /proc/filesystems; then
+    STORAGE=overlay
+else
+    STORAGE=aufs
+fi
+docker daemon -s $STORAGE -D >/var/log/docker.log 2>&1 &
+PID=$!
+trap cleanup EXIT
+
+sleep 1
+
+docker info
+
+ip link set dev eth0 mtu 1300
+ip link set dev docker0 mtu 1300
+
+IDS=$(docker ps -qa)
+if [ -n "$IDS" ]; then
+    docker kill $(docker ps -qa) || true
+    docker rm -fv || true
+fi
 
 echo Running tests
 

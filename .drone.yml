@@ -1,8 +1,16 @@
 ---
+matrix:
+  DOCKER_VERSION:
+  - 1.10.3
+  - 1.11.2
+  - 1.12.1
 pipeline:
   build:
     privileged: true
-    image: rancher/dind:v1.10.3-rancher1
+    image: rancher/dapper:1.11.2
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DOCKER_VERSION: ${DOCKER_VERSION}
     commands:
-        - wrapdocker
-        - make ci
+    - dapper ci

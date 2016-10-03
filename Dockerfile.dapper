@@ -1,15 +1,21 @@
 FROM golang:1.6.2
 RUN apt-get update && \
-    apt-get install -y uuid-runtime
+    apt-get install -y uuid-runtime iptables
 RUN go get github.com/rancher/trash
 RUN go get github.com/golang/lint/golint
-RUN curl -sL https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 > /usr/bin/docker && \
-    chmod +x /usr/bin/docker
+ARG DOCKER_VERSION=1.10.3
+RUN if [ "${DOCKER_VERSION}" = "1.10.3" ]; then \
+        curl -sL https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION} > /usr/bin/docker && \
+        chmod +x /usr/bin/docker; \
+    fi
+RUN if [ "${DOCKER_VERSION}" != "1.10.3" ]; then \
+        curl -sfL https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz | tar xzf - -C /usr/bin --strip-components=1; \
+    fi
 ENV PATH /go/bin:$PATH
 ENV DAPPER_SOURCE /go/src/github.com/rancher/agent
 ENV DAPPER_OUTPUT bin dist
-ENV DAPPER_DOCKER_SOCKET true
 ENV DAPPER_ENV TAG REPO
+ENV DAPPER_RUN_ARGS --privileged
 ENV GO15VENDOREXPERIMENT 1
 ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
 WORKDIR ${DAPPER_SOURCE}
@@ -18,5 +24,6 @@ RUN apt-get update && \
     apt-get install -y \
         python-tox
 
+VOLUME "/var/lib/docker"
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]
