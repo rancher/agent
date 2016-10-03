@@ -5,7 +5,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"runtime"
 )
 
 type Collector interface {
@@ -41,8 +40,6 @@ func HostLabels(prefix string, collectors []Collector) (map[string]string, error
 }
 
 func GetDefaultDisk(infoData model.InfoData) (string, error) {
-	collector := IopsCollector{
-		GOOS: runtime.GOOS,
-	}
+	collector := IopsCollector{}
 	return collector.getDefaultDisk()
 }

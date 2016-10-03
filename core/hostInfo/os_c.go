@@ -9,19 +9,10 @@ import (
 )
 
 type OSCollector struct {
-	DataGetter OSInfoGetter
-	GOOS       string
-	InfoData   model.InfoData
+	InfoData model.InfoData
 }
 
-type OSInfoGetter interface {
-	GetOS(model.InfoData) (map[string]string, error)
-	GetDockerVersion(model.InfoData, bool) map[string]string
-}
-
-type OSDataGetter struct{}
-
-func (o OSDataGetter) GetDockerVersion(infoData model.InfoData, verbose bool) map[string]string {
+func (o OSCollector) getDockerVersion(infoData model.InfoData, verbose bool) map[string]string {
 	data := map[string]string{}
 	versionData := infoData.Version
 	version := "unknown"
@@ -38,12 +29,12 @@ func (o OSDataGetter) GetDockerVersion(infoData model.InfoData, verbose bool) ma
 func (o OSCollector) GetData() (map[string]interface{}, error) {
 	infoData := o.InfoData
 	data := map[string]interface{}{}
-	osData, err := o.DataGetter.GetOS(infoData)
+	osData, err := o.getOS(infoData)
 	if err != nil {
 		return data, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
 	}
 
-	for key, value := range o.DataGetter.GetDockerVersion(infoData, true) {
+	for key, value := range o.getDockerVersion(infoData, true) {
 		data[key] = value
 	}
 	for key, value := range osData {
@@ -53,12 +44,12 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 }
 
 func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
-	osData, err := o.DataGetter.GetOS(o.InfoData)
+	osData, err := o.getOS(o.InfoData)
 	if err != nil {
 		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
 	}
 	labels := map[string]string{
-		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.DataGetter.GetDockerVersion(o.InfoData, false)["dockerVersion"],
+		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.getDockerVersion(o.InfoData, false)["dockerVersion"],
 		fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(osData["kernelVersion"], 2),
 	}
 	return labels, nil
@@ -66,4 +57,16 @@ func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 
 func (o OSCollector) KeyName() string {
 	return "osInfo"
+}
+
+func (o OSCollector) getOS(infoData model.InfoData) (map[string]string, error) {
+	data := map[string]string{}
+	data["operatingSystem"] = infoData.Info.OperatingSystem
+	kernelVersion, err := utils.GetKernelVersion()
+	if err != nil {
+		return map[string]string{}, errors.Wrap(err, constants.GetOSError+"failed to get kernel version")
+	}
+	data["kernelVersion"] = kernelVersion
+
+	return data, nil
 }

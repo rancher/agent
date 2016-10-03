@@ -53,3 +53,5 @@ import:
 - package: golang.org/x/sys
   version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
 
+- package: github.com/shirou/gopsutil
+  version: af2b5127ea65bc380b2e07f2f27829aac2640d65
