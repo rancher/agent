@@ -11,9 +11,24 @@ import (
 	"strings"
 )
 
-func (d DiskCollector) convertUnits(number float64) float64 {
+type FileSystem struct {
+	Type      string
+	Capacity  uint64
+	Free      uint64
+	Available uint64
+}
+
+type partition struct {
+	mountPoint string
+	major      uint
+	minor      uint
+	fsType     string
+	blockSize  uint
+}
+
+func (d DiskCollector) convertUnits(number uint64) float64 {
 	// return in MB
-	return math.Floor(number/d.Unit*1000) / 1000
+	return math.Floor(float64(number)/d.Unit*1000) / 1000
 }
 
 func (d DiskDataGetter) GetDockerStorageInfo(infoData model.InfoData) map[string]interface{} {
@@ -36,7 +51,7 @@ func (d DiskCollector) includeInFilesystem(infoData model.InfoData, device strin
 		}
 		if strings.HasSuffix(utils.InterfaceToString(poolName), "-pool") {
 			poolName := utils.InterfaceToString(poolName)
-			poolName = poolName[len(poolName)-5 : len(poolName)]
+			poolName = poolName[len(poolName)-5:]
 		}
 		if strings.Contains(device, utils.InterfaceToString(poolName)) {
 			include = false
@@ -45,41 +60,51 @@ func (d DiskCollector) includeInFilesystem(infoData model.InfoData, device strin
 	return include
 }
 
-func (d DiskCollector) getMountPointsCadvisor() map[string]interface{} {
+func (d DiskCollector) getMountPoints() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
-	stat := d.Cadvisor.GetLatestStat()
-
-	if _, ok := stat["filesystem"]; ok {
-		for _, fs := range utils.InterfaceToArray(stat["filesystem"]) {
-			fs := utils.InterfaceToMap(fs)
-			device := utils.InterfaceToString(fs["device"])
-			percentUsed := utils.InterfaceToFloat(fs["usage"]) / utils.InterfaceToFloat(fs["capacity"]) * 100
-			data[device] = map[string]interface{}{
-				"free":       d.convertUnits(utils.InterfaceToFloat(fs["capacity"]) - utils.InterfaceToFloat(fs["usage"])),
-				"total":      d.convertUnits(utils.InterfaceToFloat(fs["usage"])),
-				"used":       d.convertUnits(utils.InterfaceToFloat(fs["usage"])),
-				"percentage": math.Floor(percentUsed*100) / 100,
-			}
+	fsInfo, err := GetFileInfo()
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetMountPointsError+"failed to get file info")
+	}
+	fsList, err := fsInfo.GetGlobalFsInfo()
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetMountPointsError+"failed to get file info")
+	}
+	for _, fs := range fsList {
+		device := fs.Device
+		if device == "none" {
+			continue
+		}
+		usage := fs.Capacity - fs.Free
+		percentUsed := usage / fs.Capacity * 100.0
+		data[device] = map[string]interface{}{
+			"free":       d.convertUnits(fs.Free),
+			"total":      d.convertUnits(fs.Capacity),
+			"used":       d.convertUnits(usage),
+			"percentage": math.Floor(float64(percentUsed*100)) / 100,
 		}
 	}
-	return data
+
+	return data, nil
 }
 
-func (d DiskCollector) getMachineFilesystemsCadvisor(infoData model.InfoData) (map[string]interface{}, error) {
+func (d DiskCollector) getMachineFilesystems(infoData model.InfoData) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
-	machineInfo, err := d.Cadvisor.DataGetter.GetMachineStats()
-	if err != nil {
-		return data, errors.Wrap(err, constants.GetMachineFilesystemsCadvisorError+"failed to get machine stats")
+	if d.MachineInfo == nil {
+		return map[string]interface{}{}, nil
 	}
-	if _, ok := machineInfo["filesystems"]; ok {
-		for _, fs := range utils.InterfaceToArray(machineInfo["filesystems"]) {
-			filesystem := utils.InterfaceToMap(fs)
-			if d.includeInFilesystem(infoData, utils.InterfaceToString(filesystem["device"])) {
-				data[utils.InterfaceToString(filesystem["device"])] = map[string]interface{}{
-					"capacity": d.convertUnits(utils.InterfaceToFloat(filesystem["capacity"])),
-				}
+	machineInfo := d.MachineInfo
+
+	for _, fs := range machineInfo.Filesystems {
+		if fs.Device == "none" {
+			continue
+		}
+		if d.includeInFilesystem(infoData, fs.Device) {
+			data[fs.Device] = map[string]interface{}{
+				"capacity": d.convertUnits(fs.Capacity),
 			}
 		}
 	}
+
 	return data, nil
 }

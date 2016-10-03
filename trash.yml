@@ -53,6 +53,81 @@ import:
 - package: golang.org/x/sys
   version: a646d33e2ee3172a661fc09bca23bb4889a41bc8
 
-- package: github.com/fatih/structs
-  version: dc3312cb1a4513a366c4c9e622ad55c32df12ed3
+- package: github.com/docker/docker
+  version: 511fd4940282f4ed6df39f3c2ebc8b9a0f060c82
+
+- package: github.com/google/cadvisor
+  version: 418c181ebad0d592828bd53c5704ed9af9a7c5a6
+
+- package: github.com/c9s/goprocinfo
+  version: 19cb9f127a9c8d2034cf59ccb683cdb94b9deb6c
+
+- package: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+
+- package: github.com/mistifyio/go-zfs
+  version: 22c9b32c84eb0d0c6f4043b6e90fc94073de92fa
+
+- package: github.com/pborman/uuid
+  version: b984ec7fa9ff9e428bd0cf0abf429384dfbe3e37
+
+- package: cloud.google.com/go/compute/metadata
+  version: 3b1ae45394a234c385be014e9a488f2bb6eef821
+
+- package: github.com/aws/aws-sdk-go/aws
+  version: 72440a9c5a884936f1c679591fcf04e31a9b772a
+
+- package: github.com/aws/aws-sdk-go/aws/ec2metadata
+  version: 72440a9c5a884936f1c679591fcf04e31a9b772a
+
+- package: github.com/aws/aws-sdk-go/aws/session
+  version: 72440a9c5a884936f1c679591fcf04e31a9b772a
+
+- package: cloud.google.com/go/internal
+  version: 3b1ae45394a234c385be014e9a488f2bb6eef821
+
+- package: github.com/aws/aws-sdk-go/private/endpoints
+  version: 72440a9c5a884936f1c679591fcf04e31a9b772a
+
+- package: github.com/blang/semver
+  version: aea32c919a18e5ef4537bbd283ff29594b1b0165
+
+- package: github.com/coreos/go-systemd/dbus
+  version: 4484981625c1a6a2ecb40a390fcb6a9bcfee76e3
+
+- package: github.com/coreos/rkt/api/v1alpha
+  version: 14437382a98e5ebeb6cafb57cff445370e3f7d56
+
+- package: github.com/go-ini/ini
+  version: 193d1ecb466bf97aae8b454a5cfc192941c64809
+
+- package: github.com/godbus/dbus
+  version: c7fdd8b5cd55e87b4e1f4e372cdb1db61dd6c66f
+
+- package: github.com/golang/protobuf/proto
+  version: b982704f8bb716bb608144408cff30e15fbde841
+
+- package: github.com/jmespath/go-jmespath
+  version: 0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74
+
+- package: github.com/syndtr/gocapability/capability
+  version: 2c00daeb6c3b45114c80ac44119e7b8801fdd852
+
+- package: github.com/vishvananda/netlink/nl
+  version: 1e2e08e8a2dcdacaae3f14ac44c5cfa31361f270
+
+- package: golang.org/x/exp/inotify
+  version: 292a51b8d262487dab23a588950e8052d63d9113
+
+- package: github.com/coreos/go-systemd/util
+  version: 4484981625c1a6a2ecb40a390fcb6a9bcfee76e3
+
+- package: github.com/vishvananda/netlink
+  version: 1e2e08e8a2dcdacaae3f14ac44c5cfa31361f270
+
+- package: google.golang.org/grpc
+  version: 3c4302b7131d2b14bb9c8aff7aa909bc20540145
+
+- package: github.com/coreos/pkg/dlopen
+  version: 7f080b6c11ac2d2347c3cd7521e810207ea1a041
 

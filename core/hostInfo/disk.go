@@ -1,6 +1,7 @@
 package hostInfo
 
 import (
+	info "github.com/google/cadvisor/info/v1"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -8,10 +9,10 @@ import (
 
 type DiskCollector struct {
 	Unit                float64
-	Cadvisor            CadvisorAPIClient
 	DataGetter          DiskInfoGetter
 	InfoData            model.InfoData
 	DockerStorageDriver string
+	MachineInfo         *info.MachineInfo
 }
 
 type DiskInfoGetter interface {
@@ -29,14 +30,18 @@ func (d DiskCollector) GetData() (map[string]interface{}, error) {
 		"dockerStorageDriver":       infoData.Info.Driver,
 	}
 
-	mfs, err := d.getMachineFilesystemsCadvisor(infoData)
+	mfs, err := d.getMachineFilesystems(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info from cadvisor")
+		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info")
 	}
 	for key, value := range mfs {
 		data["fileSystems"].(map[string]interface{})[key] = value
 	}
-	for key, value := range d.getMountPointsCadvisor() {
+	mtp, err := d.getMountPoints()
+	if err != nil {
+		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get mountPoint info")
+	}
+	for key, value := range mtp {
 		data["mountPoints"].(map[string]interface{})[key] = value
 	}
 

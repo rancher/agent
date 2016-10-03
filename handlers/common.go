@@ -6,9 +6,7 @@ import (
 	"github.com/docker/engine-api/types"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
@@ -16,7 +14,6 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"os"
-	"runtime"
 	"time"
 )
 
@@ -56,14 +53,13 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		return errors.Wrap(err, "can not aasign uuid to reply event")
 	}
 	reply := &client.Publish{
-		ResourceId:    event.ResourceID,
-		PreviousIds:   []string{event.ID},
-		ResourceType:  event.ResourceType,
-		Name:          event.ReplyTo,
-		Data:          replyData,
-		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: uuid},
-		PreviousNames: []string{event.Name},
+		ResourceId:   event.ResourceID,
+		PreviousIds:  []string{event.ID},
+		ResourceType: event.ResourceType,
+		Name:         event.ReplyTo,
+		Data:         replyData,
+		Time:         time.Now().UnixNano() / int64(time.Millisecond),
+		Resource:     client.Resource{Id: uuid},
 	}
 
 	empty := "empty"
@@ -118,43 +114,7 @@ func initializeHandlers() *Handler {
 		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
-	Cadvisor := hostInfo.CadvisorAPIClient{
-		DataGetter: hostInfo.CadvisorDataGetter{
-			URL: fmt.Sprintf("%v%v:%v/api/%v", "http://", config.CadvisorIP(), config.CadvisorPort(), "v1.2"),
-		},
-	}
-	Collectors := []hostInfo.Collector{
-		hostInfo.CPUCollector{
-			Cadvisor:   Cadvisor,
-			DataGetter: hostInfo.CPUDataGetter{},
-			GOOS:       runtime.GOOS,
-		},
-		hostInfo.DiskCollector{
-			Cadvisor:   Cadvisor,
-			Unit:       1048576,
-			DataGetter: hostInfo.DiskDataGetter{},
-			InfoData: model.InfoData{
-				Info:    info,
-				Version: version,
-			},
-		},
-		hostInfo.IopsCollector{
-			GOOS: runtime.GOOS,
-		},
-		hostInfo.MemoryCollector{
-			Unit:       1024.00,
-			DataGetter: hostInfo.MemoryDataGetter{},
-			GOOS:       runtime.GOOS,
-		},
-		hostInfo.OSCollector{
-			DataGetter: hostInfo.OSDataGetter{},
-			GOOS:       runtime.GOOS,
-			InfoData: model.InfoData{
-				Info:    info,
-				Version: version,
-			},
-		},
-	}
+	Collectors := getCollectors(info, version)
 	computerHandler := ComputeHandler{
 		dockerClient: client,
 		infoData: model.InfoData{
@@ -204,14 +164,13 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 		return errors.Wrap(err, "can not aasign uuid to reply event")
 	}
 	reply := &client.Publish{
-		ResourceId:    parent.ResourceID,
-		PreviousIds:   []string{parent.ID},
-		ResourceType:  parent.ResourceType,
-		Name:          parent.ReplyTo,
-		Data:          child,
-		Time:          time.Now().UnixNano() / int64(time.Millisecond),
-		Resource:      client.Resource{Id: parentUUID},
-		PreviousNames: []string{parent.Name},
+		ResourceId:   parent.ResourceID,
+		PreviousIds:  []string{parent.ID},
+		ResourceType: parent.ResourceType,
+		Name:         parent.ReplyTo,
+		Data:         child,
+		Time:         time.Now().UnixNano() / int64(time.Millisecond),
+		Resource:     client.Resource{Id: parentUUID},
 	}
 	if parent.ReplyTo == "" {
 		return nil

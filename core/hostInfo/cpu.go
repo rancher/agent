@@ -13,7 +13,6 @@ type CPUInfoGetter interface {
 }
 
 type CPUCollector struct {
-	Cadvisor   CadvisorAPIClient
 	DataGetter CPUInfoGetter
 	GOOS       string
 }
