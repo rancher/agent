@@ -35,18 +35,19 @@ func StartUp() error {
 		} else if _, err := os.Stat("/host/proc/1/ns/mnt"); err == nil {
 			args = append([]string{"nsenter", "--mount=/host/proc/1/ns/mnt", "--"}, args...)
 		}
-		command := exec.Command(args[0], args[1:len(args)]...)
+		command := exec.Command(args[0], args[1:]...)
 		command.SysProcAttr = constants.SysAttr
-		command.Stderr = os.Stderr
-		command.Stdout = os.Stdout
 		if err := command.Start(); err != nil {
 			logrus.Error(err)
 		}
 		if err := command.Wait(); err != nil {
-			logrus.Error(err)
+			if err.Error() == "exit status 255" {
+				break
+			}
 		}
 		time.Sleep(time.Duration(5) * time.Second)
 	}
+	return nil
 }
 
 func cadvisorDockerRoot() string {
