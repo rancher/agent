@@ -115,7 +115,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 			}
 		}
 		if lastMessage != message && progress != nil {
-			progress.Update(message)
+			progress.Update(message, "yes", nil)
 			lastMessage = message
 		}
 	}

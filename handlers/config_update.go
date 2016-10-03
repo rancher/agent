@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/utils"
@@ -39,24 +38,22 @@ func (h *ConfigUpdateHandler) ConfigUpdate(event *revents.Event, cli *client.Ran
 	env = append(env, fmt.Sprintf("%v=%v", "CATTLE_HOME", home))
 	args := itemNames
 
-	retcode := -1
+	retcode := 0
 
 	command := exec.Command(config.Sh(), args...)
 	command.Env = env
 	command.Dir = home
-	output, err := command.Output()
+	output, err := command.CombinedOutput()
 	if err != nil {
-		logrus.Error(err)
-	} else {
-		retcode = 0
+		retcode = utils.GetExitCode(err)
 	}
-	if retcode == 0 {
-		return reply(map[string]interface{}{
-			"exitCode": retcode,
-			"output":   string(output),
-		}, event, cli)
+	if retcode != 0 {
+		pro := &progress.Progress{Request: event, Client: cli}
+		pro.Update("config update failed", "error", map[string]interface{}{
+			"exitcode": retcode,
+			"output":   output,
+		})
+		return nil
 	}
-	pro := &progress.Progress{Request: event, Client: cli}
-	pro.Update("config update failed")
-	return nil
+	return reply(map[string]interface{}{}, event, cli)
 }

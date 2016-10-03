@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -623,4 +624,12 @@ func getStringOrFloat(v interface{}) string {
 		return strconv.FormatFloat(f, 'f', -1, 64)
 	}
 	return v.(string)
+}
+
+func GetExitCode(err error) int {
+	if exitError, ok := err.(*exec.ExitError); ok {
+		status := exitError.Sys().(syscall.WaitStatus)
+		return status.ExitStatus()
+	}
+	return -1
 }
