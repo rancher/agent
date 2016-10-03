@@ -20,13 +20,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
-	"os/exec"
 )
 
 func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
