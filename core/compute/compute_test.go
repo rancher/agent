@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	//"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 	"os"
@@ -90,6 +90,7 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 	c.Assert(hostConfig.BlkioDeviceReadIOps, check.HasLen, 0)
 }
 
+/*
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
 	client := docker.GetClient(constants.DefaultVersion)
@@ -137,6 +138,7 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
 	c.Assert(containers[0].SystemContainer, check.Equals, "")
 }
+*/
 
 func (s *ComputeTestSuite) TestDefaultValue(c *check.C) {
 	varName, _ := uuid.NewV4()
@@ -227,6 +229,7 @@ func deleteContainer(name string) {
 		}
 
 		for _, cname := range c.Names {
+			fmt.Println(cname)
 			if name == cname {
 				found = true
 				break
