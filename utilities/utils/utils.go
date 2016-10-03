@@ -26,6 +26,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"os/exec"
 )
 
 func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
