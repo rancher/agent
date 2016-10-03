@@ -74,7 +74,7 @@ func doBuild(opts model.BuildOptions, progress *progress.Progress, client *clien
 		if rawStatus != "" {
 			status := marshaller.FromString(rawStatus)
 			if value, ok := utils.GetFieldsIfExist(status, "stream"); ok {
-				progress.Update(utils.InterfaceToString(value))
+				progress.Update(utils.InterfaceToString(value), "yes", nil)
 			}
 		}
 	}

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/mitchellh/mapstructure"
@@ -57,11 +56,14 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	progress := utils.GetProgress(event, cli)
 	exitCode, output, data, err := delegate.NsExec(inspect.State.Pid, delegateEvent)
 	if err != nil {
-		logrus.Error(err)
+		exitCode = utils.GetExitCode(err)
 	}
 	if exitCode == 0 {
 		return replyWithParent(data, delegateEvent, event, cli)
 	}
-	progress.Update(fmt.Sprintf("Update fail, exitCode %v, output data %v", exitCode, output))
+	progress.Update("Update fail", "error", map[string]interface{}{
+		"exitcode": exitCode,
+		"output":   output,
+	})
 	return nil
 }

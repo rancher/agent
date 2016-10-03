@@ -12,14 +12,14 @@ type Progress struct {
 	Client  *client.RancherClient
 }
 
-func (p *Progress) Update(msg string) {
+func (p *Progress) Update(msg string, types string, data map[string]interface{}) {
 	resp := &client.Publish{
 		ResourceId:            p.Request.ResourceID,
 		PreviousIds:           []string{p.Request.ID},
 		ResourceType:          p.Request.ResourceType,
 		Name:                  p.Request.ReplyTo,
-		Data:                  map[string]interface{}{},
-		Transitioning:         "yes",
+		Data:                  data,
+		Transitioning:         types,
 		TransitioningMessage:  msg,
 		TransitioningProgress: 0,
 	}
