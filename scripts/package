@@ -9,10 +9,11 @@ CONTENT=$(uuidgen)
 
 rm -rf dist/artifacts
 
-mkdir -p build/${CONTENT}
+mkdir -p build/${CONTENT}/bin
 mkdir -p dist/artifacts
 
-cp -rf apply.sh bin/agent build/${CONTENT}
+cp -rf apply.sh build/${CONTENT}
+cp -rf bin/agent build/${CONTENT}/bin
 
 cd build
 
