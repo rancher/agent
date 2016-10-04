@@ -21,14 +21,3 @@ sha1sum ${CONTENT}/SHA1SUMS > ${CONTENT}/SHA1SUMSSUM
 
 tar czf ../dist/artifacts/go-agent.tar.gz ${CONTENT}
 echo Created ../dist/artifacts/go-agent.tar.gz
-#mkdir -p build
-#cd build
-#
-#mkdir -p bin
-#cp ../bin/agent bin/
-#cp ../apply.sh .
-#
-#mkdir -p ../dist/artifacts
-#tar czvf ../dist/artifacts/go-agent.tar.gz .
-#
-#echo Created ../dist/artifacts/go-agent.tar.gz
