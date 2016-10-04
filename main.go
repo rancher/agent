@@ -13,7 +13,7 @@ func main() {
 	url := os.Getenv("CATTLE_URL")
 	accessKey := os.Getenv("CATTLE_ACCESS_KEY")
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
-	workerCount := 10
+	workerCount := 50
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {

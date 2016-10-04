@@ -61,8 +61,8 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	if exitCode == 0 {
 		return replyWithParent(data, delegateEvent, event, cli)
 	}
-	progress.Update("Update fail", "error", map[string]interface{}{
-		"exitcode": exitCode,
+	progress.Update("Update fail", "no", map[string]interface{}{
+		"exitCode": exitCode,
 		"output":   output,
 	})
 	return nil

@@ -49,9 +49,9 @@ func (h *ConfigUpdateHandler) ConfigUpdate(event *revents.Event, cli *client.Ran
 	}
 	if retcode != 0 {
 		pro := &progress.Progress{Request: event, Client: cli}
-		pro.Update("config update failed", "error", map[string]interface{}{
-			"exitcode": retcode,
-			"output":   output,
+		pro.Update("config update failed", "no", map[string]interface{}{
+			"exitCode": retcode,
+			"output":   string(output),
 		})
 		return nil
 	}
