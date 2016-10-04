@@ -2,6 +2,11 @@ package compute
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/blkiodev"
@@ -14,10 +19,6 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
-	"os"
-	"path"
-	"testing"
-	"time"
 )
 
 // Hook up gocheck into the "go test" runner.

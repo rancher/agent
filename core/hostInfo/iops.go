@@ -1,9 +1,6 @@
 package hostInfo
 
-import (
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
-)
+import "github.com/pkg/errors"
 
 type IopsCollector struct {
 }
@@ -11,7 +8,7 @@ type IopsCollector struct {
 func (i IopsCollector) GetData() (map[string]interface{}, error) {
 	data, err := i.parseIopsData()
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.IopsGetDataError+"failed to get data")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	return data, nil
 }

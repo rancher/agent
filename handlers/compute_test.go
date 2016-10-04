@@ -3,9 +3,17 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/config"
 	//"github.com/rancher/agent/utilities/constants"
+	"io/ioutil"
+	"os"
+	"path"
+	"runtime"
+	"testing"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
@@ -15,12 +23,6 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
-	"io/ioutil"
-	"os"
-	"path"
-	"runtime"
-	"testing"
-	"time"
 )
 
 // Hook up gocheck into the "go test" runner.

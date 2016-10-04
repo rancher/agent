@@ -2,12 +2,13 @@ package hostapi
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StartUp() {

@@ -2,11 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	goUUID "github.com/nu7hatch/gouuid"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -14,6 +9,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
+	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func StorageAPIVersion() string {
@@ -78,21 +79,21 @@ func getUUIDFromFile(uuidFilePath string) (string, error) {
 
 	fileBuffer, err := ioutil.ReadFile(uuidFilePath)
 	if err != nil && !os.IsNotExist(err) {
-		return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to read uuid file")
+		return "", errors.WithStack(err)
 	}
 	uuid = string(fileBuffer)
 	if uuid == "" {
 		newUUID, err := goUUID.NewV4()
 		if err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to generate uuid")
+			return "", errors.WithStack(err)
 		}
 		uuid = newUUID.String()
 		file, err := os.Create(uuidFilePath)
 		if err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to create uuid file")
+			return "", errors.WithStack(err)
 		}
 		if _, err := file.WriteString(uuid); err != nil {
-			return "", errors.Wrap(err, constants.ReadUUIDFromFileError+"failed to write uuid to file")
+			return "", errors.WithStack(err)
 		}
 	}
 	return uuid, nil
@@ -106,14 +107,14 @@ func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) (stri
 			if err == nil {
 				os.Remove(uuidFilePath)
 			} else if !os.IsNotExist(err) {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to open uuid file")
+				return "", errors.WithStack(err)
 			}
 			file, err := os.Create(uuidFilePath)
 			if err != nil {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to create uuid file")
+				return "", errors.WithStack(err)
 			}
 			if _, err := file.WriteString(uuid); err != nil {
-				return "", errors.Wrap(err, constants.GetUUIDFromFileError+"failed to write uuid to file")
+				return "", errors.WithStack(err)
 			}
 		}
 		return uuid, nil
@@ -156,11 +157,11 @@ func Sh() string {
 func PhysicalHost() (model.PingResource, error) {
 	uuid, err := PhysicalHostUUID(false)
 	if err != nil {
-		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError+"failed to get physical host uuid")
+		return model.PingResource{}, errors.WithStack(err)
 	}
 	hostname, err := Hostname()
 	if err != nil {
-		return model.PingResource{}, errors.Wrap(err, constants.PhysicalHostError+"failed to get hostname")
+		return model.PingResource{}, errors.WithStack(err)
 	}
 	return model.PingResource{
 		UUID: uuid,

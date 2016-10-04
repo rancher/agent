@@ -4,6 +4,18 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+	"regexp"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
+
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
@@ -16,17 +28,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"os/exec"
-	"path"
-	"regexp"
-	"strconv"
-	"strings"
-	"syscall"
-	"time"
 )
 
 func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
@@ -34,16 +35,16 @@ func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error
 	data := event.Data
 	var ihm model.InstanceHostMap
 	if err := mapstructure.Decode(data["instanceHostMap"], &ihm); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instancehostmap")
+		return model.Instance{}, model.Host{}, errors.WithStack(err)
 	}
 
 	var instance model.Instance
 	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instance data")
+		return model.Instance{}, model.Host{}, errors.WithStack(err)
 	}
 	var host model.Host
 	if err := mapstructure.Decode(ihm.Host, &host); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall host data")
+		return model.Instance{}, model.Host{}, errors.WithStack(err)
 	}
 
 	return instance, host, nil
@@ -363,14 +364,14 @@ func GetContainer(client *engineCli.Client, instance model.Instance, byAgent boo
 	if err == nil && len(labeledContainers) > 0 {
 		return labeledContainers[0], nil
 	} else if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
+		return types.Container{}, errors.WithStack(err)
 	}
 
 	// Next look by UUID using fallback method
 	options = types.ContainerListOptions{All: true}
 	containerList, err := client.ContainerList(context.Background(), options)
 	if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
+		return types.Container{}, errors.WithStack(err)
 	}
 
 	if container, ok := FindFirst(containerList, func(c types.Container) bool {
@@ -463,7 +464,7 @@ func GetKernelVersion() (string, error) {
 	defer file.Close()
 	data := []string{}
 	if err != nil {
-		return "", errors.Wrap(err, constants.GetKernelVersionError+"failed to open process version file")
+		return "", errors.WithStack(err)
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
@@ -498,7 +499,7 @@ func RemoveContainer(client *engineCli.Client, containerID string) error {
 		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
 	if err := client.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{}); !engineCli.IsErrContainerNotFound(err) {
-		return errors.Wrap(err, constants.RemoveContainerError+"failed to remove container")
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -535,7 +536,7 @@ func GetAgentImage(client *engineCli.Client) (map[string]string, error) {
 	args.Add("label", constants.SystemLabels)
 	images, err := client.ImageList(context.Background(), types.ImageListOptions{Filters: args})
 	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.GetAgentImageError+"failed to list images")
+		return map[string]string{}, errors.WithStack(err)
 	}
 	systemImage := map[string]string{}
 	for _, image := range images {
@@ -556,16 +557,16 @@ func Get(url string) (map[string]interface{}, error) {
 		defer resp.Body.Close()
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.Wrap(err, constants.GetCadvisorError)
+			return nil, errors.WithStack(err)
 		}
 		var result map[string]interface{}
 		err1 := json.Unmarshal(data, &result)
 		if err1 != nil {
-			return nil, errors.Wrap(err, constants.GetCadvisorError)
+			return nil, errors.WithStack(err)
 		}
 		return result, nil
 	}
-	return nil, errors.Wrap(err, constants.GetCadvisorError)
+	return nil, errors.WithStack(err)
 }
 
 func IsContainerNotFoundError(e error) bool {

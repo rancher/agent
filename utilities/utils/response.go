@@ -2,11 +2,11 @@ package utils
 
 import (
 	"fmt"
+
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
 )
@@ -17,7 +17,7 @@ func GetResponseData(event *revents.Event, client *client.Client) (map[string]in
 	case "instanceHostMap":
 		resp, err := getInstanceHostMapData(event, client)
 		if err != nil {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to marshall instancehostmap")
+			return map[string]interface{}{}, errors.WithStack(err)
 		}
 		return map[string]interface{}{resourceType: resp}, nil
 	case "volumeStoragePoolMap":
@@ -31,7 +31,7 @@ func GetResponseData(event *revents.Event, client *client.Client) (map[string]in
 	case "instancePull":
 		resp, err := getInstancePullData(event, client)
 		if err != nil {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to get instance pull data")
+			return map[string]interface{}{}, errors.WithStack(err)
 		}
 		return map[string]interface{}{
 			"fields": map[string]interface{}{
@@ -51,12 +51,12 @@ func GetResponseData(event *revents.Event, client *client.Client) (map[string]in
 func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[string]interface{}, error) {
 	instance, _, err := GetInstanceAndHost(event)
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to marshall instancehostmap")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 
 	container, err := GetContainer(client, instance, false)
 	if err != nil && !IsContainerNotFoundError(err) {
-		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get container")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 
 	if container.ID == "" {
@@ -84,11 +84,11 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 	dockerMounts := []types.MountPoint{}
 	inspect, err := client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to inspect container")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	dockerMounts, err = getMountData(container.ID, client)
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get mount data")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	dockerIP := inspect.NetworkSettings.IPAddress
 	if container.Ports != nil && len(container.Ports) > 0 {
@@ -139,7 +139,7 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 func getMountData(containerID string, client *client.Client) ([]types.MountPoint, error) {
 	inspect, err := client.ContainerInspect(context.Background(), containerID)
 	if err != nil {
-		return []types.MountPoint{}, errors.Wrap(err, constants.GetMountDataError+"failed to inspect container")
+		return []types.MountPoint{}, errors.WithStack(err)
 	}
 	return inspect.Mounts, nil
 }
@@ -156,7 +156,7 @@ func getInstancePullData(event *revents.Event, dockerClient *client.Client) (typ
 	inspect, _, err := dockerClient.ImageInspectWithRaw(context.Background(),
 		fmt.Sprintf("%v%v", imageName, tag))
 	if err != nil && !client.IsErrImageNotFound(err) {
-		return types.ImageInspect{}, errors.Wrap(err, constants.GetInstancePullDataError+"failed to inspect images")
+		return types.ImageInspect{}, errors.WithStack(err)
 	}
 	return inspect, nil
 }

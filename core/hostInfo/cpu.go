@@ -2,9 +2,9 @@ package hostInfo
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type CPUCollector struct {
@@ -15,11 +15,11 @@ func (c CPUCollector) GetData() (map[string]interface{}, error) {
 
 	cInfo, err := c.getCPUInfo()
 	if err != nil {
-		return data, errors.Wrap(err, constants.CPUGetDataError+"failed to get cpu info")
+		return data, errors.WithStack(err)
 	}
 	percent, err := c.getCPUPercentage()
 	if err != nil {
-		return data, errors.Wrap(err, constants.CPUGetDataError+"failed to get cpu percentage")
+		return data, errors.WithStack(err)
 	}
 	for key, value := range percent {
 		data[key] = value

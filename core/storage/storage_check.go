@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"os"
+
 	"github.com/docker/engine-api/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
@@ -8,7 +10,6 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
 )
 
 func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
@@ -22,7 +23,7 @@ func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerCl
 	if client.IsErrVolumeNotFound(err) {
 		return false, nil
 	} else if err != nil {
-		return false, errors.Wrap(err, constants.IsVolumeActiveError)
+		return false, errors.WithStack(err)
 	}
 	if vol.Mountpoint != "" {
 		return vol.Mountpoint != "moved", nil
@@ -44,7 +45,7 @@ func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClien
 	} else if client.IsErrImageNotFound(err) {
 		return false, nil
 	}
-	return false, errors.Wrap(err, constants.IsImageActiveError)
+	return false, errors.WithStack(err)
 }
 
 func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *client.Client) (bool, error) {
@@ -52,14 +53,14 @@ func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client 
 		container, err := utils.GetContainer(client, volume.Instance, false)
 		if err != nil {
 			if !utils.IsContainerNotFoundError(err) {
-				return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to get container")
+				return false, errors.WithStack(err)
 			}
 		}
 		return container.ID == "", nil
 	} else if isManagedVolume(volume) {
 		ok, err := IsVolumeActive(volume, storagePool, client)
 		if err != nil {
-			return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to check whether volume is activated")
+			return false, errors.WithStack(err)
 		}
 		return !ok, nil
 	}

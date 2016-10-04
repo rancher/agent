@@ -1,6 +1,9 @@
 package ping
 
 import (
+	"net"
+	"os"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
@@ -12,8 +15,6 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
-	"net"
-	"os"
 )
 
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -28,12 +29,12 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 
 	physicalHost, err := config.PhysicalHost()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError+"failed to get physical host")
+		return errors.WithStack(err)
 	}
 
 	hostname, err := config.Hostname()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError+"failed to get hostname")
+		return errors.WithStack(err)
 	}
 	labels, err := getHostLabels(collectors)
 	if err != nil {
@@ -43,7 +44,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	labels[constants.RancherAgentImage] = rancherImage
 	uuid, err := config.DockerUUID()
 	if err != nil {
-		return errors.Wrap(err, constants.AddResourceError+"failed to get docker UUID")
+		return errors.WithStack(err)
 	}
 	compute := model.PingResource{
 		Type:             "host",
@@ -88,7 +89,7 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	}
 	uuid, err := config.DockerUUID()
 	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
+		return errors.WithStack(err)
 	}
 	pong.Resources = append(pong.Resources, model.PingResource{
 		Type: "hostUuid",
@@ -97,7 +98,7 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	containers := []model.PingResource{}
 	running, nonrunning, err := getAllContainerByState(dockerClient)
 	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
+		return errors.WithStack(err)
 	}
 	for _, container := range running {
 		containers = utils.AddContainer("running", container, containers, dockerClient, systemImages)
@@ -142,7 +143,7 @@ func getAllContainerByState(dockerClient *client.Client) (map[string]types.Conta
 	nonrunningContainers := map[string]types.Container{}
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
-		return map[string]types.Container{}, map[string]types.Container{}, errors.Wrap(err, constants.GetAllContainerByStateError+"failed to list containers")
+		return map[string]types.Container{}, map[string]types.Container{}, errors.WithStack(err)
 	}
 	for _, c := range containerList {
 		if c.Status != "" && c.Status != "Created" {

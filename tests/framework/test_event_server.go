@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 )
 
 func NewServer() *mux.Router {

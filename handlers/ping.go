@@ -9,7 +9,6 @@ import (
 	"github.com/rancher/agent/core/ping"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 )
@@ -30,12 +29,12 @@ func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) erro
 	}
 	if config.DoPing() {
 		if err := ping.DoPingAction(event, &resp, h.dockerClient, h.collectors, h.SystemImage); err != nil {
-			return errors.Wrap(err, constants.PingError+"failed to do ping action")
+			return errors.WithStack(err)
 		}
 	}
 	data, err := marshaller.StructToMap(resp)
 	if err != nil {
-		return errors.Wrap(err, constants.PingError+"failed to marshall response data")
+		return errors.WithStack(err)
 	}
 	return reply(data, event, cli)
 }

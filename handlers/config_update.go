@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
-	"os"
-	"os/exec"
 )
 
 type ConfigUpdateHandler struct {

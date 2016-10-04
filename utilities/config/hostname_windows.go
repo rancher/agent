@@ -1,15 +1,15 @@
 package config
 
 import (
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 func Hostname() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return "", errors.Wrap(err, constants.HostNameError)
+		return "", errors.WithStack(err)
 	}
 	return DefaultValue("HOSTNAME", hostname), nil
 }

@@ -5,13 +5,14 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
-	"errors"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"hash"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 func DownloadFile(url string, dest string, reporthook interface{}, checksum string) (string, error) {
@@ -65,7 +66,7 @@ func validateChecksum(fileName string, checksumValue string) error {
 	}
 	newValue, err := checksum(fileName, digest)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 	if newValue != checksumValue {
 		return fmt.Errorf("Invalid checksum [%s]", newValue)

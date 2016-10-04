@@ -4,12 +4,12 @@ package hostInfo
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/utilities/utils"
 )
 
 func (i IopsCollector) getIopsData(readOrWrite string) (map[string]interface{}, error) {
@@ -27,13 +27,13 @@ func (i IopsCollector) parseIopsData() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	readJSONData, err := i.getIopsData("read")
 	if err != nil && !os.IsNotExist(err) {
-		return data, errors.Wrap(err, constants.ParseIopsDataError+"failed to read iops file")
+		return data, errors.WithStack(err)
 	} else if err != nil && os.IsNotExist(err) {
 		return data, nil
 	}
 	writeJSONData, err := i.getIopsData("write")
 	if err != nil && !os.IsNotExist(err) {
-		return data, errors.Wrap(err, constants.ParseIopsDataError+"failed to read iops file")
+		return data, errors.WithStack(err)
 	} else if err != nil && os.IsNotExist(err) {
 		return data, nil
 	}
@@ -51,7 +51,7 @@ func (i IopsCollector) parseIopsData() (map[string]interface{}, error) {
 func (i IopsCollector) getDefaultDisk() (string, error) {
 	data, err := i.GetData()
 	if err != nil {
-		return "", errors.Wrap(err, constants.GetDefaultDiskError+"failed to get data")
+		return "", errors.WithStack(err)
 	}
 	if len(data) == 0 {
 		return "", nil
