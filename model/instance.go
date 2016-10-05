@@ -52,8 +52,11 @@ type Instance struct {
 }
 
 type InstanceFieldsData struct {
-	Fields        InstanceFields
-	IPSec         IPSec
+	Fields InstanceFields
+	IPSec  map[string]struct {
+		Nat    float64
+		Isakmp float64
+	} `json:"ipsec"`
 	DockerInspect ContainerJSON `json:"dockerInspect,omitempty" yaml:"dockerInspect,omitempty"`
 	Process       ProcessData
 }
@@ -235,11 +238,4 @@ type DeviceOptions struct {
 	WriteIops uint64
 	ReadBps   uint64
 	WriteBps  uint64
-}
-
-type IPSec struct {
-	Setting map[string]struct {
-		Nat    float64
-		Isakmp float64
-	}
 }
