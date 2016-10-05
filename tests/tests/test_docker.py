@@ -63,8 +63,7 @@ def test_volume_activate_driver1(agent):
 def test_volume_activate_driver2(agent):
     def pre(req):
         vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': {'size': '10G'}}}
+        vol['data'] = {'fields': {'driver': 'local'}}
         vol['name'] = 'test_vol'
 
     def post(req, resp):

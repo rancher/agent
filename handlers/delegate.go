@@ -53,7 +53,7 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 		logrus.Errorf("Can not call [%v], container not running", container.ID)
 		return nil
 	}
-	progress := utils.GetProgress(event, cli)
+	progress := utils.GetProgress(delegateEvent, cli)
 	exitCode, output, data, err := delegate.NsExec(inspect.State.Pid, delegateEvent)
 	if err != nil {
 		exitCode = utils.GetExitCode(err)
@@ -61,9 +61,9 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	if exitCode == 0 {
 		return replyWithParent(data, delegateEvent, event, cli)
 	}
-	progress.Update("Update fail", "error", map[string]interface{}{
-		"exitcode": exitCode,
+	progress.UpdateWithParent("Update fail", "no", map[string]interface{}{
+		"exitCode": exitCode,
 		"output":   output,
-	})
+	}, event)
 	return nil
 }
