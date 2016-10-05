@@ -1,9 +1,10 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/tests/framework"
-	"net/http"
 )
 
 func main() {

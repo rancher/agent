@@ -2,6 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
@@ -13,8 +16,6 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
-	"strings"
 )
 
 func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
@@ -42,7 +43,7 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 		if vol.Mountpoint == "moved" {
 			logrus.Info(fmt.Sprintf("Removing moved volume %s so that it can be re-added.", volume.Name))
 			if err := client.VolumeRemove(context.Background(), volume.Name, true); err != nil {
-				return errors.Wrap(err, constants.DoVolumeActivateError+"failed to remove volume")
+				return errors.WithStack(err)
 			}
 		}
 	}
@@ -54,7 +55,7 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 	}
 	_, err1 := client.VolumeCreate(context.Background(), options)
 	if err1 != nil {
-		return errors.Wrap(err1, constants.DoVolumeActivateError+"failed to create volume")
+		return errors.WithStack(err)
 	}
 	return nil
 }
@@ -90,7 +91,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 
 	tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
 	if authErr != nil {
-		logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
+		logrus.Warnf("Authorization error; %s", authErr)
 	}
 
 	lastMessage := ""
@@ -100,15 +101,18 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 			RegistryAuth: tokenInfo.IdentityToken,
 		})
 	if err != nil {
-		return errors.Wrap(err, "Failed to pull image")
+		return errors.WithStack(err)
 	}
 	buffer := utils.ReadBuffer(reader)
 	statusList := strings.Split(buffer, "\r\n")
 	for _, rawStatus := range statusList {
 		if rawStatus != "" {
-			status := marshaller.FromString(rawStatus)
+			status, err := marshaller.FromString(rawStatus)
+			if err != nil {
+				return errors.WithStack(err)
+			}
 			if utils.HasKey(status, "error") {
-				return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
+				return errors.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
 			}
 			if utils.HasKey(status, "status") {
 				message = utils.InterfaceToString(status["status"])
@@ -130,20 +134,20 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 	if ok, err := IsVolumeRemoved(volume, storagePool, dockerClient); ok {
 		return nil
 	} else if err != nil {
-		return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to check whether volume is removed")
+		return errors.WithStack(err)
 	}
 	if volume.DeviceNumber == 0 {
 		container, err := utils.GetContainer(dockerClient, volume.Instance, false)
 		if err != nil {
 			if !utils.IsContainerNotFoundError(err) {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"faild to get container")
+				return errors.WithStack(err)
 			}
 		}
 		if container.ID == "" {
 			return nil
 		}
 		if err := utils.RemoveContainer(dockerClient, container.ID); !engineCli.IsErrContainerNotFound(err) {
-			return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove container")
+			return errors.WithStack(err)
 		}
 	} else if isManagedVolume(volume) {
 		version := config.StorageAPIVersion()
@@ -155,7 +159,7 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 				logrus.Error(fmt.Errorf("Encountered conflict (%s) while deleting volume. Orphaning volume.",
 					err.Error()))
 			} else {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove volume")
+				return errors.WithStack(err)
 			}
 		}
 		return nil
@@ -165,10 +169,10 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		_, existErr := os.Stat(path)
 		if existErr == nil {
 			if err := os.RemoveAll(path); err != nil {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove directory")
+				return errors.WithStack(err)
 			}
 		}
-		return errors.Wrap(existErr, constants.DoVolumeRemoveError+"failed to find the path")
+		return errors.WithStack(existErr)
 	}
 	return nil
 }

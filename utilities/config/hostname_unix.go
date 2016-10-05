@@ -3,15 +3,15 @@
 package config
 
 import (
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
 	"os/exec"
+
+	"github.com/pkg/errors"
 )
 
 func Hostname() (string, error) {
 	hostname, err := getFQDNLinux()
 	if err != nil {
-		return "", errors.Wrap(err, constants.HostNameError)
+		return "", errors.WithStack(err)
 	}
 	return DefaultValue("HOSTNAME", hostname), nil
 }
@@ -20,7 +20,7 @@ func getFQDNLinux() (string, error) {
 	cmd := exec.Command("/bin/hostname", "-f")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrap(err, constants.GetFQDNLinuxError)
+		return "", errors.WithStack(err)
 	}
 	fqdn := string(output)
 	fqdn = fqdn[:len(fqdn)-1]

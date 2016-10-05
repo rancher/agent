@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	goUUID "github.com/nu7hatch/gouuid"
@@ -14,8 +17,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-	"os"
-	"time"
 )
 
 type Handler struct {
@@ -51,7 +52,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	}
 	uuid, err := getUUID()
 	if err != nil {
-		return errors.Wrap(err, "can not aasign uuid to reply event")
+		return errors.WithStack(err)
 	}
 	reply := &client.Publish{
 		ResourceId:   event.ResourceID,
@@ -67,7 +68,9 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	if len(replyData) > 0 {
 		empty = "not empty"
 	}
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	if reply.ResourceType != "agent" {
+		logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	}
 
 	err = publishReply(reply, cli)
 	if err != nil {
@@ -167,7 +170,7 @@ func initializeHandlers() *Handler {
 func replyWithParent(replyData map[string]interface{}, event *revents.Event, parent *revents.Event, cli *client.RancherClient) error {
 	childUUID, err := getUUID()
 	if err != nil {
-		return errors.Wrap(err, "can not aasign uuid to reply event")
+		return errors.WithStack(err)
 	}
 	child := map[string]interface{}{
 		"resourceId":    event.ResourceID,
@@ -181,7 +184,7 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 	}
 	parentUUID, err := getUUID()
 	if err != nil {
-		return errors.Wrap(err, "can not aasign uuid to reply event")
+		return errors.WithStack(err)
 	}
 	reply := &client.Publish{
 		ResourceId:   parent.ResourceID,
@@ -210,7 +213,7 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 func getUUID() (string, error) {
 	newUUID, err := goUUID.NewV4()
 	if err != nil {
-		return "", errors.Wrap(err, "can't generate uuid")
+		return "", errors.WithStack(err)
 	}
 	return newUUID.String(), nil
 

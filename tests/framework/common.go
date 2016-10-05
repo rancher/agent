@@ -3,6 +3,7 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
 	revents "github.com/rancher/event-subscriber/events"

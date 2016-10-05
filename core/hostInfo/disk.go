@@ -3,7 +3,6 @@ package hostInfo
 import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 type DiskCollector struct {
@@ -23,14 +22,14 @@ func (d DiskCollector) GetData() (map[string]interface{}, error) {
 
 	mfs, err := d.getMachineFilesystems(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get filesystem info")
+		return data, errors.WithStack(err)
 	}
 	for key, value := range mfs {
 		data["fileSystems"].(map[string]interface{})[key] = value
 	}
 	mp, err := d.getMountPoints()
 	if err != nil {
-		return data, errors.Wrap(err, constants.DiskGetDataError+"failed get mountpoint info")
+		return data, errors.WithStack(err)
 	}
 	for key, value := range mp {
 		data["mountPoints"].(map[string]interface{})[key] = value

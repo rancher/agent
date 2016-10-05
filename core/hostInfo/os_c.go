@@ -2,9 +2,9 @@ package hostInfo
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 )
 
@@ -31,7 +31,7 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	osData, err := o.getOS(infoData)
 	if err != nil {
-		return data, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
+		return data, errors.WithStack(err)
 	}
 
 	for key, value := range o.getDockerVersion(infoData, true) {
@@ -46,7 +46,7 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 	osData, err := o.getOS(o.InfoData)
 	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
+		return map[string]string{}, errors.WithStack(err)
 	}
 	labels := map[string]string{
 		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.getDockerVersion(o.InfoData, false)["dockerVersion"],
@@ -64,7 +64,7 @@ func (o OSCollector) getOS(infoData model.InfoData) (map[string]string, error) {
 	data["operatingSystem"] = infoData.Info.OperatingSystem
 	kernelVersion, err := utils.GetKernelVersion()
 	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.GetOSError+"failed to get kernel version")
+		return map[string]string{}, errors.WithStack(err)
 	}
 	data["kernelVersion"] = kernelVersion
 

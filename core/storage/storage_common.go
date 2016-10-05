@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"os"
+	"strings"
+
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/pkg/errors"
@@ -8,11 +11,8 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
-	"strings"
 )
 
 func isManagedVolume(volume model.Volume) bool {
@@ -34,7 +34,7 @@ func imageBuild(image model.Image, progress *progress.Progress, dockerClient *cl
 		if err == nil {
 			opts.FileObj = file
 			if buildErr := doBuild(opts, progress, dockerClient); buildErr != nil {
-				return errors.Wrap(buildErr, constants.ImageBuildError+"failed to build image")
+				return errors.WithStack(buildErr)
 			}
 		}
 		if file != "" {
@@ -48,7 +48,7 @@ func imageBuild(image model.Image, progress *progress.Progress, dockerClient *cl
 		}
 		opts.Remote = remote
 		if buildErr := doBuild(opts, progress, dockerClient); buildErr != nil {
-			return errors.Wrap(buildErr, constants.ImageBuildError+"failed to build image")
+			return errors.WithStack(buildErr)
 		}
 	}
 	return nil
@@ -66,13 +66,16 @@ func doBuild(opts model.BuildOptions, progress *progress.Progress, client *clien
 	}
 	response, err := client.ImageBuild(context.Background(), nil, imageBuildOptions)
 	if err != nil {
-		return errors.Wrap(err, constants.DoBuildError+"failed to build image")
+		return errors.WithStack(err)
 	}
 	buffer := utils.ReadBuffer(response.Body)
 	statusList := strings.Split(buffer, "\r\n")
 	for _, rawStatus := range statusList {
 		if rawStatus != "" {
-			status := marshaller.FromString(rawStatus)
+			status, err := marshaller.FromString(rawStatus)
+			if err != nil {
+				return errors.WithStack(err)
+			}
 			if value, ok := utils.GetFieldsIfExist(status, "stream"); ok {
 				progress.Update(utils.InterfaceToString(value), "yes", nil)
 			}

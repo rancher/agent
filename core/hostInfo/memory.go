@@ -2,7 +2,6 @@ package hostInfo
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -36,7 +35,7 @@ func (m MemoryCollector) getMemInfoData() (map[string]interface{}, error) {
 func (m MemoryCollector) GetData() (map[string]interface{}, error) {
 	data, err := m.getMemInfoData()
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, constants.MemoryGetDataError+"failed to get data")
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	return data, nil
 }

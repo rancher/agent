@@ -1,13 +1,14 @@
 package events
 
 import (
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
-	"os"
-	"time"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {

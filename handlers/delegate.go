@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/delegate"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
@@ -38,7 +37,7 @@ func (h *DelegateRequestHandler) DelegateRequest(event *revents.Event, cli *clie
 	container, err := utils.GetContainer(h.dockerClient, instance, true)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
-			return errors.Wrap(err, constants.DelegateRequestError+"failed to get network agent container")
+			return errors.WithStack(err)
 		}
 	}
 

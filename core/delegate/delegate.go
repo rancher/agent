@@ -2,18 +2,18 @@ package delegate
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/marshaller"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
-	revents "github.com/rancher/event-subscriber/events"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/marshaller"
+	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/utils"
+	revents "github.com/rancher/event-subscriber/events"
 )
 
 func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{}, error) {
@@ -21,14 +21,14 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 	cmd := []string{"-F", "-m", "-u", "-i", "-n", "-p", "-t", strconv.Itoa(pid), "--", script}
 	input, err := marshaller.ToString(event)
 	if err != nil {
-		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"failed to marshall data")
+		return 1, "", map[string]interface{}{}, errors.WithStack(err)
 	}
 	data := map[string]interface{}{}
 
 	envmap := map[string]string{}
 	file, fileErr := os.Open(fmt.Sprintf("/proc/%v/environ", pid))
 	if fileErr != nil {
-		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"failed to open environ files")
+		return 1, "", map[string]interface{}{}, errors.WithStack(err)
 	}
 	for _, line := range strings.Split(utils.ReadBuffer(file), "\x00") {
 		if len(line) == 0 {
@@ -75,7 +75,10 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 	text := []string{}
 	for _, line := range strings.Split(string(output), "\n") {
 		if strings.HasPrefix(line, "{") {
-			buffer := marshaller.FromString(line)
+			buffer, err := marshaller.FromString(line)
+			if err != nil {
+				return retcode, string(output), map[string]interface{}{}, errors.WithStack(err)
+			}
 			data = buffer
 			break
 		}

@@ -3,10 +3,12 @@
 package hostInfo
 
 import (
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/load"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/load"
 )
 
 func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
@@ -14,11 +16,11 @@ func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
 
 	cpuInfo, err := cpu.Info()
 	if err != nil {
-		return map[string]interface{}{}, err
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	counts, err := cpu.Counts(true)
 	if err != nil {
-		return map[string]interface{}{}, err
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	data["count"] = counts
 	if len(cpuInfo) > 0 {
@@ -35,7 +37,7 @@ func (c CPUCollector) getCPUPercentage() (map[string]interface{}, error) {
 
 	percents, err := cpu.Percent(time.Second*1, true)
 	if err != nil {
-		return map[string]interface{}{}, err
+		return map[string]interface{}{}, errors.WithStack(err)
 	}
 	for _, percent := range percents {
 		cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(percent, 'f', -1, 64))

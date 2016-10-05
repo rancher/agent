@@ -4,7 +4,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 )
 
 type Collector interface {
@@ -18,7 +17,7 @@ func CollectData(collectors []Collector) map[string]interface{} {
 	for _, collector := range collectors {
 		collectedData, err := collector.GetData()
 		if err != nil {
-			logrus.Warnf("Failed to collect data from collector %v error msg: %v", collector.KeyName(), err.Error())
+			logrus.Warnf("Failed to collect data from collector %v. Error msg: %v", collector.KeyName(), err.Error())
 		}
 		data[collector.KeyName()] = collectedData
 	}
@@ -30,7 +29,7 @@ func HostLabels(prefix string, collectors []Collector) (map[string]string, error
 	for _, collector := range collectors {
 		lmap, err := collector.GetLabels(prefix)
 		if err != nil {
-			return map[string]string{}, errors.Wrap(err, constants.HostLabelsError+"failed to collect labels from collectors")
+			return map[string]string{}, errors.WithStack(err)
 		}
 		for key, value := range lmap {
 			labels[key] = value

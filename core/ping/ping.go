@@ -6,7 +6,6 @@ import (
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
 )
 
@@ -15,10 +14,10 @@ func DoPingAction(event *revents.Event, resp *model.PingResponse, dockerClient *
 		return nil
 	}
 	if err := addResource(event, resp, dockerClient, collectors); err != nil {
-		return errors.Wrap(err, constants.DoPingActionError+"failed to add resource")
+		return errors.WithStack(err)
 	}
 	if err := addInstance(event, resp, dockerClient, systemImages); err != nil {
-		return errors.Wrap(err, constants.DoPingActionError+"failed to add instance")
+		return errors.WithStack(err)
 	}
 	return nil
 }

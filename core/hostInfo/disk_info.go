@@ -3,11 +3,13 @@
 package hostInfo
 
 import (
+	"math"
+	"strings"
+
+	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/utils"
 	"github.com/shirou/gopsutil/disk"
-	"math"
-	"strings"
 )
 
 func (d DiskCollector) convertUnits(number uint64) float64 {
@@ -35,7 +37,7 @@ func (d DiskCollector) includeInFilesystem(infoData model.InfoData, device strin
 		}
 		if strings.HasSuffix(utils.InterfaceToString(poolName), "-pool") {
 			poolName := utils.InterfaceToString(poolName)
-			poolName = poolName[len(poolName)-5 : len(poolName)]
+			poolName = poolName[len(poolName)-5:]
 		}
 		if strings.Contains(device, utils.InterfaceToString(poolName)) {
 			include = false
@@ -48,12 +50,12 @@ func (d DiskCollector) getMountPoints() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	partitions, err := disk.Partitions(false)
 	if err != nil {
-		return data, err
+		return data, errors.WithStack(err)
 	}
 	for _, partition := range partitions {
 		usage, err := disk.Usage(partition.Mountpoint)
 		if err != nil {
-			return map[string]interface{}{}, err
+			return map[string]interface{}{}, errors.WithStack(err)
 		}
 		data[partition.Device] = map[string]interface{}{
 			"free":       d.convertUnits(usage.Free),
@@ -69,13 +71,13 @@ func (d DiskCollector) getMachineFilesystems(infoData model.InfoData) (map[strin
 	data := map[string]interface{}{}
 	partitions, err := disk.Partitions(false)
 	if err != nil {
-		return data, err
+		return data, errors.WithStack(err)
 	}
 	for _, partition := range partitions {
 		if d.includeInFilesystem(infoData, partition.Device) {
 			usage, err := disk.Usage(partition.Mountpoint)
 			if err != nil {
-				return map[string]interface{}{}, err
+				return map[string]interface{}{}, errors.WithStack(err)
 			}
 			data[utils.InterfaceToString(partition.Device)] = map[string]interface{}{
 				"capacity": d.convertUnits(usage.Total),

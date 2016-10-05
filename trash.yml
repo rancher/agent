@@ -42,7 +42,7 @@ import:
   version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
 
 - package: github.com/pkg/errors
-  version: a22138067af1c4942683050411a841ade67fe1eb
+  version: 839d9e913e063e28dfd0e6c7b7512793e0a48be9
 
 - package: gopkg.in/check.v1
   version: 4f90aeace3a26ad7021961c297b22c42160c7b25

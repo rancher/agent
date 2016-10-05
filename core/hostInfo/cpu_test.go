@@ -2,8 +2,9 @@ package hostInfo
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/cpu"
 	"testing"
+
+	"github.com/shirou/gopsutil/cpu"
 )
 
 func TestCpuTime(t *testing.T) {

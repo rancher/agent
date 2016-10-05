@@ -1,11 +1,12 @@
 package storage
 
 import (
+	"testing"
+
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"gopkg.in/check.v1"
-	"testing"
 )
 
 // Hook up gocheck into the "go test" runner.

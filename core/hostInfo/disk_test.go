@@ -2,8 +2,9 @@ package hostInfo
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/disk"
 	"testing"
+
+	"github.com/shirou/gopsutil/disk"
 )
 
 func TestDiskData(t *testing.T) {
