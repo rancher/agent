@@ -51,7 +51,7 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 		command := exec.Command("nsenter", cmd...)
 		command.Env = envs
 		command.Stdin = strings.NewReader(string(input))
-		buffer, err := command.Output()
+		buffer, err := command.CombinedOutput()
 		if err == nil {
 			retcode, output = 0, buffer
 			break
@@ -60,9 +60,10 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 		exCMD := append(cmd[:len(cmd)-1], "/usr/bin/test", "-e", script)
 		existCMD := exec.Command("nsenter", exCMD...)
 		existCMD.Env = envs
-		_, err1 := existCMD.Output()
+		_, err1 := existCMD.CombinedOutput()
 		existCMD.Wait()
 		if err1 == nil {
+			output = buffer
 			break
 		}
 
