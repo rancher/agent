@@ -32,13 +32,22 @@ func (p *Progress) Update(msg string, types string, data map[string]interface{})
 	}
 }
 
-func (p *Progress) UpdateWithParent(msg string, types string, data map[string]interface{}, parent *revents.Event) {
+func (p *Progress) UpdateWithParent(msg string, types string, data map[string]interface{}, event, parent *revents.Event) {
 	resp := &client.Publish{
-		ResourceId:            parent.ResourceID,
-		PreviousIds:           []string{parent.ID},
-		ResourceType:          parent.ResourceType,
-		Name:                  parent.ReplyTo,
-		Data:                  data,
+		ResourceId:   parent.ResourceID,
+		PreviousIds:  []string{parent.ID},
+		ResourceType: parent.ResourceType,
+		Name:         parent.ReplyTo,
+		Data: map[string]interface{}{
+			"resourceId":            event.ResourceID,
+			"previousIds":           []string{event.ID},
+			"resourceType":          event.ResourceType,
+			"name":                  event.ReplyTo,
+			"data":                  data,
+			"transitioning":         types,
+			"transitioningMessage":  msg,
+			"transitioningProgress": 0,
+		},
 		Transitioning:         types,
 		TransitioningMessage:  msg,
 		TransitioningProgress: 0,
