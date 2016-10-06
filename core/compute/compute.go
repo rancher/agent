@@ -86,6 +86,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 
 	setupDeviceOptions(&hostConfig, instance, infoData)
 
+	setupComputeResourceFields(&hostConfig, instance)
+
 	setupFieldsConfig(instance.Data.Fields, &config)
 
 	setupLabels(instance.Data.Fields.Labels, &config)

@@ -49,6 +49,8 @@ type Instance struct {
 	ProcessData                 ProcessData
 	VolumesFromDataVolumeMounts []Volume
 	Token                       string
+	MilliCPUReservation         int64
+	MemoryReservation           int64
 }
 
 type InstanceFieldsData struct {
@@ -202,7 +204,6 @@ type InstanceFields struct {
 	Isolation          container.Isolation
 	KernelMemory       int64
 	Memory             int64
-	MemoryReservation  int64
 	MemorySwap         int64
 	MemorySwappiness   *int64
 	OomKillDisable     *bool
