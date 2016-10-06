@@ -82,23 +82,20 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	if auth.ServerAddress == "https://docker.io" {
 		auth.ServerAddress = "https://index.docker.io"
 	}
-	/*
-			Always pass insecure_registry=True to prevent docker-py
-		        from pre-verifying the registry. Let the docker daemon handle
-		        the verification of and connection to the registry.
-	*/
-
-	tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
-	if authErr != nil {
-		logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
+	cre = rc
+	pullOption := types.ImagePullOptions{}
+	if rc.PublicValue != "" {
+		tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
+		if authErr != nil {
+			logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
+		}
+		pullOption.RegistryAuth = tokenInfo.IdentityToken
+		pullOption.PrivilegeFunc = authFunc
 	}
 
 	lastMessage := ""
 	message := ""
-	reader, err := client.ImagePull(context.Background(), realImageUUID,
-		types.ImagePullOptions{
-			RegistryAuth: tokenInfo.IdentityToken,
-		})
+	reader, err := client.ImagePull(context.Background(), realImageUUID, pullOption)
 	if err != nil {
 		return errors.Wrap(err, "Failed to pull image")
 	}

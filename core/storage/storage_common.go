@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/pkg/errors"
@@ -14,6 +16,8 @@ import (
 	"os"
 	"strings"
 )
+
+var cre model.RegistryCredential
 
 func isManagedVolume(volume model.Volume) bool {
 	driver := volume.Data.Fields.Driver
@@ -91,4 +95,13 @@ func isBuild(image model.Image) bool {
 
 func pathToVolume(volume model.Volume) string {
 	return strings.Replace(volume.URI, "file://", "", -1)
+}
+
+func authFunc() (string, error) {
+	username := cre.PublicValue
+	password := cre.SecretValue
+	email := cre.Data.Fields.Email
+	auth := fmt.Sprintf("{ \"username\": \"%s\", \"password\": \"%s\", \"email\": \"%s\" }", username, password, email)
+	str := base64.StdEncoding.EncodeToString([]byte(auth))
+	return str, nil
 }
