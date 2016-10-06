@@ -24,8 +24,7 @@ func (p *Progress) Update(msg string, types string, data map[string]interface{})
 		TransitioningProgress: 0,
 	}
 	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
-	empty := "empty"
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, empty, transition)
+	logrus.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.Name, resp.ResourceId, resp.ResourceType, transition)
 	err := publishReply(resp, p.Client)
 	if err != nil {
 		logrus.Error(err)
@@ -53,8 +52,7 @@ func (p *Progress) UpdateWithParent(msg string, types string, data map[string]in
 		TransitioningProgress: 0,
 	}
 	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
-	empty := "empty"
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, empty, transition)
+	logrus.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, transition)
 	err := publishReply(resp, p.Client)
 	if err != nil {
 		logrus.Error(err)
