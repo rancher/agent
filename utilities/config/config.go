@@ -16,10 +16,6 @@ import (
 	"strings"
 )
 
-func StorageAPIVersion() string {
-	return DefaultValue("DOCKER_STORAGE_API_VERSION", "1.21")
-}
-
 func URL() string {
 	ret := DefaultValue("CONFIG_URL", "")
 	if len(ret) == 0 {

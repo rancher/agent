@@ -9,7 +9,6 @@ import (
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -29,9 +28,6 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 			opts[k] = utils.InterfaceToString(v)
 		}
 	}
-	v := config.StorageAPIVersion()
-	client.UpdateClientVersion(v)
-	defer client.UpdateClientVersion(constants.DefaultVersion)
 
 	// Rancher longhorn volumes indicate when they've been moved to a
 	// different host. If so, we have to delete before we create
@@ -143,9 +139,6 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 			return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove container")
 		}
 	} else if isManagedVolume(volume) {
-		version := config.StorageAPIVersion()
-		dockerClient.UpdateClientVersion(version)
-		defer dockerClient.UpdateClientVersion(constants.DefaultVersion)
 		err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)
 		if err != nil {
 			if strings.Contains(err.Error(), "409") {
