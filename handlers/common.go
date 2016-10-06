@@ -67,7 +67,11 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	if len(replyData) > 0 {
 		empty = "not empty"
 	}
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	if reply.ResourceType != "agent" {
+		logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	} else {
+		logrus.Debugf("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	}
 
 	err = publishReply(reply, cli)
 	if err != nil {
@@ -199,7 +203,11 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 	if len(replyData) > 0 {
 		empty = "not empty"
 	}
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	if reply.ResourceType != "agent" {
+		logrus.Infof("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	} else {
+		logrus.Debugf("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	}
 	err = publishReply(reply, cli)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
