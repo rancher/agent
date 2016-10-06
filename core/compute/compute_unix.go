@@ -222,7 +222,7 @@ func setupIpsec(instance model.Instance, host model.Host, config *container.Conf
 		return
 	}
 	hostID := strconv.Itoa(host.ID)
-	if endPoint, ok := instance.Data.IPSec.Setting[hostID]; ok {
+	if endPoint, ok := instance.Data.IPSec[hostID]; ok {
 		natValue := endPoint.Nat
 		isakmp := endPoint.Isakmp
 		binding := hostConfig.PortBindings
