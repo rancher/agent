@@ -1,13 +1,23 @@
 package main
 
 import (
-	"os"
-
+	"flag"
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/events"
+	"os"
 )
 
+var VERSION = "dev"
+
 func main() {
+	version := flag.Bool("version", false, "go-agent version")
+	flag.Parse()
+	if *version {
+		fmt.Printf("go-agent version %s \n", VERSION)
+		os.Exit(0)
+	}
+
 	logrus.Info("Launching agent")
 
 	url := os.Getenv("CATTLE_URL")
