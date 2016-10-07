@@ -39,6 +39,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	if err != nil {
 		return err
 	}
+	handlers.WebConn = router.GetWebSocketConn()
 	err = router.StartWithoutCreate(nil)
 	return err
 }

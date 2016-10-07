@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
+	"github.com/gorilla/websocket"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
@@ -12,6 +13,7 @@ import (
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"os"
@@ -69,7 +71,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	}
 	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
 
-	err = publishReply(reply, cli)
+	err = publishReply(reply)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
 	}
@@ -200,7 +202,7 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 		empty = "not empty"
 	}
 	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
-	err = publishReply(reply, cli)
+	err = publishReply(reply)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
 	}
@@ -216,10 +218,21 @@ func getUUID() (string, error) {
 
 }
 
-func publishReply(reply *client.Publish, apiClient *client.RancherClient) error {
-	_, err := apiClient.Publish.Create(reply)
-	if err != nil {
-		logrus.Error(err)
+var WebConn *websocket.Conn
+
+func publishReply(reply *client.Publish) error {
+	unlock := locks.Lock(WebConn)
+	for {
+		if unlock != nil {
+			break
+		}
+		logrus.Debug("Websocket connection gets locked. Sleep 0.5 seconds and try again")
+		time.Sleep(500 * time.Millisecond)
 	}
-	return err
+	defer unlock.Unlock()
+	err := WebConn.WriteJSON(reply)
+	if err != nil {
+		return errors.Wrap(err, "Can not write publish data to websocket")
+	}
+	return nil
 }
