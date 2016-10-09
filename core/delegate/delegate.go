@@ -30,6 +30,7 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 	if fileErr != nil {
 		return 1, "", map[string]interface{}{}, errors.Wrap(err, constants.NsExecError+"failed to open environ files")
 	}
+	defer file.Close()
 	for _, line := range strings.Split(utils.ReadBuffer(file), "\x00") {
 		if len(line) == 0 {
 			continue
@@ -61,7 +62,6 @@ func NsExec(pid int, event *revents.Event) (int, string, map[string]interface{},
 		existCMD := exec.Command("nsenter", exCMD...)
 		existCMD.Env = envs
 		_, err1 := existCMD.CombinedOutput()
-		existCMD.Wait()
 		if err1 == nil {
 			output = buffer
 			break

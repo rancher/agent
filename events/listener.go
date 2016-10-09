@@ -35,7 +35,12 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	}()
 
 	eventHandlers := handlers.GetHandlers()
-	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount, revents.DefaultPingConfig)
+	pingConfig := revents.PingConfig{
+		SendPingInterval:  5000,
+		CheckPongInterval: 5000,
+		MaxPongWait:       60000,
+	}
+	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount, pingConfig)
 	if err != nil {
 		return err
 	}

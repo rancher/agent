@@ -76,12 +76,12 @@ func validateChecksum(fileName string, checksumValue string) error {
 func downloadFromURL(rawurl string, filepath string) error {
 	file, err := os.OpenFile(filepath, os.O_WRONLY, 0666)
 	if err == nil {
+		defer file.Close()
 		response, err1 := http.Get(rawurl)
 		if err1 != nil {
 			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
 			return err1
 		}
-		defer file.Close()
 		defer response.Body.Close()
 		n, err := io.Copy(file, response.Body)
 		if err != nil {

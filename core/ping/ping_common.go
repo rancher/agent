@@ -9,6 +9,7 @@ import (
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
@@ -95,7 +96,14 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		UUID: uuid,
 	})
 	containers := []model.PingResource{}
-	running, nonrunning, err := getAllContainerByState(dockerClient)
+	header := map[string]string{}
+	header["timeout"] = "2"
+	dc, err := docker.NewEnvClientWithHeader(header)
+	if err != nil {
+		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker client")
+	}
+	dc.UpdateClientVersion(constants.DefaultVersion)
+	running, nonrunning, err := getAllContainerByState(dc)
 	if err != nil {
 		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
 	}
