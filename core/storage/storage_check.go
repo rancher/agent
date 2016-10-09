@@ -4,7 +4,6 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -15,9 +14,6 @@ func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerCl
 	if !isManagedVolume(volume) {
 		return true, nil
 	}
-	version := config.StorageAPIVersion()
-	dockerClient.UpdateClientVersion(version)
-	defer dockerClient.UpdateClientVersion(constants.DefaultVersion)
 	vol, err := dockerClient.VolumeInspect(context.Background(), volume.Name)
 	if client.IsErrVolumeNotFound(err) {
 		return false, nil
