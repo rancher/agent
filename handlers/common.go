@@ -29,19 +29,26 @@ type Handler struct {
 func GetHandlers() map[string]revents.EventHandler {
 	handler := initializeHandlers()
 	return map[string]revents.EventHandler{
-		"compute.instance.activate":   handler.compute.InstanceActivate,
-		"compute.instance.deactivate": handler.compute.InstanceDeactivate,
-		"compute.instance.force.stop": handler.compute.InstanceForceStop,
-		"compute.instance.inspect":    handler.compute.InstanceInspect,
-		"compute.instance.pull":       handler.compute.InstancePull,
-		"compute.instance.remove":     handler.compute.InstanceRemove,
-		"storage.image.activate":      handler.storage.ImageActivate,
-		"storage.volume.activate":     handler.storage.VolumeActivate,
-		"storage.volume.deactivate":   handler.storage.VolumeDeactivate,
-		"storage.volume.remove":       handler.storage.VolumeRemove,
-		"delegate.request":            handler.delegate.DelegateRequest,
+		"compute.instance.activate":   logRequest(handler.compute.InstanceActivate),
+		"compute.instance.deactivate": logRequest(handler.compute.InstanceDeactivate),
+		"compute.instance.force.stop": logRequest(handler.compute.InstanceForceStop),
+		"compute.instance.inspect":    logRequest(handler.compute.InstanceInspect),
+		"compute.instance.pull":       logRequest(handler.compute.InstancePull),
+		"compute.instance.remove":     logRequest(handler.compute.InstanceRemove),
+		"storage.image.activate":      logRequest(handler.storage.ImageActivate),
+		"storage.volume.activate":     logRequest(handler.storage.VolumeActivate),
+		"storage.volume.deactivate":   logRequest(handler.storage.VolumeDeactivate),
+		"storage.volume.remove":       logRequest(handler.storage.VolumeRemove),
+		"delegate.request":            logRequest(handler.delegate.DelegateRequest),
 		"ping":                        handler.ping.Ping,
-		"config.update":               handler.configUpdate.ConfigUpdate,
+		"config.update":               logRequest(handler.configUpdate.ConfigUpdate),
+	}
+}
+
+func logRequest(f revents.EventHandler) revents.EventHandler {
+	return func(event *revents.Event, cli *client.RancherClient) error {
+		logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
+		return f(event, cli)
 	}
 }
 
@@ -63,11 +70,10 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		Resource:     client.Resource{Id: uuid},
 	}
 
-	empty := "empty"
-	if len(replyData) > 0 {
-		empty = "not empty"
+	if reply.ResourceType != "agent" {
+		logrus.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
 	}
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", uuid, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	logrus.Debugf("Reply: %+v", reply)
 
 	err = publishReply(reply, cli)
 	if err != nil {
@@ -195,11 +201,12 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 	if parent.ReplyTo == "" {
 		return nil
 	}
-	empty := "empty"
-	if len(replyData) > 0 {
-		empty = "not empty"
+
+	if reply.ResourceType != "agent" {
+		logrus.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
 	}
-	logrus.Infof("Reply: %v, %v, %v:%v, data: %v", parentUUID, reply.Name, reply.ResourceId, reply.ResourceType, empty)
+	logrus.Debugf("Reply: %+v", reply)
+
 	err = publishReply(reply, cli)
 	if err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)

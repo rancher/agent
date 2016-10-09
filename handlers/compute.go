@@ -21,7 +21,6 @@ type ComputeHandler struct {
 }
 
 func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
-	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, host, err := utils.GetInstanceAndHost(event)
 
 	if err != nil {
@@ -50,7 +49,6 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 }
 
 func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
-	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	instance, _, err := utils.GetInstanceAndHost(event)
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to marshall instance and host data")
@@ -83,7 +81,6 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 }
 
 func (h *ComputeHandler) InstanceForceStop(event *revents.Event, cli *client.RancherClient) error {
-	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var request model.InstanceForceStop
 	err := mapstructure.Decode(event.Data["instanceForceStop"], &request)
 	if err != nil {
@@ -98,7 +95,6 @@ func (h *ComputeHandler) InstanceForceStop(event *revents.Event, cli *client.Ran
 }
 
 func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *client.RancherClient) error {
-	logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 	var inspect model.InstanceInspect
 	if err := mapstructure.Decode(event.Data["instanceInspect"], &inspect); err != nil {
 		return errors.Wrap(err, constants.InstanceInspectError+"failed to marshall incoming request")
