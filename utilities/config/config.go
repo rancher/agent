@@ -258,3 +258,7 @@ func DefaultValue(name string, df string) string {
 func Stamp() string {
 	return DefaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
 }
+
+func LogFile() string {
+	return DefaultValue("AGENT_LOG", "/var/log/rancher/agent.log")
+}
