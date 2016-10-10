@@ -20,7 +20,7 @@ type PingHandler struct {
 }
 
 func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) error {
-	if event.Name != "ping" || event.ReplyTo == "" {
+	if event.ReplyTo == "" {
 		return nil
 	}
 	resp := model.PingResponse{

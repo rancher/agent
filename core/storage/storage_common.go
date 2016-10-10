@@ -72,6 +72,7 @@ func doBuild(opts model.BuildOptions, progress *progress.Progress, client *clien
 	if err != nil {
 		return errors.Wrap(err, constants.DoBuildError+"failed to build image")
 	}
+	defer response.Body.Close()
 	buffer := utils.ReadBuffer(response.Body)
 	statusList := strings.Split(buffer, "\r\n")
 	for _, rawStatus := range statusList {

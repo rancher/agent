@@ -95,7 +95,6 @@ func HasLabel(instance model.Instance) bool {
 func ReadBuffer(reader io.ReadCloser) string {
 	buffer := make([]byte, 1024)
 	s := ""
-	defer reader.Close()
 	for {
 		n, err := reader.Read(buffer)
 		s = s + string(buffer[:n])

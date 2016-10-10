@@ -17,9 +17,16 @@ func (i IopsCollector) getIopsData(readOrWrite string) (map[string]interface{}, 
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
-	data, _ := ioutil.ReadAll(file)
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
 	var result map[string]interface{}
-	json.Unmarshal(data, result)
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
 	return result, nil
 }
 

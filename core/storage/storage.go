@@ -95,6 +95,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	if err != nil {
 		return errors.Wrap(err, "Failed to pull image")
 	}
+	defer reader.Close()
 	buffer := utils.ReadBuffer(reader)
 	statusList := strings.Split(buffer, "\r\n")
 	for _, rawStatus := range statusList {
