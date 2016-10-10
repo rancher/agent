@@ -286,6 +286,8 @@ func setupFieldsConfig(fields model.InstanceFields, config *container.Config) {
 	}
 
 	config.StopSignal = fields.StopSignal
+
+	config.User = fields.User
 }
 
 func isStopped(client *client.Client, container types.Container) (bool, error) {

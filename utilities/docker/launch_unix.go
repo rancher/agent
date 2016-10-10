@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func launchDefaultClient(version string) (*dclient.Client, error) {
@@ -21,7 +22,7 @@ func launchDefaultClient(version string) (*dclient.Client, error) {
 	return cli, nil
 }
 
-func NewEnvClientWithHeader(header map[string]string) (*dclient.Client, error) {
+func NewEnvClientWithTimeout(timeout time.Duration) (*dclient.Client, error) {
 	var client *http.Client
 	if dockerCertPath := os.Getenv("DOCKER_CERT_PATH"); dockerCertPath != "" {
 		options := tlsconfig.Options{
@@ -39,6 +40,7 @@ func NewEnvClientWithHeader(header map[string]string) (*dclient.Client, error) {
 			Transport: &http.Transport{
 				TLSClientConfig: tlsc,
 			},
+			Timeout: timeout,
 		}
 	}
 
@@ -52,5 +54,5 @@ func NewEnvClientWithHeader(header map[string]string) (*dclient.Client, error) {
 		version = dclient.DefaultVersion
 	}
 
-	return dclient.NewClient(host, version, client, header)
+	return dclient.NewClient(host, version, client, nil)
 }

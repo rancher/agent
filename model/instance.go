@@ -226,6 +226,7 @@ type InstanceFields struct {
 	DomainName         string
 	Labels             map[string]string
 	StopSignal         string
+	User               string
 }
 
 type LogConfig struct {
