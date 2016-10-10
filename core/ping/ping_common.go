@@ -1,6 +1,10 @@
 package ping
 
 import (
+	"net"
+	"os"
+	"strconv"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
@@ -11,9 +15,8 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
-	"net"
-	"os"
 )
 
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -57,6 +60,33 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		APIProxy:         config.HostProxy(),
 	}
 
+	if memOverride := getResourceOverride("CATTLE_MEMORY_OVERRIDE"); memOverride != 0 {
+		compute.Memory = memOverride
+	} else if stats["memoryInfo"] != nil {
+		if memTotal, ok := stats["memoryInfo"].(map[string]interface{})["memTotal"]; ok {
+			compute.Memory = memTotal.(uint64) * 1024 * 1024
+		}
+	}
+
+	if cpuOverride := getResourceOverride("CATTLE_MILLI_CPU_OVERRIDE"); cpuOverride != 0 {
+		compute.MilliCPU = cpuOverride
+	} else if stats["cpuInfo"] != nil {
+		if cpuCount, ok := stats["cpuInfo"].(map[string]interface{})["count"].(int); ok {
+			compute.MilliCPU = uint64(cpuCount) * 1000
+		}
+	}
+
+	if storageOverride := getResourceOverride("CATTLE_LOCAL_STORAGE_MB_OVERRIDE"); storageOverride != 0 {
+		compute.LocalStorageMb = storageOverride
+	} else {
+		usage, err := disk.Usage("/var/lib/docker")
+		if err != nil {
+			logrus.Errorf("Error getting local storage usage: %v", err)
+		} else {
+			compute.LocalStorageMb = uint64(usage.Free) / 1000
+		}
+	}
+
 	pool := model.PingResource{
 		Type:     "storagePool",
 		Kind:     "docker",
@@ -80,6 +110,19 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	}
 	pong.Resources = append(pong.Resources, physicalHost, compute, pool, ip)
 	return nil
+}
+
+func getResourceOverride(envVar string) uint64 {
+	var resource uint64
+	var err error
+	if val := os.Getenv(envVar); val != "" {
+		resource, err = strconv.ParseUint(val, 10, 64)
+		if err != nil {
+			logrus.Warnf("Couldn't parse %v %v. Will not use it.", envVar, val)
+			return 0
+		}
+	}
+	return resource
 }
 
 func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, systemImages map[string]string) error {

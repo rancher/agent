@@ -27,4 +27,7 @@ type PingResource struct {
 	DockerID         string                 `json:"dockerId,omitempty" yaml:"dockerId,omitempty"`
 	Image            string                 `json:"image,omitempty" yaml:"image,omitempty"`
 	Created          int64                  `json:"created,omitempty" yaml:"created,omitempty"`
+	Memory           uint64                 `json:"memory,omitempty" yaml:"memory,omitempty"`
+	MilliCPU         uint64                 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
+	LocalStorageMb   uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty"`
 }

@@ -36,6 +36,64 @@ var _ = check.Suite(&ComputeTestSuite{})
 func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
 }
 
+type mt map[string]interface{}
+
+func (s *ComputeTestSuite) TestMillCpuReservation(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, instance, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+
+	instance["milliCpuReservation"] = 200
+	fields["cpuShares"] = 100
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+
+	// Value should be 20% of 1024, rounded down
+	c.Assert(inspect.HostConfig.CPUShares, check.Equals, int64(204))
+}
+
+func (s *ComputeTestSuite) TestMemoryReservation(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, instance, _ := unmarshalEventAndInstanceFields(rawEvent, c)
+
+	instance["memoryReservation"] = 4194304 // 4MB, the minimum
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+
+	c.Assert(inspect.HostConfig.MemoryReservation, check.Equals, int64(4194304))
+}
+
+func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},
+	map[string]interface{}) {
+	event := unmarshalEvent(rawEvent, c)
+	instance := event["data"].(map[string]interface{})["instanceHostMap"].(map[string]interface{})["instance"].(map[string]interface{})
+	fields := instance["data"].(map[string]interface{})["fields"].(map[string]interface{})
+	return event, instance, fields
+}
+
 func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	constants.ConfigOverride["CONFIG_URL"] = "https://localhost:1234/a/path"
 	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")

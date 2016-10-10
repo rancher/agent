@@ -238,8 +238,8 @@ func setupIpsec(instance model.Instance, host model.Host, config *container.Conf
 			HostPort: strconv.Itoa(int(natValue)),
 		}
 		exposedPorts := map[nat.Port]struct{}{
-			port1: struct{}{},
-			port2: struct{}{},
+			port1: {},
+			port2: {},
 		}
 		if _, ok := binding[port1]; ok {
 			binding[port1] = append(binding[port1], bind1)
@@ -379,8 +379,6 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.RestartPolicy = fields.RestartPolicy
 
-	hostConfig.CPUShares = fields.CPUShares
-
 	hostConfig.VolumeDriver = fields.VolumeDriver
 
 	hostConfig.CpusetCpus = fields.CPUSet
@@ -401,8 +399,6 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.KernelMemory = fields.KernelMemory
 
-	hostConfig.MemoryReservation = fields.MemoryReservation
-
 	hostConfig.MemorySwap = fields.MemorySwap
 
 	hostConfig.Memory = fields.Memory
@@ -420,6 +416,23 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.UTSMode = fields.Uts
 
 	hostConfig.IpcMode = fields.IpcMode
+}
+
+func setupComputeResourceFields(hostConfig *container.HostConfig, instance model.Instance) {
+	hostConfig.MemoryReservation = instance.MemoryReservation
+
+	shares := instance.Data.Fields.CPUShares
+	if instance.MilliCPUReservation != 0 {
+		// Need to do it this way instead of (milliCPU / milliCPUToCPU) * sharesPerCPU to avoid integer division resulting in a zero
+		shares = (instance.MilliCPUReservation * 1024) / 1000
+	}
+
+	// Min value in kernel is 2
+	if shares < 2 {
+		shares = 2
+	}
+
+	hostConfig.CPUShares = shares
 }
 
 func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instance, infoData model.InfoData) {

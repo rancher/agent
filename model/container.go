@@ -73,6 +73,8 @@ type Container struct {
 
 	Memory int64 `json:"memory,omitempty" yaml:"memory,omitempty"`
 
+	MemoryReservation int64 `json:"memoryReservation,omitempty" yaml:"memory_reservation,omitempty"`
+
 	MemorySwap int64 `json:"memorySwap,omitempty" yaml:"memory_swap,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
