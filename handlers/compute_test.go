@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/go-units"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
@@ -83,6 +84,116 @@ func (s *ComputeTestSuite) TestMemoryReservation(c *check.C) {
 	}
 
 	c.Assert(inspect.HostConfig.MemoryReservation, check.Equals, int64(4194304))
+}
+
+func (s *ComputeTestSuite) TestNewFields(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+	fields["privileged"] = true
+	fields["blkioWeight"] = 100
+	fields["cpuPeriod"] = 100000
+	fields["cpuQuota"] = 50000
+	fields["cpuSetMems"] = "0,1"
+	fields["kernelMemory"] = 10000000
+	fields["memory"] = 10000000
+	fields["memorySwappiness"] = 50
+	fields["oomKillDisable"] = true
+	fields["oomScoreAdj"] = 500
+	fields["shmSize"] = 67108864
+	fields["tmpfs"] = map[string]string{
+		"/run": "rw,noexec,nosuid,size=65536k",
+	}
+	fields["groupAdd"] = []string{"root"}
+	fields["uts"] = "host"
+	fields["ipcMode"] = "host"
+	fields["stopSignal"] = "SIGTERM"
+	fields["ulimits"] = []map[string]interface{}{
+		{
+			"name": "cpu",
+			"hard": 100000,
+			"soft": 100000,
+		},
+	}
+
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+
+	c.Assert(inspect.HostConfig.BlkioWeight, check.Equals, uint16(100))
+	c.Assert(inspect.HostConfig.CPUPeriod, check.Equals, int64(100000))
+	c.Assert(inspect.HostConfig.CPUQuota, check.Equals, int64(50000))
+	c.Assert(inspect.HostConfig.CpusetMems, check.Equals, "0,1")
+	c.Assert(inspect.HostConfig.KernelMemory, check.Equals, int64(10000000))
+	c.Assert(inspect.HostConfig.Memory, check.Equals, int64(10000000))
+	c.Assert(*(inspect.HostConfig.MemorySwappiness), check.Equals, int64(50))
+	c.Assert(*(inspect.HostConfig.OomKillDisable), check.Equals, true)
+	c.Assert(inspect.HostConfig.OomScoreAdj, check.Equals, 500)
+	c.Assert(inspect.HostConfig.ShmSize, check.Equals, int64(67108864))
+	c.Assert(inspect.HostConfig.GroupAdd, check.DeepEquals, []string{"root"})
+	c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
+		"/run": "rw,noexec,nosuid,size=65536k",
+	})
+	c.Assert(string(inspect.HostConfig.UTSMode), check.Equals, "host")
+	c.Assert(string(inspect.HostConfig.IpcMode), check.Equals, "host")
+	c.Assert(inspect.Config.StopSignal, check.Equals, "SIGTERM")
+	ulimits := []units.Ulimit{
+		{
+			Name: "cpu",
+			Hard: int64(100000),
+			Soft: int64(100000),
+		},
+	}
+	c.Assert(*(inspect.HostConfig.Ulimits[0]), check.DeepEquals, ulimits[0])
+}
+
+// need docker daemon with higher version than 1.10.3
+func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+	fields["sysctls"] = map[string]string{
+		"net.ipv4.ip_forward": "1",
+	}
+	fields["healthCmd"] = []string{
+		"ls",
+	}
+	fields["healthInterval"] = 5
+	fields["healthRetries"] = 3
+	fields["healthTimeout"] = 60
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	version, err := dockerClient.ServerVersion(context.Background())
+	if err != nil {
+		c.Fatal(err)
+	}
+	if version.Version == "1.12.1" {
+		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
+			"net.ipv4.ip_forward": "1",
+		})
+		c.Assert(inspect.Config.Healthcheck.Test, check.DeepEquals, []string{"ls"})
+		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
+		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
+		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
+	}
+
 }
 
 func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},

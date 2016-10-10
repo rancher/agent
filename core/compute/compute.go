@@ -91,6 +91,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 
 	setupFieldsConfig(instance.Data.Fields, &config)
 
+	setupHeathConfig(instance.Data.Fields, &config)
+
 	setupLabels(instance.Data.Fields.Labels, &config)
 
 	container, err := utils.GetContainer(dockerClient, instance, false)
