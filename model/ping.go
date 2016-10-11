@@ -13,7 +13,7 @@ type PingResource struct {
 	Type             string                 `json:"type,omitempty" yaml:"type,omitempty"`
 	Kind             string                 `json:"kind,omitempty" yaml:"kind,omitempty"`
 	HostName         string                 `json:"hostname,omitempty" yaml:"hostname,omitempty"`
-	CreateLabels     map[string][]string    `json:"createLabels,omitempty" yaml:"createLabels,omitempty"`
+	CreateLabels     map[string]string      `json:"createLabels,omitempty" yaml:"createLabels,omitempty"`
 	Labels           map[string]string      `json:"labels,omitempty" yaml:"labels,omitempty"`
 	UUID             string                 `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 	PhysicalHostUUID string                 `json:"physicalHostUuid,omitempty" yaml:"physicalHostUuid,omitempty"`

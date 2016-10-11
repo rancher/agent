@@ -199,17 +199,19 @@ func CadvisorWrapper() string {
 	return DefaultValue("CADVISOR_WRAPPER", "")
 }
 
-func Labels() map[string][]string {
+func Labels() map[string]string {
 	val := DefaultValue("HOST_LABELS", "")
+	ret := map[string]string{}
 	if val != "" {
 		m, err := url.ParseQuery(val)
 		if err != nil {
 			logrus.Error(err)
-		} else {
-			return m
+		}
+		for k, v := range m {
+			ret[k] = v[0]
 		}
 	}
-	return map[string][]string{}
+	return ret
 }
 
 func DockerEnable() bool {
