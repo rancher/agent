@@ -3,10 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types"
 	"github.com/rancher/agent/utilities/config"
-	//"github.com/rancher/agent/utilities/constants"
-	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
