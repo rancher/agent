@@ -18,6 +18,8 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
+	"strings"
+	"time"
 )
 
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -139,26 +141,40 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		UUID: uuid,
 	})
 	containers := []model.PingResource{}
-	header := map[string]string{}
-	header["timeout"] = "2"
-	dc, err := docker.NewEnvClientWithHeader(header)
+
+	clientTimeout := time.Duration(time.Second * 2)
+	dc, err := docker.NewEnvClientWithTimeout(clientTimeout)
 	if err != nil {
 		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker client")
 	}
 	dc.UpdateClientVersion(constants.DefaultVersion)
-	running, nonrunning, err := getAllContainerByState(dc)
-	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker UUID")
+
+	// if we can not get all container in 2s, we will skip it
+	done := make(chan bool, 1)
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(2 * time.Second)
+		timeout <- true
+	}()
+	running, nonrunning, err := getAllContainerByState(dc, done)
+	select {
+	case <-done:
+		if err != nil {
+			return errors.Wrap(err, constants.AddInstanceError+"failed to get all containers")
+		}
+		for _, container := range running {
+			containers = utils.AddContainer("running", container, containers, dockerClient, systemImages)
+		}
+		for _, container := range nonrunning {
+			containers = utils.AddContainer("stopped", container, containers, dockerClient, systemImages)
+		}
+		pong.Resources = append(pong.Resources, containers...)
+		pong.Options.Instances = true
+		return nil
+	case <-timeout:
+		logrus.Warn("Can not get response from docker daemon")
+		return nil
 	}
-	for _, container := range running {
-		containers = utils.AddContainer("running", container, containers, dockerClient, systemImages)
-	}
-	for _, container := range nonrunning {
-		containers = utils.AddContainer("stopped", container, containers, dockerClient, systemImages)
-	}
-	pong.Resources = append(pong.Resources, containers...)
-	pong.Options.Instances = true
-	return nil
 }
 
 func pingIncludeResource(ping *revents.Event) bool {
@@ -189,7 +205,8 @@ func getHostLabels(collectors []hostInfo.Collector) (map[string]string, error) {
 	return hostInfo.HostLabels("io.rancher.host", collectors)
 }
 
-func getAllContainerByState(dockerClient *client.Client) (map[string]types.Container, map[string]types.Container, error) {
+func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[string]types.Container, map[string]types.Container, error) {
+	// avoid calling API twice
 	nonrunningContainers := map[string]types.Container{}
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
@@ -201,10 +218,13 @@ func getAllContainerByState(dockerClient *client.Client) (map[string]types.Conta
 		}
 	}
 	runningContainers := map[string]types.Container{}
-	containerListRunning, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
-	for _, c := range containerListRunning {
-		runningContainers[c.ID] = c
-		delete(nonrunningContainers, c.ID)
+	// if status is running, it is a running container
+	for _, c := range containerList {
+		if strings.Contains(c.Status, "Up") || c.State == "Running" {
+			runningContainers[c.ID] = c
+			delete(nonrunningContainers, c.ID)
+		}
 	}
+	done <- true
 	return runningContainers, nonrunningContainers, nil
 }
