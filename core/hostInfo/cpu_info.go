@@ -31,14 +31,14 @@ func (c CPUCollector) getCPUInfo() (map[string]interface{}, error) {
 
 func (c CPUCollector) getCPUPercentage() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
-	cpuCoresPercentages := []string{}
+	cpuCoresPercentages := []float64{}
 
 	percents, err := cpu.Percent(time.Second*1, true)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
 	for _, percent := range percents {
-		cpuCoresPercentages = append(cpuCoresPercentages, strconv.FormatFloat(percent, 'f', -1, 64))
+		cpuCoresPercentages = append(cpuCoresPercentages, percent)
 	}
 	data["cpuCoresPercentages"] = cpuCoresPercentages
 	return data, nil
