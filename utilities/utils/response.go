@@ -9,6 +9,12 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	revents "github.com/rancher/event-subscriber/events"
 	"golang.org/x/net/context"
+	"bufio"
+	"strings"
+	"regexp"
+	"time"
+	"runtime"
+	"github.com/Sirupsen/logrus"
 )
 
 func GetResponseData(event *revents.Event, client *client.Client) (map[string]interface{}, error) {
@@ -90,7 +96,17 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get mount data")
 	}
-	dockerIP := inspect.NetworkSettings.IPAddress
+	dockerIP := ""
+	if runtime.GOOS == "windows" {
+		ip, err := getIPFromExec(inspect.ID, client)
+		if err != nil {
+			// in here we only log that err
+			logrus.Error(err)
+		}
+		dockerIP = ip
+	} else {
+		dockerIP = inspect.NetworkSettings.IPAddress
+	}
 	if container.Ports != nil && len(container.Ports) > 0 {
 		for _, port := range container.Ports {
 			privatePort := fmt.Sprintf("%v/%v", port.PrivatePort, port.Type)
@@ -159,4 +175,36 @@ func getInstancePullData(event *revents.Event, dockerClient *client.Client) (typ
 		return types.ImageInspect{}, errors.Wrap(err, constants.GetInstancePullDataError+"failed to inspect images")
 	}
 	return inspect, nil
+}
+
+func getIPFromExec(containerID string, client *client.Client) (string, error) {
+	execConfig := types.ExecConfig{
+		AttachStdout: true,
+		AttachStdin: true,
+		AttachStderr: true,
+		Privileged: true,
+		Tty: false,
+		Detach: false,
+		Cmd:          []string{"powershell", "ipconfig"},
+	}
+	ip := ""
+	// waiting for the DHCP to assign IP address. Testing purpose. May try multiple times until ip address arrives
+	time.Sleep(time.Duration(2) * time.Second)
+	execObj, err := client.ContainerExecCreate(context.Background(), containerID, execConfig)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get IPAddress")
+	}
+	hijack, err := client.ContainerExecAttach(context.Background(), execObj.ID, execConfig)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get IPAddress")
+	}
+	scanner := bufio.NewScanner(hijack.Reader)
+	for scanner.Scan() {
+		output := scanner.Text()
+		if strings.Contains(output, "IPv4 Address") {
+			ip = regexp.MustCompile("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$").FindString(output)
+		}
+	}
+	hijack.Close()
+	return ip, nil
 }
