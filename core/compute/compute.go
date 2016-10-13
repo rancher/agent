@@ -104,7 +104,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	containerID := container.ID
 	created := false
 	if len(containerID) == 0 {
-		newID, err := createContainer(dockerClient, &config, &hostConfig, imageTag, instance, name, progress)
+		newID, err := createContainer(dockerClient, &config, &hostConfig, &networkConfig, imageTag, instance, name, progress)
 		if err != nil {
 			return errors.Wrap(err, constants.DoInstanceActivateError+"failed to create container")
 		}

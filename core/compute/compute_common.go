@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
+func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkConfig *network.NetworkingConfig,
 	imageTag string, instance model.Instance, name string, progress *progress.Progress) (string, error) {
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
@@ -42,13 +42,13 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	dockerImage := utils.ParseRepoTag(imageTag)
 	config.Image = dockerImage.UUID
 
-	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
+	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
 		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
-		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, name)
+		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
 		if err1 != nil {
 			return "", errors.Wrap(err1, constants.CreateContainerError+"failed to create container")
 		}
@@ -252,6 +252,26 @@ func setupLegacyCommand(config *container.Config, fields model.InstanceFields, c
 }
 
 func setupNetworkingConfig(networkConfig *network.NetworkingConfig, instance model.Instance) {
+	kind := instance.Nics[0].Network.Kind
+	if kind == "dockerHost" {
+		endpoint := network.EndpointSettings{
+			NetworkID: "3e419f53974f29bc41374ba3f2444d22c16465d2578a1a4f05492e8b5aa2b06",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["MyTransparentNetwork"] = &endpoint
+	} else if kind == "dockerNone" {
+		endpoint := network.EndpointSettings{
+			NetworkID: "5f10ecf9ae8848a40c2605c4fad87259894ac5214e6012da0a903afc39fec032",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["none"] = &endpoint
+	} else {
+		endpoint := network.EndpointSettings{
+			NetworkID: "4b7c2cc63f6fa11d656a3c01ddc72724364650472f9dd58c411fecc507fb1535",
+		}
+		networkConfig.EndpointsConfig = map[string]*network.EndpointSettings{}
+		networkConfig.EndpointsConfig["nat"] = &endpoint
+	}
 
 }
 

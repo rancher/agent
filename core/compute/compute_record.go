@@ -45,7 +45,7 @@ func RecordState(client *client.Client, instance model.Instance, dockerID string
 	}
 
 	if ok := utils.IsPathExist(contDir); !ok {
-		mkErr := os.MkdirAll(contDir, 777)
+		mkErr := os.MkdirAll(contDir, 644)
 		if mkErr != nil {
 			return errors.Wrap(mkErr, constants.RecordStateError+"failed to make directory")
 		}
