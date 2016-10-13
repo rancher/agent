@@ -207,6 +207,7 @@ type InstanceFields struct {
 	MemorySwap         int64
 	MemorySwappiness   *int64
 	OomKillDisable     *bool
+	OomScoreAdj        int
 	ShmSize            int64
 	Tmpfs              map[string]string
 	Ulimits            []*units.Ulimit
@@ -227,6 +228,15 @@ type InstanceFields struct {
 	Labels             map[string]string
 	StopSignal         string
 	User               string
+	Sysctls            map[string]string
+	HealthCmd          []string
+	HealthTimeout      int
+	HealthInterval     int
+	HealthRetries      int
+	StorageOpt         map[string]string
+	PidsLimit          int64
+	Cgroup             container.CgroupSpec
+	DiskQuota          int64
 }
 
 type LogConfig struct {

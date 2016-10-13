@@ -407,6 +407,8 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.OomKillDisable = fields.OomKillDisable
 
+	hostConfig.OomScoreAdj = fields.OomScoreAdj
+
 	hostConfig.ShmSize = fields.ShmSize
 
 	hostConfig.Tmpfs = fields.Tmpfs
@@ -416,6 +418,18 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.UTSMode = fields.Uts
 
 	hostConfig.IpcMode = fields.IpcMode
+
+	hostConfig.Sysctls = fields.Sysctls
+
+	hostConfig.StorageOpt = fields.StorageOpt
+
+	hostConfig.PidsLimit = fields.PidsLimit
+
+	hostConfig.DiskQuota = fields.DiskQuota
+
+	hostConfig.Cgroup = fields.Cgroup
+
+	hostConfig.CgroupParent = fields.CgroupParent
 }
 
 func setupComputeResourceFields(hostConfig *container.HostConfig, instance model.Instance) {

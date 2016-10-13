@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig,
@@ -92,7 +93,7 @@ func setupPorts(config *container.Config, instance model.Instance, hostConfig *c
 				bindAddr := port.Data.Fields.BindAddress
 				if _, ok := bindings[bind]; !ok {
 					bindings[bind] = []nat.PortBinding{
-						nat.PortBinding{
+						{
 							HostIP:   bindAddr,
 							HostPort: utils.ConvertPortToString(port.PublicPort),
 						},
@@ -171,6 +172,15 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 		}
 	}
 	return nil
+}
+
+func setupHeathConfig(instanceFields model.InstanceFields, config *container.Config) {
+	healthConfig := &container.HealthConfig{}
+	healthConfig.Test = instanceFields.HealthCmd
+	healthConfig.Interval = time.Duration(instanceFields.HealthInterval) * time.Second
+	healthConfig.Retries = instanceFields.HealthRetries
+	healthConfig.Timeout = time.Duration(instanceFields.HealthTimeout) * time.Second
+	config.Healthcheck = healthConfig
 }
 
 func flagSystemContainer(instance model.Instance, config *container.Config) {
