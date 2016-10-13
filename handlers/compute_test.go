@@ -94,7 +94,7 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	fields["blkioWeight"] = 100
 	fields["cpuPeriod"] = 100000
 	fields["cpuQuota"] = 50000
-	fields["cpuSetMems"] = "0,1"
+	fields["cpuSetMems"] = "0"
 	fields["kernelMemory"] = 10000000
 	fields["memory"] = 10000000
 	fields["memorySwappiness"] = 50
@@ -131,7 +131,7 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	c.Assert(inspect.HostConfig.BlkioWeight, check.Equals, uint16(100))
 	c.Assert(inspect.HostConfig.CPUPeriod, check.Equals, int64(100000))
 	c.Assert(inspect.HostConfig.CPUQuota, check.Equals, int64(50000))
-	c.Assert(inspect.HostConfig.CpusetMems, check.Equals, "0,1")
+	c.Assert(inspect.HostConfig.CpusetMems, check.Equals, "0")
 	c.Assert(inspect.HostConfig.KernelMemory, check.Equals, int64(10000000))
 	c.Assert(inspect.HostConfig.Memory, check.Equals, int64(10000000))
 	c.Assert(*(inspect.HostConfig.MemorySwappiness), check.Equals, int64(50))
