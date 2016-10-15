@@ -56,5 +56,12 @@ import:
 - package: github.com/shirou/gopsutil
   version: af2b5127ea65bc380b2e07f2f27829aac2640d65
 
+
 - package: github.com/ShowMax/go-fqdn
   version: 2501cdd51ef4c60dd727c58b2199e1a09466b10f
+
+- package: github.com/StackExchange/wmi
+  version: e54cbda6595d7293a7a468ccf9525f6bc8887f99 
+ 
+- package: github.com/go-ole/go-ole
+  version: 7dfdcf409020452e29b4babcbb22f984d2aa308a
