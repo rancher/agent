@@ -56,7 +56,6 @@ import:
 - package: github.com/shirou/gopsutil
   version: af2b5127ea65bc380b2e07f2f27829aac2640d65
 
-
 - package: github.com/ShowMax/go-fqdn
   version: 2501cdd51ef4c60dd727c58b2199e1a09466b10f
 

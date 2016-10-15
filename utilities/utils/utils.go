@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	engineCli "github.com/docker/engine-api/client"
@@ -452,22 +451,6 @@ func SemverTrunk(version string, vals int) string {
 		return m[vals]
 	}
 	return version
-}
-
-func GetKernelVersion() (string, error) {
-	file, err := os.Open("/proc/version")
-	defer file.Close()
-	data := []string{}
-	if err != nil {
-		return "", errors.Wrap(err, constants.GetKernelVersionError+"failed to open process version file")
-	}
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		data = append(data, scanner.Text())
-	}
-	version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
-	return version, nil
 }
 
 func NameFilter(name string, container types.Container) bool {

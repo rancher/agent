@@ -62,7 +62,7 @@ func (o OSCollector) KeyName() string {
 func (o OSCollector) getOS(infoData model.InfoData) (map[string]string, error) {
 	data := map[string]string{}
 	data["operatingSystem"] = infoData.Info.OperatingSystem
-	kernelVersion, err := utils.GetKernelVersion()
+	kernelVersion, err := getKernelVersion()
 	if err != nil {
 		return map[string]string{}, errors.Wrap(err, constants.GetOSError+"failed to get kernel version")
 	}

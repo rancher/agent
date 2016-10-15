@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
