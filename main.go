@@ -18,6 +18,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if os.Getenv("CATTLE_DEBUG") != "" {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	logrus.Info("Launching agent")
 
 	url := os.Getenv("CATTLE_URL")
