@@ -57,6 +57,10 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		utils.AddLabel(&config, constants.ContainerNameLabel, instanceName)
 	}
 
+	setupFieldsHostConfig(instance.Data.Fields, &hostConfig)
+
+	setupFieldsConfig(instance.Data.Fields, &config)
+
 	setupPublishPorts(&hostConfig, instance)
 
 	if err := setupDNSSearch(&hostConfig, instance); err != nil {
@@ -81,15 +85,11 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 
 	setupCattleConfigURL(instance, &config)
 
-	setupFieldsHostConfig(instance.Data.Fields, &hostConfig)
-
 	setupNetworkingConfig(&networkConfig, instance)
 
 	setupDeviceOptions(&hostConfig, instance, infoData)
 
 	setupComputeResourceFields(&hostConfig, instance)
-
-	setupFieldsConfig(instance.Data.Fields, &config)
 
 	setupHeathConfig(instance.Data.Fields, &config)
 
