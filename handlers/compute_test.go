@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/Sirupsen/logrus"
@@ -19,6 +20,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -153,6 +155,49 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 		},
 	}
 	c.Assert(*(inspect.HostConfig.Ulimits[0]), check.DeepEquals, ulimits[0])
+}
+
+func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
+	// this test aims to verify that if the dnsSearch is set to rancher.internal, we should add dnssearch from host to
+	// containers
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+	fields["dnsSearch"] = []string{"rancher.internal"}
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(constants.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+	file, err := os.Open("/etc/resolv.conf")
+	if err != nil {
+		c.Fatal(err)
+	}
+	defer file.Close()
+	dnsSearch := []string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		s := []string{}
+		if strings.HasPrefix(line, "search") {
+			// in case multiple search lines
+			// respect the last one
+			s = strings.Split(line, " ")[1:]
+			for i := range s {
+				search := s[len(s)-i-1]
+				if !utils.SearchInList(dnsSearch, search) {
+					dnsSearch = append([]string{search}, dnsSearch...)
+				}
+			}
+		}
+	}
+	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
 }
 
 // need docker daemon with higher version than 1.10.3

@@ -66,8 +66,8 @@ func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) e
 			s = strings.Split(line, " ")[1:]
 			for i := range s {
 				search := s[len(s)-i-1]
-				if !utils.SearchInList(s, search) {
-					dnsSearch = append(dnsSearch, search)
+				if !utils.SearchInList(dnsSearch, search) {
+					dnsSearch = append([]string{search}, dnsSearch...)
 				}
 			}
 			hostConfig.DNSSearch = dnsSearch
@@ -369,9 +369,7 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.DNS = fields.DNS
 
-	if hostConfig.DNSSearch == nil {
-		hostConfig.DNSSearch = fields.DNSSearch
-	}
+	hostConfig.DNSSearch = fields.DNSSearch
 
 	hostConfig.CapAdd = fields.CapAdd
 
