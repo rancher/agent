@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"strings"
@@ -103,7 +104,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 	containerID := container.ID
 	created := false
-	if len(containerID) == 0 {
+	if containerID == "" {
 		newID, err := createContainer(dockerClient, &config, &hostConfig, imageTag, instance, name, progress)
 		if err != nil {
 			return errors.Wrap(err, constants.DoInstanceActivateError+"failed to create container")
@@ -205,15 +206,29 @@ func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.C
 }
 
 func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Client) (types.ContainerJSON, error) {
-	containerID := inspect.ID
-	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
 	if err != nil {
-		return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to list containers")
+		return types.ContainerJSON{}, errors.New("Can't initialize docker client")
 	}
-	result, find := utils.FindFirst(containerList, func(c types.Container) bool {
-		return utils.IDFilter(containerID, c)
-	})
-	if !find {
+	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
+	containerID := inspect.ID
+	if containerID != "" {
+		// inspect by id
+		containerInspect, err := clientWithTimeout.ContainerInspect(context.Background(), containerID)
+		if err != nil && !client.IsErrContainerNotFound(err) {
+			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"Failed to inspect container")
+		} else if err == nil {
+			return containerInspect, nil
+		}
+	}
+	if inspect.Name != "" {
+		// inspect by name
+		containerList, err := clientWithTimeout.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+		if err != nil {
+			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to list containers")
+		}
+		find := false
+		result := types.Container{}
 		name := fmt.Sprintf("/%s", inspect.Name)
 		if resultWithNameInspect, ok := utils.FindFirst(containerList, func(c types.Container) bool {
 			return utils.NameFilter(name, c)
@@ -221,15 +236,16 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 			result = resultWithNameInspect
 			find = true
 		}
-	}
-	if find {
-		inspectResp, err := dockerClient.ContainerInspect(context.Background(), result.ID)
-		if err != nil {
-			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to inspect container")
+
+		if find {
+			inspectResp, err := clientWithTimeout.ContainerInspect(context.Background(), result.ID)
+			if err != nil && !client.IsErrContainerNotFound(err) {
+				return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to inspect container")
+			}
+			return inspectResp, nil
 		}
-		return inspectResp, nil
 	}
-	return types.ContainerJSON{}, fmt.Errorf("container with id [%v] not found", containerID)
+	return types.ContainerJSON{}, errors.Errorf("container with id [%v] not found", containerID)
 }
 
 func DoInstanceRemove(instance model.Instance, dockerClient *client.Client) error {

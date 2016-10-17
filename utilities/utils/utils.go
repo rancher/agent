@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
@@ -354,25 +355,21 @@ func ParseRepoTag(name string) model.RepoTag {
 }
 
 func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) (types.Container, error) {
-	// First look for UUID label directly
-	args := filters.NewArgs()
-	args.Add("label", fmt.Sprintf("%s=%s", constants.UUIDLabel, instance.UUID))
-	options := types.ContainerListOptions{All: true, Filter: args}
-	labeledContainers, err := client.ContainerList(context.Background(), options)
-	if err == nil && len(labeledContainers) > 0 {
-		return labeledContainers[0], nil
-	} else if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
+	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
+	if err != nil {
+		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to get docker client")
 	}
-
-	// Next look by UUID using fallback method
-	options = types.ContainerListOptions{All: true}
-	containerList, err := client.ContainerList(context.Background(), options)
+	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
+	containers, err := clientWithTimeout.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
 		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
 	}
-
-	if container, ok := FindFirst(containerList, func(c types.Container) bool {
+	for _, container := range containers {
+		if uuid, ok := container.Labels[constants.UUIDLabel]; ok && uuid == instance.UUID {
+			return container, nil
+		}
+	}
+	if container, ok := FindFirst(containers, func(c types.Container) bool {
 		if GetUUID(c) == instance.UUID {
 			return true
 		}
@@ -382,7 +379,7 @@ func GetContainer(client *engineCli.Client, instance model.Instance, byAgent boo
 	}
 
 	if externalID := instance.ExternalID; externalID != "" {
-		if container, ok := FindFirst(containerList, func(c types.Container) bool {
+		if container, ok := FindFirst(containers, func(c types.Container) bool {
 			return IDFilter(externalID, c)
 		}); ok {
 			return container, nil
@@ -391,7 +388,7 @@ func GetContainer(client *engineCli.Client, instance model.Instance, byAgent boo
 
 	if byAgent {
 		agentID := instance.AgentID
-		if container, ok := FindFirst(containerList, func(c types.Container) bool {
+		if container, ok := FindFirst(containers, func(c types.Container) bool {
 			return AgentIDFilter(strconv.Itoa(agentID), c)
 		}); ok {
 			return container, nil
