@@ -84,6 +84,11 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 
 func initializeHandlers() *Handler {
 	client := docker.GetClient(constants.DefaultVersion)
+	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
+	if err != nil {
+		logrus.Errorf("Err: %v. Can not initialize docker client. Exiting go-agent", err)
+	}
+	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
 	info := types.Info{}
 	version := types.Version{}
 	systemImages := map[string]string{}
@@ -142,7 +147,7 @@ func initializeHandlers() *Handler {
 		},
 	}
 	computerHandler := ComputeHandler{
-		dockerClient: client,
+		dockerClient: clientWithTimeout,
 		infoData: model.InfoData{
 			Info:    info,
 			Version: version,
@@ -152,10 +157,10 @@ func initializeHandlers() *Handler {
 		dockerClient: client,
 	}
 	delegateHandler := DelegateRequestHandler{
-		dockerClient: client,
+		dockerClient: clientWithTimeout,
 	}
 	pingHandler := PingHandler{
-		dockerClient: client,
+		dockerClient: clientWithTimeout,
 		collectors:   Collectors,
 		SystemImage:  systemImages,
 	}
