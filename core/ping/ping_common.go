@@ -1,10 +1,6 @@
 package ping
 
 import (
-	"net"
-	"os"
-	"strconv"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
@@ -18,6 +14,9 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
+	"net"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
