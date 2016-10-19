@@ -186,19 +186,19 @@ type InstanceFields struct {
 	LogConfig          LogConfig
 	SecurityOpt        []string
 	Devices            []string
-	DNS                []string
-	DNSSearch          []string
+	DNS                []string `json:"dns"`
+	DNSSearch          []string `json:"dnsSearch"`
 	CapAdd             []string
 	CapDrop            []string
 	RestartPolicy      container.RestartPolicy
-	CPUShares          int64
+	CPUShares          int64 `json:"cpuShares"`
 	VolumeDriver       string
 	CPUSet             string
 	BlkioWeight        uint16
 	CgroupParent       string
-	CPUPeriod          int64
-	CPUQuota           int64
-	CPUsetMems         string
+	CPUPeriod          int64  `json:"cpuPeriod"`
+	CPUQuota           int64  `json:"cpuQuota"`
+	CPUsetMems         string `json:"cpuSetMems"`
 	DNSOpt             []string
 	GroupAdd           []string
 	Isolation          container.Isolation
