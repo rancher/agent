@@ -3,6 +3,7 @@
 package config
 
 import (
+	gofqdn "github.com/ShowMax/go-fqdn"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
 	"os/exec"
@@ -20,7 +21,9 @@ func getFQDNLinux() (string, error) {
 	cmd := exec.Command("/bin/hostname", "-f")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrap(err, constants.GetFQDNLinuxError)
+		// if command line doesn't work, try to look up by IP
+		fqdn := gofqdn.Get()
+		return fqdn, nil
 	}
 	fqdn := string(output)
 	fqdn = fqdn[:len(fqdn)-1]
