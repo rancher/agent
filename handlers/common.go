@@ -29,19 +29,19 @@ type Handler struct {
 func GetHandlers() map[string]revents.EventHandler {
 	handler := initializeHandlers()
 	return map[string]revents.EventHandler{
-		"compute.instance.activate":   logRequest(handler.compute.InstanceActivate),
-		"compute.instance.deactivate": logRequest(handler.compute.InstanceDeactivate),
-		"compute.instance.force.stop": logRequest(handler.compute.InstanceForceStop),
-		"compute.instance.inspect":    logRequest(handler.compute.InstanceInspect),
-		"compute.instance.pull":       logRequest(handler.compute.InstancePull),
-		"compute.instance.remove":     logRequest(handler.compute.InstanceRemove),
-		"storage.image.activate":      logRequest(handler.storage.ImageActivate),
-		"storage.volume.activate":     logRequest(handler.storage.VolumeActivate),
-		"storage.volume.deactivate":   logRequest(handler.storage.VolumeDeactivate),
-		"storage.volume.remove":       logRequest(handler.storage.VolumeRemove),
-		"delegate.request":            logRequest(handler.delegate.DelegateRequest),
-		"ping":                        handler.ping.Ping,
-		"config.update":               logRequest(handler.configUpdate.ConfigUpdate),
+		"compute.instance.activate":   cleanLog(logRequest(handler.compute.InstanceActivate)),
+		"compute.instance.deactivate": cleanLog(logRequest(handler.compute.InstanceDeactivate)),
+		"compute.instance.force.stop": cleanLog(logRequest(handler.compute.InstanceForceStop)),
+		"compute.instance.inspect":    cleanLog(logRequest(handler.compute.InstanceInspect)),
+		"compute.instance.pull":       cleanLog(logRequest(handler.compute.InstancePull)),
+		"compute.instance.remove":     cleanLog(logRequest(handler.compute.InstanceRemove)),
+		"storage.image.activate":      cleanLog(logRequest(handler.storage.ImageActivate)),
+		"storage.volume.activate":     cleanLog(logRequest(handler.storage.VolumeActivate)),
+		"storage.volume.deactivate":   cleanLog(logRequest(handler.storage.VolumeDeactivate)),
+		"storage.volume.remove":       cleanLog(logRequest(handler.storage.VolumeRemove)),
+		"delegate.request":            cleanLog(logRequest(handler.delegate.DelegateRequest)),
+		"ping":                        cleanLog(handler.ping.Ping),
+		"config.update":               cleanLog(logRequest(handler.configUpdate.ConfigUpdate)),
 	}
 }
 
@@ -49,6 +49,16 @@ func logRequest(f revents.EventHandler) revents.EventHandler {
 	return func(event *revents.Event, cli *client.RancherClient) error {
 		logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 		return f(event, cli)
+	}
+}
+
+func cleanLog(f revents.EventHandler) revents.EventHandler {
+	return func(event *revents.Event, cli *client.RancherClient) error {
+		err := f(event, cli)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{"err": err}).Debug("Verbose error message")
+		}
+		return errors.Cause(err)
 	}
 }
 
