@@ -5,6 +5,7 @@ import (
 
 	"gopkg.in/check.v1"
 
+	gofqdn "github.com/ShowMax/go-fqdn"
 	"github.com/rancher/agent/utilities/constants"
 )
 
@@ -26,4 +27,14 @@ func (s *ConfigTestSuite) TestLabels(c *check.C) {
 	labels := Labels()
 	c.Assert(labels, check.DeepEquals, map[string]string{"foo": "bar", "test": "1", "novalue": ""})
 
+}
+
+func (s *ConfigTestSuite) unTestHostName(c *check.C) {
+	// by default getFQDNLinux should just have the same with getFQDNByIP
+	fqdn1, err := getFQDNLinux()
+	if err != nil {
+		c.Fatal(err)
+	}
+	fqdn2 := gofqdn.Get()
+	c.Assert(fqdn1, check.Equals, fqdn2)
 }
