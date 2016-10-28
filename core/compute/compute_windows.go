@@ -41,3 +41,7 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instance, infoData model.InfoData) {
 }
+
+func setupComputeResourceFields(hostConfig *container.HostConfig, instance model.Instance) {
+
+}

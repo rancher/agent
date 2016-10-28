@@ -90,7 +90,7 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get mount data")
 	}
-	dockerIP := inspect.NetworkSettings.IPAddress
+	dockerIP := getIP(inspect)
 	if container.Ports != nil && len(container.Ports) > 0 {
 		for _, port := range container.Ports {
 			privatePort := fmt.Sprintf("%v/%v", port.PrivatePort, port.Type)
