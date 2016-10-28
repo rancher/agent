@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/docker/engine-api/client"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"

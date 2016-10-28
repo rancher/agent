@@ -3,7 +3,7 @@
 package docker
 
 import (
-	dclient "github.com/docker/engine-api/client"
+	dclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"

@@ -5,9 +5,9 @@ package compute
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/types"
-	"github.com/docker/engine-api/types/blkiodev"
-	"github.com/docker/engine-api/types/container"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/blkiodev"
+	"github.com/docker/docker/api/types/container"
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
@@ -104,11 +104,6 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 		}
 		time.Sleep(time.Duration(1) * time.Second)
 	}
-	_, err := client.ImagePull(context.Background(), "ibuildthecloud/helloworld:latest", types.ImagePullOptions{})
-	if err != nil {
-		c.Fatal(err)
-	}
-	time.Sleep(time.Duration(5) * time.Second)
 	config := container.Config{Image: "ibuildthecloud/helloworld:latest"}
 	resp, err := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
 	if err != nil {

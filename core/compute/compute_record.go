@@ -2,7 +2,7 @@ package compute
 
 import (
 	"fmt"
-	"github.com/docker/engine-api/client"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/model"

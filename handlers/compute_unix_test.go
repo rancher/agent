@@ -5,7 +5,7 @@ package handlers
 import (
 	"bufio"
 	"fmt"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/go-units"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
@@ -83,9 +83,6 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	fields["oomKillDisable"] = true
 	fields["oomScoreAdj"] = 500
 	fields["shmSize"] = 67108864
-	fields["tmpfs"] = map[string]string{
-		"/run": "rw,noexec,nosuid,size=65536k",
-	}
 	fields["groupAdd"] = []string{"root"}
 	fields["uts"] = "host"
 	fields["ipcMode"] = "host"
@@ -121,9 +118,6 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	c.Assert(inspect.HostConfig.OomScoreAdj, check.Equals, 500)
 	c.Assert(inspect.HostConfig.ShmSize, check.Equals, int64(67108864))
 	c.Assert(inspect.HostConfig.GroupAdd, check.DeepEquals, []string{"root"})
-	c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
-		"/run": "rw,noexec,nosuid,size=65536k",
-	})
 	c.Assert(string(inspect.HostConfig.UTSMode), check.Equals, "host")
 	c.Assert(string(inspect.HostConfig.IpcMode), check.Equals, "host")
 	c.Assert(inspect.Config.StopSignal, check.Equals, "SIGTERM")
@@ -180,32 +174,35 @@ func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
 	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
 }
 
-// need docker daemon with higher version than 1.10.3
+// need docker daemon with version 1.12.1
 func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
-	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
-	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
-	event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
-	fields["sysctls"] = map[string]string{
-		"net.ipv4.ip_forward": "1",
-	}
-	fields["healthCmd"] = []string{
-		"ls",
-	}
-	fields["healthInterval"] = 5
-	fields["healthRetries"] = 3
-	fields["healthTimeout"] = 60
-	rawEvent = marshalEvent(event, c)
-	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No id found")
-	}
 	dockerClient := docker.GetClient(constants.DefaultVersion)
 	version, err := dockerClient.ServerVersion(context.Background())
 	if err != nil {
 		c.Fatal(err)
 	}
 	if version.Version == "1.12.1" {
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+		rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+		event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+		fields["sysctls"] = map[string]string{
+			"net.ipv4.ip_forward": "1",
+		}
+		fields["tmpfs"] = map[string]string{
+			"/run": "rw,noexec,nosuid,size=65536k",
+		}
+		fields["healthCmd"] = []string{
+			"ls",
+		}
+		fields["healthInterval"] = 5
+		fields["healthRetries"] = 3
+		fields["healthTimeout"] = 60
+		rawEvent = marshalEvent(event, c)
+		reply := testEvent(rawEvent, c)
+		container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No id found")
+		}
 		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 		if err != nil {
 			c.Fatal("Inspect Err")
@@ -217,6 +214,9 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
 		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
 		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
+		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
+			"/run": "rw,noexec,nosuid,size=65536k",
+		})
 	}
 }
 

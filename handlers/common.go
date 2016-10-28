@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"

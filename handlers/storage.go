@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/Sirupsen/logrus"
-	engineCli "github.com/docker/engine-api/client"
+	engineCli "github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/compute"

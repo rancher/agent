@@ -2,8 +2,7 @@ package docker
 
 import (
 	"fmt"
-	"github.com/docker/engine-api/client"
-	dclient "github.com/docker/engine-api/client"
+	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
@@ -13,16 +12,16 @@ import (
 	"time"
 )
 
-func launchDefaultClient(version string) (*client.Client, error) {
+func launchDefaultClient(version string) (*dockerClient.Client, error) {
 	ip := fmt.Sprintf("tcp://%v:2375", os.Getenv("DEFAULT_GATEWAY"))
-	cliFromAgent, cerr := client.NewClient(ip, version, nil, nil)
+	cliFromAgent, cerr := dockerClient.NewClient(ip, version, nil, nil)
 	if cerr != nil {
 		return nil, errors.Wrap(cerr, constants.LaunchDefaultClientError)
 	}
 	return cliFromAgent, nil
 }
 
-func NewEnvClientWithTimeout(timeout time.Duration) (*dclient.Client, error) {
+func NewEnvClientWithTimeout(timeout time.Duration) (*dockerClient.Client, error) {
 	var client *http.Client
 	if dockerCertPath := os.Getenv("DOCKER_CERT_PATH"); dockerCertPath != "" {
 		options := tlsconfig.Options{
@@ -48,8 +47,8 @@ func NewEnvClientWithTimeout(timeout time.Duration) (*dclient.Client, error) {
 
 	version := os.Getenv("DOCKER_API_VERSION")
 	if version == "" {
-		version = dclient.DefaultVersion
+		version = dockerClient.DefaultVersion
 	}
 
-	return dclient.NewClient(host, version, client, nil)
+	return dockerClient.NewClient(host, version, client, nil)
 }

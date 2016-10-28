@@ -1,7 +1,7 @@
 package docker
 
 import (
-	"github.com/docker/engine-api/client"
+	"github.com/docker/docker/client"
 )
 
 func GetClient(version string) *client.Client {
