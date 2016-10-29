@@ -3,8 +3,8 @@ package storage
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
@@ -16,8 +16,6 @@ import (
 	"os"
 	"strings"
 )
-
-var cre model.RegistryCredential
 
 func isManagedVolume(volume model.Volume) bool {
 	driver := volume.Data.Fields.Driver
@@ -98,11 +96,41 @@ func pathToVolume(volume model.Volume) string {
 	return strings.Replace(volume.URI, "file://", "", -1)
 }
 
-func authFunc() (string, error) {
-	username := cre.PublicValue
-	password := cre.SecretValue
-	email := cre.Data.Fields.Email
-	auth := fmt.Sprintf("{ \"username\": \"%s\", \"password\": \"%s\", \"email\": \"%s\" }", username, password, email)
-	str := base64.StdEncoding.EncodeToString([]byte(auth))
-	return str, nil
+func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePullOptions, progress *progress.Progress) error {
+	lastMessage := ""
+	message := ""
+	reader, err := client.ImagePull(context.Background(), imageUUID, opts)
+	if err != nil {
+		return errors.Wrap(err, "Failed to pull image")
+	}
+	defer reader.Close()
+	buffer := utils.ReadBuffer(reader)
+	statusList := strings.Split(buffer, "\r\n")
+	for _, rawStatus := range statusList {
+		if rawStatus != "" {
+			status := marshaller.FromString(rawStatus)
+			if utils.HasKey(status, "error") {
+				return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
+			}
+			if utils.HasKey(status, "status") {
+				message = utils.InterfaceToString(status["status"])
+			}
+		}
+		if lastMessage != message && progress != nil {
+			progress.Update(message, "yes", nil)
+			lastMessage = message
+		}
+	}
+	return nil
+}
+
+func wrapAuth(auth types.AuthConfig) string {
+	username := auth.Username
+	password := auth.Password
+	email := auth.Email
+	if username == "" {
+		return ""
+	}
+	str := fmt.Sprintf("{ \"username\": \"%s\", \"password\": \"%s\", \"email\": \"%s\" }", username, password, email)
+	return base64.StdEncoding.EncodeToString([]byte(str))
 }

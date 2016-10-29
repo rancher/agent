@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
-	engineCli "github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
+	engineCli "github.com/docker/docker/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -79,42 +78,11 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	if auth.ServerAddress == "https://docker.io" {
 		auth.ServerAddress = "https://index.docker.io"
 	}
-	cre = rc
-	pullOption := types.ImagePullOptions{}
-	if rc.PublicValue != "" {
-		tokenInfo, authErr := client.RegistryLogin(context.Background(), auth)
-		if authErr != nil {
-			logrus.Error(fmt.Sprintf("Authorization error; %s", authErr))
-		}
-		pullOption.RegistryAuth = tokenInfo.IdentityToken
-		pullOption.PrivilegeFunc = authFunc
+	registryAuth := wrapAuth(auth)
+	pullOption := types.ImagePullOptions{
+		RegistryAuth: registryAuth,
 	}
-
-	lastMessage := ""
-	message := ""
-	reader, err := client.ImagePull(context.Background(), realImageUUID, pullOption)
-	if err != nil {
-		return errors.Wrap(err, "Failed to pull image")
-	}
-	defer reader.Close()
-	buffer := utils.ReadBuffer(reader)
-	statusList := strings.Split(buffer, "\r\n")
-	for _, rawStatus := range statusList {
-		if rawStatus != "" {
-			status := marshaller.FromString(rawStatus)
-			if utils.HasKey(status, "error") {
-				return fmt.Errorf("Image [%s] failed to pull: %s", realImageUUID, message)
-			}
-			if utils.HasKey(status, "status") {
-				message = utils.InterfaceToString(status["status"])
-			}
-		}
-		if lastMessage != message && progress != nil {
-			progress.Update(message, "yes", nil)
-			lastMessage = message
-		}
-	}
-	return nil
+	return pullImageWrap(client, realImageUUID, pullOption, progress)
 }
 
 func DoVolumeDeactivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress) error {

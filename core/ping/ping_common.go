@@ -2,8 +2,8 @@ package ping
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"

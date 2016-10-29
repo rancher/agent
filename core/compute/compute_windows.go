@@ -1,8 +1,8 @@
 package compute
 
 import (
-	"github.com/docker/engine-api/client"
-	"github.com/docker/engine-api/types/container"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/rancher/agent/model"
 )
 

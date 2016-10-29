@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	engineCli "github.com/docker/engine-api/client"
+	engineCli "github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/core/marshaller"

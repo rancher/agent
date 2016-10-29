@@ -3,7 +3,7 @@
 package handlers
 
 import (
-	"github.com/docker/engine-api/types"
+	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
