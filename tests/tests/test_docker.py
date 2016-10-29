@@ -454,39 +454,6 @@ def test_instance_activate_links(agent):
 
 
 @if_docker
-def test_instance_activate_links_no_service(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-    delete_container('/target_redis')
-    delete_container('/target_mysql')
-
-    client = docker_client()
-    c = client.create_container('ibuildthecloud/helloworld',
-                                ports=[(3307, 'udp'), (3306, 'tcp')],
-                                name='target_mysql')
-    client.start(c, port_bindings={
-        '3307/udp': ('127.0.0.2', 12346),
-        '3306/tcp': ('127.0.0.2', 12345)
-    })
-
-    c = client.create_container('ibuildthecloud/helloworld',
-                                name='target_redis')
-    client.start(c)
-
-    def post(req, resp):
-        id = resp['data']['instanceHostMap']['instance']
-        id = id['+data']['dockerContainer']['Id']
-        inspect = docker_client().inspect_container(id)
-        instance_activate_common_validation(resp)
-
-        assert {'/target_mysql:/r-test-c861f990/mysql',
-                '/target_redis:/r-test-c861f990/redis'} == \
-            set(inspect['HostConfig']['Links'])
-
-    event_test(agent, 'docker/instance_activate_links_no_service',
-               post_func=post)
-
-
-@if_docker
 def test_instance_activate_cpu_set(agent):
 
     def pre(req):
