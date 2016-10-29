@@ -7,7 +7,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
@@ -483,51 +482,17 @@ func RemoveContainer(client *engineCli.Client, containerID string) error {
 	return nil
 }
 
-func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client, systemImages map[string]string) []model.PingResource {
-	sysCon := getSysContainer(container, dockerClient, systemImages)
+func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client) []model.PingResource {
 	containerData := model.PingResource{
-		Type:            "instance",
-		UUID:            GetUUID(container),
-		State:           state,
-		SystemContainer: sysCon,
-		DockerID:        container.ID,
-		Image:           container.Image,
-		Labels:          container.Labels,
-		Created:         container.Created,
+		Type:     "instance",
+		UUID:     GetUUID(container),
+		State:    state,
+		DockerID: container.ID,
+		Image:    container.Image,
+		Labels:   container.Labels,
+		Created:  container.Created,
 	}
 	return append(containers, containerData)
-}
-
-func getSysContainer(container types.Container, client *engineCli.Client, systemImages map[string]string) string {
-	image := container.Image
-	if _, ok := systemImages[image]; ok {
-		return systemImages[image]
-	}
-	label, ok := container.Labels["io.rancher.container.system"]
-	if ok {
-		return label
-	}
-	return ""
-}
-
-func GetAgentImage(client *engineCli.Client) (map[string]string, error) {
-	args := filters.NewArgs()
-	args.Add("label", constants.SystemLabels)
-	images, err := client.ImageList(context.Background(), types.ImageListOptions{Filters: args})
-	if err != nil {
-		return map[string]string{}, errors.Wrap(err, constants.GetAgentImageError+"failed to list images")
-	}
-	systemImage := map[string]string{}
-	for _, image := range images {
-		labelValue := image.Labels[constants.SystemLabels]
-		for _, l := range image.RepoTags {
-			if strings.HasSuffix(l, ":latest") {
-				alias := l[:len(l)-7]
-				systemImage[alias] = labelValue
-			}
-		}
-	}
-	return systemImage, nil
 }
 
 func Get(url string) (map[string]interface{}, error) {

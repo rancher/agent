@@ -127,7 +127,7 @@ func getResourceOverride(envVar string) uint64 {
 	return resource
 }
 
-func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, systemImages map[string]string) error {
+func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client) error {
 	if !pingIncludeInstance(ping) {
 		return nil
 	}
@@ -162,10 +162,10 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 			return errors.Wrap(err, constants.AddInstanceError+"failed to get all containers")
 		}
 		for _, container := range running {
-			containers = utils.AddContainer("running", container, containers, dockerClient, systemImages)
+			containers = utils.AddContainer("running", container, containers, dockerClient)
 		}
 		for _, container := range nonrunning {
-			containers = utils.AddContainer("stopped", container, containers, dockerClient, systemImages)
+			containers = utils.AddContainer("stopped", container, containers, dockerClient)
 		}
 		pong.Resources = append(pong.Resources, containers...)
 		pong.Options.Instances = true

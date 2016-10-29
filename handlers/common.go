@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
@@ -101,8 +100,7 @@ func initializeHandlers() *Handler {
 	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
 	info := types.Info{}
 	version := types.Version{}
-	systemImages := map[string]string{}
-	flags := [3]bool{}
+	flags := [2]bool{}
 	// initialize the info and version so we don't have to call docker API every time a ping request comes
 	for i := 0; i < 10; i++ {
 		in, err := client.Info(context.Background())
@@ -122,17 +120,8 @@ func initializeHandlers() *Handler {
 		}
 		time.Sleep(time.Duration(1) * time.Second)
 	}
-	for i := 0; i < 10; i++ {
-		ret, err := utils.GetAgentImage(client)
-		if err == nil {
-			systemImages = ret
-			flags[2] = true
-			break
-		}
-		time.Sleep(time.Duration(1) * time.Second)
-	}
 	// if we can't get the initialization data the program should exit
-	if !flags[0] || !flags[1] || !flags[2] {
+	if !flags[0] || !flags[1] {
 		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
@@ -172,7 +161,6 @@ func initializeHandlers() *Handler {
 	pingHandler := PingHandler{
 		dockerClient: clientWithTimeout,
 		collectors:   Collectors,
-		SystemImage:  systemImages,
 	}
 	configHandler := ConfigUpdateHandler{}
 	handler := Handler{

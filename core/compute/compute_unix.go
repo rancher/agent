@@ -304,7 +304,7 @@ func setupLinksNetwork(instance model.Instance, config *container.Config,
 		    rebuild the link configuration because it depends on manipulating the
 		    createConfig.
 	*/
-	if !utils.HasService(instance, "linkService") || utils.IsNonrancherContainer(instance) {
+	if utils.IsNonrancherContainer(instance) {
 		return
 	}
 
