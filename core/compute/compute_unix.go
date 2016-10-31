@@ -4,10 +4,17 @@ package compute
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
@@ -15,9 +22,10 @@ import (
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
-	"os"
-	"strconv"
-	"strings"
+)
+
+var (
+	cniWaitLabel = "io.rancher.cni.wait"
 )
 
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {
@@ -188,6 +196,12 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 				id = other.ID
 			}
 			hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%v", id))
+			hostConfig.Links = nil
+		} else if kind == "cni" {
+			config.Labels[cniWaitLabel] = "true"
+			portsSupported = false
+			config.NetworkDisabled = true
+			hostConfig.NetworkMode = "none"
 			hostConfig.Links = nil
 		}
 	}
@@ -512,4 +526,11 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 		hostConfig.BlkioDeviceWriteBps = blkioDeviceWriteBps
 	}
 
+}
+
+func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) (types.ContainerCreateResponse, error) {
+	if err := modifyForCNI(dockerClient, config, hostConfig); err != nil {
+		return types.ContainerCreateResponse{}, err
+	}
+	return dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
 }

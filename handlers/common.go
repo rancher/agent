@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	goUUID "github.com/nu7hatch/gouuid"
@@ -13,8 +16,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-	"os"
-	"time"
 )
 
 type Handler struct {
@@ -22,7 +23,6 @@ type Handler struct {
 	storage      *StorageHandler
 	configUpdate *ConfigUpdateHandler
 	ping         *PingHandler
-	delegate     *DelegateRequestHandler
 }
 
 func GetHandlers() map[string]revents.EventHandler {
@@ -36,9 +36,7 @@ func GetHandlers() map[string]revents.EventHandler {
 		"compute.instance.remove":     cleanLog(logRequest(handler.compute.InstanceRemove)),
 		"storage.image.activate":      cleanLog(logRequest(handler.storage.ImageActivate)),
 		"storage.volume.activate":     cleanLog(logRequest(handler.storage.VolumeActivate)),
-		"storage.volume.deactivate":   cleanLog(logRequest(handler.storage.VolumeDeactivate)),
 		"storage.volume.remove":       cleanLog(logRequest(handler.storage.VolumeRemove)),
-		"delegate.request":            cleanLog(logRequest(handler.delegate.DelegateRequest)),
 		"ping":                        cleanLog(handler.ping.Ping),
 		"config.update":               cleanLog(logRequest(handler.configUpdate.ConfigUpdate)),
 	}
@@ -155,9 +153,6 @@ func initializeHandlers() *Handler {
 	storageHandler := StorageHandler{
 		dockerClient: client,
 	}
-	delegateHandler := DelegateRequestHandler{
-		dockerClient: clientWithTimeout,
-	}
 	pingHandler := PingHandler{
 		dockerClient: clientWithTimeout,
 		collectors:   Collectors,
@@ -168,7 +163,6 @@ func initializeHandlers() *Handler {
 		storage:      &storageHandler,
 		ping:         &pingHandler,
 		configUpdate: &configHandler,
-		delegate:     &delegateHandler,
 	}
 	return &handler
 }

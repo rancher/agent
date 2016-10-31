@@ -2,6 +2,9 @@ package compute
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -15,8 +18,6 @@ import (
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"strings"
-	"time"
 )
 
 func DoInstanceActivate(instance model.Instance, host model.Host, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData) error {
@@ -124,11 +125,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", instance.ID, containerID)
-
-	if err := RecordState(dockerClient, instance, containerID); err != nil {
-		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to record state")
-	}
-
 	return nil
 }
 

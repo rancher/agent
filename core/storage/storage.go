@@ -3,6 +3,9 @@ package storage
 import (
 	"fmt"
 
+	"os"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	engineCli "github.com/docker/docker/client"
@@ -12,8 +15,6 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
-	"strings"
 )
 
 func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
@@ -83,10 +84,6 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 		RegistryAuth: registryAuth,
 	}
 	return pullImageWrap(client, realImageUUID, pullOption, progress)
-}
-
-func DoVolumeDeactivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress) error {
-	return errors.New("Not implemented")
 }
 
 func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client) error {

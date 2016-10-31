@@ -4,9 +4,11 @@ from tests.common import event_test, delete_container, \
     instance_activate_assert_image_id, \
     docker_client, \
     container_field_test_boiler_plate, \
-    trim, CONFIG_OVERRIDE, JsonObject, Config, get_container, \
+    trim, CONFIG_OVERRIDE, JsonObject, get_container, \
     instance_only_activate, delete_volume, DockerConfig, \
     newer_than, json_data, if_docker, remove_container
+
+from tests.cattle import Config
 
 import time
 from docker.errors import APIError
@@ -77,39 +79,6 @@ def test_volume_activate_driver2(agent):
         del resp['actions']
 
     event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
-
-
-@if_docker
-def test_volume_deactivate_driver(agent):
-    def pre(req):
-        v = DockerConfig.storage_api_version()
-        docker_client(version=v).create_volume('test_vol',
-                                               'local')
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': {'size': '10G'}}}
-        vol['name'] = 'test_vol'
-
-    def post(req, resp):
-        v = DockerConfig.storage_api_version()
-        vol = docker_client(version=v).inspect_volume('test_vol')
-        assert vol['Driver'] == 'local'
-        assert vol['Name'] == 'test_vol'
-        docker_client(version=v).remove_volume('test_vol')
-        del resp['data']['volumeStoragePoolMap']
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_deactivate', pre_func=pre, post_func=post)
-
-
-@if_docker
-def test_volume_deactivate(agent):
-    def post(req, resp):
-        del resp['data']['volumeStoragePoolMap']
-        del resp['links']
-        del resp['actions']
-    event_test(agent, 'docker/volume_deactivate', post_func=post)
 
 
 @if_docker

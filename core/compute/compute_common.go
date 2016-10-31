@@ -3,6 +3,12 @@ package compute
 import (
 	"fmt"
 
+	urls "net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -17,11 +23,6 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	urls "net/url"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkConfig *network.NetworkingConfig,
@@ -43,13 +44,13 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	dockerImage := utils.ParseRepoTag(imageTag)
 	config.Image = dockerImage.UUID
 
-	containerResponse, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
+	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
 		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
-		containerResponse, err1 := dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkConfig, name)
+		containerResponse, err1 := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)
 		if err1 != nil {
 			return "", errors.Wrap(err1, constants.CreateContainerError+"failed to create container")
 		}

@@ -3,9 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"testing"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
@@ -13,11 +16,6 @@ import (
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
-	"io/ioutil"
-	"os"
-	"path"
-	"testing"
-	"time"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -58,17 +56,6 @@ func deleteContainer(name string) {
 				time.Sleep(time.Duration(500) * time.Millisecond)
 			}
 			dockerClient.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{})
-			RemoveStateFile(c.ID)
-		}
-	}
-}
-
-func RemoveStateFile(id string) {
-	if len(id) > 0 {
-		contDir := config.ContainerStateDir()
-		filePath := path.Join(contDir, id)
-		if _, err := os.Stat(filePath); err == nil {
-			os.Remove(filePath)
 		}
 	}
 }
