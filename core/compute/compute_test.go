@@ -4,6 +4,10 @@ package compute
 
 import (
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/blkiodev"
@@ -16,10 +20,6 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
-	"os"
-	"path"
-	"testing"
-	"time"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -229,17 +229,6 @@ func deleteContainer(name string) {
 				time.Sleep(time.Duration(500) * time.Millisecond)
 			}
 			client.ContainerRemove(context.Background(), c.ID, types.ContainerRemoveOptions{})
-			RemoveStateFile(c.ID)
-		}
-	}
-}
-
-func RemoveStateFile(id string) {
-	if len(id) > 0 {
-		contDir := config.ContainerStateDir()
-		filePath := path.Join(contDir, id)
-		if _, err := os.Stat(filePath); err == nil {
-			os.Remove(filePath)
 		}
 	}
 }

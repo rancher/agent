@@ -1,13 +1,14 @@
 package storage
 
 import (
+	"os"
+
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
 )
 
 func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
@@ -24,10 +25,6 @@ func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerCl
 		return vol.Mountpoint != "moved", nil
 	}
 	return true, nil
-}
-
-func IsVolumeInactive(volume model.Volume, storagePool model.StoragePool) bool {
-	return true
 }
 
 func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {

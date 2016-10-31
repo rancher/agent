@@ -5,7 +5,6 @@ import (
 	engineCli "github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/compute"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -80,29 +79,6 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 	return h.reply(event, cli, constants.VolumeActivateError)
 }
 
-func (h *StorageHandler) VolumeDeactivate(event *revents.Event, cli *client.RancherClient) error {
-	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
-	if err != nil {
-		return errors.Wrap(err, constants.VolumeDeactivateError+"failed to marshall incoming request")
-	}
-	volume := volumeStoragePoolMap.Volume
-	storagePool := volumeStoragePoolMap.StoragePool
-	progress := utils.GetProgress(event, cli)
-
-	if storage.IsVolumeInactive(volume, storagePool) {
-		return h.reply(event, cli, constants.VolumeDeactivateError)
-	}
-
-	if err := storage.DoVolumeDeactivate(volume, storagePool, progress); err != nil {
-		return errors.Wrap(err, constants.VolumeDeactivateError+"failed to deactivate volume")
-	}
-	if !storage.IsVolumeInactive(volume, storagePool) {
-		return errors.New(constants.VolumeDeactivateError)
-	}
-	return h.reply(event, cli, constants.VolumeDeactivateError)
-}
-
 func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
 	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
@@ -113,11 +89,6 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 	storagePool := volumeStoragePoolMap.StoragePool
 	progress := utils.GetProgress(event, cli)
 
-	if volume.DeviceNumber == 0 {
-		if err := compute.PurgeState(volume.Instance, h.dockerClient); err != nil {
-			return errors.Wrap(err, constants.VolumeRemoveError+"failed to purge state")
-		}
-	}
 	if ok, err := storage.IsVolumeRemoved(volume, storagePool, h.dockerClient); err == nil && !ok {
 		rmErr := storage.DoVolumeRemove(volume, storagePool, progress, h.dockerClient)
 		if rmErr != nil {

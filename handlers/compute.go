@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
@@ -12,7 +14,6 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
-	"strings"
 )
 
 type ComputeHandler struct {
@@ -34,9 +35,6 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 	}
 
 	if ok, err := compute.IsInstanceActive(instance, host, h.dockerClient); ok {
-		if err := compute.RecordState(h.dockerClient, instance, ""); err != nil {
-			return errors.Wrap(err, constants.InstanceActivateError+"failed to record state")
-		}
 		return h.reply(event, cli, constants.InstanceActivateError)
 	} else if err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to check whether instance is activated")

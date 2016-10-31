@@ -6,7 +6,6 @@ import inspect
 import json
 import logging
 import os
-from os import path
 from os.path import dirname
 import pytest
 import requests
@@ -14,9 +13,8 @@ import tests
 import time
 from docker.utils import compare_version
 import re
-from tests.cattle import Config
 import random
-import platform
+
 
 TEST_DIR = os.path.join(dirname(tests.__file__))
 CONFIG_OVERRIDE = {}
@@ -173,7 +171,6 @@ def delete_container(name):
                     break
                 time.sleep(0.5)
             client.remove_container(c)
-            remove_state_file(c)
 
 
 def docker_client(version=None, base_url_override=None, tls_config=None,
@@ -239,30 +236,9 @@ def default_value(name, default):
     return result
 
 
-def state_file_exists(docker_id):
-    try:
-        cont_dir = Config.container_state_dir()
-        file_path = path.join(cont_dir, docker_id)
-        return os.path.exists(file_path)
-    except:
-        return False
-
-
-def remove_state_file(container):
-    if container:
-        try:
-            cont_dir = Config.container_state_dir()
-            file_path = os.path.join(cont_dir, container['Id'])
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except:
-            pass
-
-
 def instance_activate_common_validation(resp):
     docker_container = resp['data']['instanceHostMap']['instance']
     docker_container = docker_container['+data']['dockerContainer']
-    docker_id = docker_container['Id']
     container_field_test_boiler_plate(resp)
     fields = resp['data']['instanceHostMap']['instance']['+data']['+fields']
     try:
@@ -276,8 +252,6 @@ def instance_activate_common_validation(resp):
     for idx, p in enumerate(fields['dockerPorts']):
         if '8080' in p or '12201' in p:
             fields['dockerPorts'][idx] = re.sub(r':.*:', ':1234:', p)
-    if platform.system() != "Windows":
-        assert state_file_exists(docker_id)
     instance_activate_assert_host_config(resp)
     instance_activate_assert_image_id(resp)
     del docker_container["State"]

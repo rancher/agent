@@ -1,5 +1,5 @@
 from common import delete_container, docker_client, \
-    container_field_test_boiler_plate, state_file_exists, event_test, trim, \
+    container_field_test_boiler_plate, event_test, trim, \
     get_container
 
 
@@ -25,7 +25,6 @@ def test_native_container_activate_only(agent):
         assert docker_inspect['Id'] == inspect['Id']
         assert docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-        assert state_file_exists(docker_inspect['Id'])
 
         docker_container = instance_data['dockerContainer']
         fields = instance_data['+fields']
@@ -56,7 +55,6 @@ def test_native_container_activate_not_running(agent):
         assert docker_inspect['Id'] == inspect['Id']
         assert not docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-        assert state_file_exists(docker_inspect['Id'])
 
         docker_container = instance_data['dockerContainer']
         fields = instance_data['+fields']
@@ -108,7 +106,6 @@ def test_native_container_deactivate_only(agent):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert not docker_inspect['State']['Running']
-        assert state_file_exists(docker_inspect['Id'])
         container_field_test_boiler_plate(resp)
 
         docker_container = instance_data['dockerContainer']
@@ -128,7 +125,6 @@ def test_native_container_deactivate_only(agent):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert docker_inspect['State']['Running']
-        assert state_file_exists(docker_inspect['Id'])
         container_field_test_boiler_plate(resp)
 
         docker_container = instance_data['dockerContainer']
@@ -203,14 +199,12 @@ def test_native_container_remove(agent):
 
     c = get_container('/native_container')
     docker_client().stop(c)
-    assert state_file_exists(c['Id'])
 
     def pre(req):
         instance = req['data']['volumeStoragePoolMap']['volume']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        assert not state_file_exists(c['Id'])
         del resp['links']
         del resp['actions']
 

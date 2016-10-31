@@ -2,11 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	goUUID "github.com/nu7hatch/gouuid"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -14,6 +9,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
+	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
 )
 
 func URL() string {
@@ -164,10 +165,6 @@ func PhysicalHost() (model.PingResource, error) {
 		Kind: "physicalHost",
 		Name: hostname,
 	}, nil
-}
-
-func ContainerStateDir() string {
-	return path.Join(StateDir(), "containers")
 }
 
 func UpdatePyagent() bool {
