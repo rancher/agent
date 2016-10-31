@@ -25,7 +25,8 @@ import (
 )
 
 var (
-	cniWaitLabel = "io.rancher.cni.wait"
+	cniWaitLabel    = "io.rancher.cni.wait"
+	cniNetworkLabel = "io.rancher.cni.network"
 )
 
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {
@@ -170,7 +171,8 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 	portsSupported := true
 	hostnameSupported := true
 	if len(instance.Nics) > 0 {
-		kind := instance.Nics[0].Network.Kind
+		network := instance.Nics[0].Network
+		kind := network.Kind
 		if kind == "dockerHost" {
 			portsSupported = false
 			hostnameSupported = false
@@ -199,8 +201,12 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 			hostConfig.Links = nil
 		} else if kind == "cni" {
 			config.Labels[cniWaitLabel] = "true"
+			if config.Labels[cniNetworkLabel] == "" && network.Name != "" {
+				config.Labels[cniNetworkLabel] = network.Name
+			}
 			portsSupported = false
-			config.NetworkDisabled = true
+			// If this is set true resolv.conf is not setup.
+			config.NetworkDisabled = false
 			hostConfig.NetworkMode = "none"
 			hostConfig.Links = nil
 		}

@@ -28,6 +28,7 @@ type Nic struct {
 		} `json:"subnet"`
 	} `json:"ipAddresses"`
 	Network struct {
+		Name            string `json:"name"`
 		Kind            string `json:"kind"`
 		NetworkServices []Service
 	} `json:"network"`
