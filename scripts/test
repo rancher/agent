@@ -39,7 +39,7 @@ docker pull ibuildthecloud/helloworld:latest
 
 PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
 
-go test -race -cover -tags=test ${PACKAGES}
+go test -race -cover -timeout 30s -tags=test ${PACKAGES}
 
 cd tests
 find -depth -name __pycache__ -o -name "*.pyc" -exec rm -rf {} \;
