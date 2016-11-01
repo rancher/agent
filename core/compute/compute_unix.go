@@ -448,6 +448,8 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.Cgroup = fields.Cgroup
 
 	hostConfig.CgroupParent = fields.CgroupParent
+
+	hostConfig.UsernsMode = fields.UsernsMode
 }
 
 func setupComputeResourceFields(hostConfig *container.HostConfig, instance model.Instance) {

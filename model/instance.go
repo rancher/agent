@@ -237,6 +237,7 @@ type InstanceFields struct {
 	PidsLimit          int64
 	Cgroup             container.CgroupSpec
 	DiskQuota          int64
+	UsernsMode         container.UsernsMode
 }
 
 type LogConfig struct {

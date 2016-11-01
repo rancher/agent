@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
@@ -194,16 +195,17 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 		fields["healthCmd"] = []string{
 			"ls",
 		}
+		fields["usernsMode"] = "host"
 		fields["healthInterval"] = 5
 		fields["healthRetries"] = 3
 		fields["healthTimeout"] = 60
 		rawEvent = marshalEvent(event, c)
 		reply := testEvent(rawEvent, c)
-		container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
 		if !ok {
 			c.Fatal("No id found")
 		}
-		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		inspect, err := dockerClient.ContainerInspect(context.Background(), cont.(types.Container).ID)
 		if err != nil {
 			c.Fatal("Inspect Err")
 		}
@@ -217,6 +219,7 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
 			"/run": "rw,noexec,nosuid,size=65536k",
 		})
+		c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
 	}
 }
 
