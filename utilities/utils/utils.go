@@ -326,31 +326,11 @@ func FindIPAndMac(instance model.Instance) (string, string, string) {
 	return "", "", ""
 }
 
-func ParseRepoTag(name string) model.RepoTag {
+func ParseRepoTag(name string) string {
 	if strings.HasPrefix(name, "docker:") {
 		name = name[7:]
 	}
-	n := strings.Index(name, ":")
-	if n < 0 {
-		return model.RepoTag{
-			Repo: name,
-			Tag:  "latest",
-			UUID: name + ":latest",
-		}
-	}
-	tag := name[n+1:]
-	if strings.Index(tag, "/") < 0 {
-		return model.RepoTag{
-			Repo: name[:n],
-			Tag:  tag,
-			UUID: name,
-		}
-	}
-	return model.RepoTag{
-		Repo: name,
-		Tag:  "latest",
-		UUID: name + ":latest",
-	}
+	return name
 }
 
 func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) (types.Container, error) {
