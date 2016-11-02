@@ -64,8 +64,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	if utils.IsImageNoOp(image.Data) {
 		return nil
 	}
-	dockerImage := utils.ParseRepoTag(imageUUID)
-	realImageUUID := dockerImage.UUID
+	imageName := utils.ParseRepoTag(imageUUID)
 	if isBuild(image) {
 		return imageBuild(image, progress, client)
 	}
@@ -83,7 +82,7 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	pullOption := types.ImagePullOptions{
 		RegistryAuth: registryAuth,
 	}
-	return pullImageWrap(client, realImageUUID, pullOption, progress)
+	return pullImageWrap(client, imageName, pullOption, progress)
 }
 
 func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client) error {

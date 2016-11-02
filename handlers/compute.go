@@ -129,7 +129,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 	if pullErr != nil {
 		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}
-	logrus.Info("rancher id [%v]: Image with docker id [%v] has been pulled", event.ResourceID, inspect.ID)
+	logrus.Infof("rancher id [%v]: Image with docker id [%v] has been pulled", event.ResourceID, inspect.ID)
 	return h.reply(event, cli, constants.InstanceRemoveError)
 }
 
