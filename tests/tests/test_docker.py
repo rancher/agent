@@ -1481,7 +1481,7 @@ def ping_post_process(req, resp):
               'io.rancher.host.linux_kernel_version': '4.1'}
 
     uuids = {'uuid-running': 0, 'uuid-stopped': 1, 'uuid-created': 2,
-             'uuid-system': 3, 'uuid-sys-nover': 4, 'uuid-agent-instance': 5}
+             'uuid-system': 1, 'uuid-sys-nover': 2, 'uuid-agent-instance': 3}
     instances = []
     for r in resources:
         if r['type'] == 'host':
@@ -1530,7 +1530,7 @@ def ping_post_process(req, resp):
 
     instances.sort(key=ping_sort)
 
-    assert len(instances) == 5
+    assert len(instances) == 3
 
     resources = filter(lambda x: x.get('kind') == 'docker', resources)
     resources += instances
@@ -1593,42 +1593,29 @@ def test_ping(agent, pull_images, mocker):
     delete_container('/named-running')
     delete_container('/named-stopped')
     delete_container('/named-created')
-    delete_container('/named-system')
-    delete_container('/named-sys-nover')
     delete_container('/named-agent-instance')
 
     client.create_container('ibuildthecloud/helloworld',
                             name='named-created', labels={
                                 'io.rancher.container.uuid': 'uuid-created'})
-    running = client.create_container('ibuildthecloud/helloworld:latest',
+    running = client.create_container('ibuildthecloud/helloworld',
                                       name='named-running', labels={
                                           'io.rancher.container.uuid':
                                           'uuid-running'})
     client.start(running)
-    stopped = client.create_container('ibuildthecloud/helloworld:latest',
+
+    # Set entryopint to /bin/sh so it will stop immediately
+    stopped = client.create_container('ibuildthecloud/helloworld',
+                                      entrypoint='/bin/sh',
                                       name='named-stopped', labels={
                                           'io.rancher.container.uuid':
                                           'uuid-stopped'})
     client.start(stopped)
-    client.kill(stopped, signal='SIGKILL')
-
-    system_con = client.create_container('rancher/agent:v0.7.9',
-                                         name='named-system', labels={
-                                             'io.rancher.container.uuid':
-                                             'uuid-system'})
-    client.start(system_con)
-    client.kill(system_con, signal='SIGKILL')
-
-    sys_nover = client.create_container('rancher/agent',
-                                        name='named-sys-nover', labels={
-                                            'io.rancher.container.uuid':
-                                            'uuid-sys-nover'})
-    client.start(sys_nover)
-    client.kill(sys_nover, signal='SIGKILL')
 
     agent_inst_con = client.create_container(
-        'ibuildthecloud/helloworld:latest',
+        'ibuildthecloud/helloworld',
         name='named-agent-instance',
+        entrypoint='/bin/sh',
         labels={
             'io.rancher.container.uuid':
                 'uuid-agent-instance',
@@ -1636,7 +1623,6 @@ def test_ping(agent, pull_images, mocker):
                 'networkAgent'},
         command='true')
     client.start(agent_inst_con)
-    client.kill(agent_inst_con, signal='SIGKILL')
 
     CONFIG_OVERRIDE['DOCKER_UUID'] = 'testuuid'
     CONFIG_OVERRIDE['PHYSICAL_HOST_UUID'] = 'hostuuid'
