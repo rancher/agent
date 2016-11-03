@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
@@ -11,44 +12,43 @@ import (
 	"golang.org/x/net/context"
 )
 
-func GetResponseData(event *revents.Event, client *client.Client) (map[string]interface{}, error) {
-	resourceType := event.ResourceType
-	switch resourceType {
-	case "instanceHostMap":
-		resp, err := getInstanceHostMapData(event, client)
-		if err != nil {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to marshall instancehostmap")
-		}
-		return map[string]interface{}{resourceType: resp}, nil
-	case "volumeStoragePoolMap":
-		return map[string]interface{}{
-			resourceType: map[string]interface{}{
-				"volume": map[string]interface{}{
-					"format": "docker",
-				},
-			},
-		}, nil
-	case "instancePull":
-		resp, err := getInstancePullData(event, client)
-		if err != nil {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to get instance pull data")
-		}
-		return map[string]interface{}{
-			"fields": map[string]interface{}{
-				"dockerImage": resp,
-			},
-		}, nil
-	case "imageStoragePoolMap":
-		return map[string]interface{}{
-			resourceType: map[string]interface{}{},
-		}, nil
-	default:
-		return map[string]interface{}{}, nil
+func InstanceHostMapReply(event *revents.Event, client *client.Client, cache *cache.Cache) (map[string]interface{}, error) {
+	resp, err := getInstanceHostMapData(event, client, cache)
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to get instance host map")
 	}
-
+	return map[string]interface{}{event.ResourceType: resp}, nil
 }
 
-func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[string]interface{}, error) {
+func VolumeStoragePoolMapReply() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"volumeStoragePoolMap": map[string]interface{}{
+			"volume": map[string]interface{}{
+				"format": "docker",
+			},
+		},
+	}, nil
+}
+
+func InstancePullReply(event *revents.Event, client *client.Client) (map[string]interface{}, error) {
+	resp, err := getInstancePullData(event, client)
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetResponseDataError+"failed to get instance pull data")
+	}
+	return map[string]interface{}{
+		"fields": map[string]interface{}{
+			"dockerImage": resp,
+		},
+	}, nil
+}
+
+func ImageStoragePoolMapReply() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"imageStoragePoolMap": map[string]interface{}{},
+	}, nil
+}
+
+func getInstanceHostMapData(event *revents.Event, client *client.Client, cache *cache.Cache) (map[string]interface{}, error) {
 	instance, _, err := GetInstanceAndHost(event)
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to marshall instancehostmap")
@@ -90,7 +90,10 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get mount data")
 	}
-	dockerIP := getIP(inspect)
+	dockerIP, err := getIP(inspect, cache)
+	if err != nil {
+		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get ip of the container")
+	}
 	if container.Ports != nil && len(container.Ports) > 0 {
 		for _, port := range container.Ports {
 			privatePort := fmt.Sprintf("%v/%v", port.PrivatePort, port.Type)

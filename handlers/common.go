@@ -8,6 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
@@ -123,6 +124,7 @@ func initializeHandlers() *Handler {
 		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
+	cache := cache.New(5*time.Minute, 30*time.Second)
 	Collectors := []hostInfo.Collector{
 		hostInfo.CPUCollector{},
 		hostInfo.DiskCollector{
@@ -149,6 +151,7 @@ func initializeHandlers() *Handler {
 			Info:    info,
 			Version: version,
 		},
+		memCache: cache,
 	}
 	storageHandler := StorageHandler{
 		dockerClient: client,
