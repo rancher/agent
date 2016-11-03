@@ -31,25 +31,3 @@ func (s *ComputeTestSuite) TestDoImageActivate(c *check.C) {
 	err := DoImageActivate(image, storagePool, nil, client, imageUUID)
 	c.Check(err, check.NotNil)
 }
-
-func (s *ComputeTestSuite) TestPullingPrivateImage(c *check.C) {
-	image := model.Image{
-		RegistryCredential: model.RegistryCredential{
-			PublicValue: "strongmonkey1992",
-			SecretValue: "pds123456",
-			Data: model.CredentialData{
-				Fields: model.CredentialFields{
-					ServerAddress: "https://index.docker.io/v1",
-					Email:         "daishan1992@gmail.com",
-				},
-			},
-		},
-	}
-	dclient := docker.GetClient(constants.DefaultVersion)
-	imageUUID := "strongmonkey1992/docker-whale"
-	storagePool := model.StoragePool{}
-	err := DoImageActivate(image, storagePool, nil, dclient, imageUUID)
-	if err != nil {
-		c.Fatal(err)
-	}
-}
