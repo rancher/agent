@@ -17,19 +17,6 @@ import platform
 from cattle.plugins.host_info.main import HostInfo
 
 
-@pytest.fixture(scope='module')
-def pull_images():
-    client = docker_client()
-    images = [('ibuildthecloud/helloworld', 'latest'),
-              ('rancher/agent', 'v0.7.9'),
-              ('rancher/agent', 'latest')]
-    for i in images:
-        try:
-            client.inspect_image(':'.join(i))
-        except APIError:
-            client.pull(i[0], i[1])
-
-
 @if_docker
 def test_volume_activate(agent):
 
@@ -1584,7 +1571,7 @@ def ping_post_process_state_exception(req, resp, valid_resp):
 
 
 @if_docker
-def test_ping(agent, pull_images, mocker):
+def test_ping(agent, mocker):
     mocker.patch.object(HostInfo, 'collect_data',
                         return_value=json_data('docker/host_info_resp'))
 
