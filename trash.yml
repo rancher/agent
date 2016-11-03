@@ -64,3 +64,12 @@ import:
  
 - package: github.com/go-ole/go-ole
   version: 7dfdcf409020452e29b4babcbb22f984d2aa308a
+
+- package: github.com/patrickmn/go-cache
+  version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
+
+- package: github.com/vishvananda/netlink
+  version: da7420cab5e209195f5f7387fccd4c7f48758d30
+
+- package: github.com/vishvananda/netns
+  version: 8ba1072b58e0c2a240eb5f6120165c7776c3e7b8
