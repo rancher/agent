@@ -64,7 +64,7 @@ func setWaitEntrypoint(c *client.Client, container *container.Config) error {
 	}
 
 	if len(container.Entrypoint) == 0 || container.Entrypoint[0] != waitProg {
-		container.Entrypoint = append(container.Entrypoint, waitProg)
+		container.Entrypoint = append([]string{waitProg}, container.Entrypoint...)
 	}
 
 	return nil
