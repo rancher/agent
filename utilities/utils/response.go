@@ -110,6 +110,15 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client) (map[st
 		}
 	}
 
+	if len(dockerPorts) == 0 {
+		image, _, err := client.ImageInspectWithRaw(context.Background(), container.ImageID)
+		if err == nil && image.Config != nil {
+			for k := range image.Config.ExposedPorts {
+				dockerPorts = append(dockerPorts, string(k))
+			}
+		}
+	}
+
 	update := map[string]interface{}{
 		"instance": map[string]interface{}{
 			"+data": map[string]interface{}{
