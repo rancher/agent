@@ -32,7 +32,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	}
 
 	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); ok {
-		return h.reply(event, cli, constants.ImageActivateError)
+		return imageStoragePoolMapReply(event, cli)
 	} else if err != nil {
 		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
 	}
@@ -48,7 +48,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 		return errors.New(constants.ImageActivateError + "failed to activate image")
 	}
 	logrus.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ResourceID, image.Name)
-	return h.reply(event, cli, constants.ImageActivateError)
+	return imageStoragePoolMapReply(event, cli)
 }
 
 func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -62,7 +62,7 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 	progress := utils.GetProgress(event, cli)
 
 	if ok, err := storage.IsVolumeActive(volume, storagePool, h.dockerClient); ok {
-		return h.reply(event, cli, constants.VolumeActivateError)
+		return volumeStoragePoolMapReply(event, cli)
 	} else if err != nil {
 		return errors.Wrap(err, constants.VolumeActivateError+"failed to check whether volume is activated")
 	}
@@ -76,7 +76,7 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 		return errors.New(constants.VolumeActivateError + "volume is not activated")
 	}
 	logrus.Infof("rancher id [%v]: Volume with name [%v] has been activated", event.ResourceID, volume.Name)
-	return h.reply(event, cli, constants.VolumeActivateError)
+	return volumeStoragePoolMapReply(event, cli)
 }
 
 func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
@@ -98,13 +98,5 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 		return errors.Wrap(err, constants.VolumeRemoveError+"failed to check whether volume is removed")
 	}
 	logrus.Infof("rancher id [%v]: Volume with name [%v] has been removed", event.ResourceID, volume.Name)
-	return h.reply(event, cli, constants.VolumeRemoveError)
-}
-
-func (h *StorageHandler) reply(event *revents.Event, cli *client.RancherClient, errMSG string) error {
-	resp, err := utils.GetResponseData(event, h.dockerClient)
-	if err != nil {
-		return errors.Wrap(err, errMSG)
-	}
-	return reply(resp, event, cli)
+	return volumeStoragePoolMapReply(event, cli)
 }

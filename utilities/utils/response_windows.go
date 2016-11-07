@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
+	"github.com/patrickmn/go-cache"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"golang.org/x/net/context"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-func getIP(inspect types.ContainerJSON) string {
+func getIP(inspect types.ContainerJSON, cache *cache.Cache) (string, error) {
 	containerID := inspect.ID
 	client := docker.GetClient(constants.DefaultVersion)
 	execConfig := types.ExecConfig{
@@ -32,12 +33,12 @@ func getIP(inspect types.ContainerJSON) string {
 	execObj, err := client.ContainerExecCreate(context.Background(), containerID, execConfig)
 	if err != nil {
 		logrus.Error(err)
-		return ""
+		return "", nil
 	}
 	hijack, err := client.ContainerExecAttach(context.Background(), execObj.ID, execConfig)
 	if err != nil {
 		logrus.Error(err)
-		return ""
+		return "", nil
 	}
 	scanner := bufio.NewScanner(hijack.Reader)
 	for scanner.Scan() {
@@ -47,5 +48,5 @@ func getIP(inspect types.ContainerJSON) string {
 		}
 	}
 	hijack.Close()
-	return ip
+	return ip, nil
 }

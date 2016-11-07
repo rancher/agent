@@ -257,3 +257,8 @@ func DefaultValue(name string, df string) string {
 func Stamp() string {
 	return DefaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
 }
+
+func TimeoutIP() int {
+	timeout, _ := strconv.Atoi(DefaultValue("IP_TIMEOUT", "60"))
+	return timeout
+}
