@@ -27,7 +27,7 @@ func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
 			c.Delete(inspect.Config.Labels[constants.UUIDLabel])
 			return InterfaceToString(cacheIP), nil
 		}
-		ip, err := lookUpIP(inspect.ID)
+		ip, err := lookUpIP(inspect)
 		if err != nil {
 			c.Add(inspect.Config.Labels[constants.UUIDLabel], "error", cache.DefaultExpiration)
 			return "", err
@@ -38,13 +38,13 @@ func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
 	return inspect.NetworkSettings.IPAddress, nil
 }
 
-func lookUpIP(id string) (string, error) {
+func lookUpIP(inspect types.ContainerJSON) (string, error) {
 	endTime := time.Now().Add(time.Duration(1) * time.Minute)
 	initTime := time.Duration(250) * time.Millisecond
 	maxTime := time.Duration(2) * time.Second
 	for {
 		// back off
-		nsHandler, err := netns.GetFromDocker(id)
+		nsHandler, err := netns.GetFromPid(inspect.State.Pid)
 		if err != nil {
 			continue
 		}
