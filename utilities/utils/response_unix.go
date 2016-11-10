@@ -3,22 +3,24 @@
 package utils
 
 import (
+	"time"
+
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
-	"time"
 )
 
 const (
-	cniLabels = "io.rancher.network.cni"
+	cniLabels = "io.rancher.cni.network"
 	linkName  = "eth0"
 )
 
 func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
-	if val, ok := inspect.Config.Labels[cniLabels]; ok && val == "true" && c != nil {
+	if inspect.Config.Labels[cniLabels] != "" && c != nil {
 		cacheIP, ok := c.Get(inspect.Config.Labels[constants.UUIDLabel])
 		if ok && InterfaceToString(cacheIP) == "error" {
 			c.Delete(inspect.Config.Labels[constants.UUIDLabel])
@@ -39,30 +41,16 @@ func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
 }
 
 func lookUpIP(inspect types.ContainerJSON) (string, error) {
-	endTime := time.Now().Add(time.Duration(1) * time.Minute)
-	initTime := time.Duration(250) * time.Millisecond
-	maxTime := time.Duration(2) * time.Second
+	endTime := time.Now().Add(30 * time.Second)
+	initTime := 250 * time.Millisecond
+	maxTime := 2 * time.Second
 	for {
-		// back off
-		nsHandler, err := netns.GetFromPid(inspect.State.Pid)
-		if err != nil {
-			continue
+		ip, err := getIPForPID(inspect.State.Pid)
+		if err != nil || ip != "" {
+			return ip, err
 		}
-		handler, err := netlink.NewHandleAt(nsHandler)
-		if err != nil {
-			continue
-		}
-		link, err := handler.LinkByName(linkName)
-		if err != nil {
-			continue
-		}
-		addrs, err := handler.AddrList(link, netlink.FAMILY_V4)
-		if err != nil {
-			continue
-		}
-		if len(addrs) > 0 {
-			return addrs[0].IP.String(), nil
-		}
+
+		logrus.Debugf("Sleeping %v (%v remaining) waiting for IP on %s", initTime, endTime.Sub(time.Now()), inspect.ID)
 		time.Sleep(initTime)
 		initTime = initTime * 2
 		if initTime.Seconds() > maxTime.Seconds() {
@@ -72,4 +60,30 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 			return "", errors.New("Timeout getting IP address")
 		}
 	}
+}
+
+func getIPForPID(pid int) (string, error) {
+	nsHandler, err := netns.GetFromPid(pid)
+	if err != nil {
+		return "", err
+	}
+	defer nsHandler.Close()
+	handler, err := netlink.NewHandleAt(nsHandler)
+	if err != nil {
+		return "", err
+	}
+	defer handler.Delete()
+	link, err := handler.LinkByName(linkName)
+	if err != nil {
+		// Don't return error, it's expected this may fail until iface is created
+		return "", nil
+	}
+	addrs, err := handler.AddrList(link, netlink.FAMILY_V4)
+	if err != nil {
+		return "", err
+	}
+	if len(addrs) > 0 {
+		return addrs[0].IP.String(), nil
+	}
+	return "", nil
 }
