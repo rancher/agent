@@ -532,3 +532,10 @@ func GetExitCode(err error) int {
 	}
 	return -1
 }
+
+func IsNoopEvent(event *revents.Event) bool {
+	if noOp, ok := GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent"); ok {
+		return InterfaceToBool(noOp)
+	}
+	return false
+}
