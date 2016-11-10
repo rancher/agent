@@ -3,26 +3,50 @@
 package docker
 
 import (
+	"net/http"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
+
 	dclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
-	"net/http"
-	"os"
-	"path/filepath"
-	"time"
+)
+
+var (
+	versionClients = map[string]*dclient.Client{}
+	timeoutClients = map[time.Duration]*dclient.Client{}
+	clientLock     = sync.Mutex{}
 )
 
 func launchDefaultClient(version string) (*dclient.Client, error) {
+	clientLock.Lock()
+	defer clientLock.Unlock()
+
+	if c, ok := versionClients[version]; ok {
+		return c, nil
+	}
+
 	cli, err := dclient.NewEnvClient()
 	if err != nil {
 		return nil, errors.Wrap(err, constants.LaunchDefaultClientError)
 	}
 	cli.UpdateClientVersion(version)
+
+	versionClients[version] = cli
 	return cli, nil
 }
 
 func NewEnvClientWithTimeout(timeout time.Duration) (*dclient.Client, error) {
+	clientLock.Lock()
+	defer clientLock.Unlock()
+
+	if c, ok := timeoutClients[timeout]; ok {
+		return c, nil
+	}
+
 	var client *http.Client
 	if dockerCertPath := os.Getenv("DOCKER_CERT_PATH"); dockerCertPath != "" {
 		options := tlsconfig.Options{
@@ -54,5 +78,11 @@ func NewEnvClientWithTimeout(timeout time.Duration) (*dclient.Client, error) {
 		version = dclient.DefaultVersion
 	}
 
-	return dclient.NewClient(host, version, client, nil)
+	c, err := dclient.NewClient(host, version, client, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	timeoutClients[timeout] = c
+	return c, nil
 }
