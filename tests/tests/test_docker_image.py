@@ -295,8 +295,8 @@ def test_image_activate_no_op(agent):
     def pre(req):
         image = req['data']['imageStoragePoolMap']['image']
         remap_dockerImage(image, image_name)
-        image['data']['processData'] = {}
-        image['data']['processData']['containerNoOpEvent'] = True
+        image['processData'] = {}
+        image['processData']['containerNoOpEvent'] = True
 
     def post(req, resp):
         images = client.images(name=repo)

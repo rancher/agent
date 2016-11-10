@@ -498,8 +498,8 @@ func IsContainerNotFoundError(e error) bool {
 	return ok
 }
 
-func IsImageNoOp(imageData model.ImageData) bool {
-	return imageData.ProcessData.ContainerNoOpEvent
+func IsImageNoOp(image model.Image) bool {
+	return image.ProcessData.ContainerNoOpEvent
 }
 
 func IsPathExist(path string) bool {
