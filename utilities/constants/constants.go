@@ -4,17 +4,20 @@ import (
 	"regexp"
 )
 
-const SystemLabels = "io.rancher.container.system"
-const ContainerNameLabel = "io.rancher.container.name"
-const PullImageLabels = "io.rancher.container.pull_image"
-const UUIDLabel = "io.rancher.container.uuid"
-const CattelURLLabel = "io.rancher.container.cattle_url"
-const AgentIDLabel = "io.rancher.container.agent_id"
-const RancherAgentImage = "io.rancher.host.agent_image"
+const (
+	SystemLabels       = "io.rancher.container.system"
+	ContainerNameLabel = "io.rancher.container.name"
+	PullImageLabels    = "io.rancher.container.pull_image"
+	UUIDLabel          = "io.rancher.container.uuid"
+	CattelURLLabel     = "io.rancher.container.cattle_url"
+	AgentIDLabel       = "io.rancher.container.agent_id"
+	RancherAgentImage  = "io.rancher.host.agent_image"
+	RancherIPLabel     = "io.rancher.container.ip"
 
-const DefaultVersion = "1.22"
-const TempName = "work"
-const TempPrefix = "cattle-temp-"
+	DefaultVersion = "1.22"
+	TempName       = "work"
+	TempPrefix     = "cattle-temp-"
+)
 
 var ConfigOverride = make(map[string]string)
 var HTTPProxyList = []string{"http_proxy", "https_proxy", "NO_PROXY"}
