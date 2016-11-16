@@ -100,8 +100,9 @@ func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {
 	hostConfig.Links = links
 }
 
-func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client) error {
-	portsSupported, hostnameSupported, err := setupNetworkMode(instance, client, config, hostConfig)
+func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client,
+	infoData model.InfoData) error {
+	portsSupported, hostnameSupported, err := setupNetworkMode(instance, client, config, hostConfig, infoData)
 	if err != nil {
 		return errors.Wrap(err, constants.SetupNetworkingError+"failed to setup network mode")
 	}
@@ -162,7 +163,7 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 }
 
 func setupNetworkMode(instance model.Instance, client *client.Client,
-	config *container.Config, hostConfig *container.HostConfig) (bool, bool, error) {
+	config *container.Config, hostConfig *container.HostConfig, infoData model.InfoData) (bool, bool, error) {
 	/*
 			Based on the network configuration we choose the network mode to set in
 		    Docker.  We only really look for none, host, or container.  For all
@@ -179,6 +180,10 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 			config.NetworkDisabled = false
 			hostConfig.NetworkMode = "host"
 			hostConfig.Links = nil
+			if strings.HasPrefix(infoData.Version.Version, "1.10") || strings.HasPrefix(infoData.Version.Version, "1.11") {
+				hostConfig.DNS = nil
+				hostConfig.DNSSearch = nil
+			}
 		} else if kind == "dockerNone" {
 			portsSupported = false
 			config.NetworkDisabled = true
