@@ -78,7 +78,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up volumes")
 	}
 
-	if err := setupNetworking(instance, host, &config, &hostConfig, dockerClient); err != nil {
+	if err := setupNetworking(instance, host, &config, &hostConfig, dockerClient, infoData); err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up networking")
 	}
 
