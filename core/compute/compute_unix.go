@@ -157,7 +157,7 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 			}
 		}
 		if ipAddress != "" {
-			utils.AddLabel(config, "io.rancher.container.ip", ipAddress)
+			utils.AddLabel(config, constants.RancherIPLabel, ipAddress)
 		}
 	}
 }
