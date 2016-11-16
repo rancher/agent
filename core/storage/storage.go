@@ -61,7 +61,7 @@ func PullImage(image model.Image, progress *progress.Progress, client *engineCli
 }
 
 func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
-	if utils.IsImageNoOp(image.Data) {
+	if utils.IsImageNoOp(image) {
 		return nil
 	}
 	imageName := utils.ParseRepoTag(imageUUID)

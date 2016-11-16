@@ -20,13 +20,12 @@ type Image struct {
 	UUID               string             `json:"uuid"`
 	VirtualSizeBytes   interface{}        `json:"virtualSizeBytes"`
 	RegistryCredential RegistryCredential `json:"registryCredential"`
-	ProcessData        map[string]interface{}
+	ProcessData        ProcessData
 }
 
 type ImageData struct {
 	Fields      ImageFields
 	DockerImage DockerImage
-	ProcessData ProcessData
 }
 
 type ImageFields struct {

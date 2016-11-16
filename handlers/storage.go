@@ -28,7 +28,9 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	progress := utils.GetProgress(event, cli)
 
 	if image.ID >= 0 && event.Data["processData"] != nil {
-		image.ProcessData = event.Data["processData"].(map[string]interface{})
+		if err := mapstructure.Decode(event.Data["processData"], &image.ProcessData); err != nil {
+			return errors.Wrap(err, constants.ImageActivateError+"failed to marshall image process data")
+		}
 	}
 
 	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); ok {

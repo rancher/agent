@@ -28,7 +28,7 @@ func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerCl
 }
 
 func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
-	if utils.IsImageNoOp(image.Data) {
+	if utils.IsImageNoOp(image) {
 		return true, nil
 	}
 	_, _, err := dockerClient.ImageInspectWithRaw(context.Background(), image.Name)
