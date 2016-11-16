@@ -42,7 +42,6 @@ type Instance struct {
 	InstanceLinks               []Link
 	NetworkContainer            *Instance
 	NativeContainer             bool
-	SystemContainer             string
 	DataVolumesFromContainers   []*Instance
 	CommandArgs                 []string
 	Labels                      map[string]interface{}
