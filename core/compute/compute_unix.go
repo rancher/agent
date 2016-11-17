@@ -402,8 +402,6 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.RestartPolicy = fields.RestartPolicy
 
-	hostConfig.VolumeDriver = fields.VolumeDriver
-
 	hostConfig.CpusetCpus = fields.CPUSet
 
 	hostConfig.BlkioWeight = fields.BlkioWeight
