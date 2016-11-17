@@ -92,8 +92,15 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client, cache *
 	}
 	dockerIP, err := getIP(inspect, cache)
 	if err != nil {
-		if !IsNoopEvent(event) {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get ip of the container")
+		// check if container is stopped, if so ignore the error and return empty ip
+		inspect, err := client.ContainerInspect(context.Background(), container.ID)
+		if err != nil {
+			return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to inspect container")
+		}
+		if inspect.State.Pid != 0 {
+			if !IsNoopEvent(event) {
+				return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get ip of the container")
+			}
 		}
 	}
 	if container.Ports != nil && len(container.Ports) > 0 {
