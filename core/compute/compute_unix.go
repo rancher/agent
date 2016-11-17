@@ -34,10 +34,6 @@ func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance
 }
 
 func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) error {
-	systemCon := instance.SystemContainer
-	if systemCon != "" {
-		return nil
-	}
 	// if only rancher search is specified,
 	// prepend search with params read from the system
 	allRancher := true
@@ -109,8 +105,6 @@ func setupNetworking(instance model.Instance, host model.Host, config *container
 	setupMacAndIP(instance, config, portsSupported, hostnameSupported)
 	setupPortsNetwork(instance, config, hostConfig, portsSupported)
 	setupLinksNetwork(instance, config, hostConfig)
-	setupIpsec(instance, host, config, hostConfig)
-	setupDNS(instance)
 	return nil
 }
 
@@ -214,6 +208,10 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 			config.NetworkDisabled = false
 			hostConfig.NetworkMode = "none"
 			hostConfig.Links = nil
+			if strings.HasPrefix(infoData.Version.Version, "1.10") {
+				hostConfig.DNS = nil
+				hostConfig.DNSSearch = nil
+			}
 		}
 	}
 	return portsSupported, hostnameSupported, nil
@@ -231,89 +229,6 @@ func setupPortsNetwork(instance model.Instance, config *container.Config,
 		config.ExposedPorts = map[nat.Port]struct{}{}
 		hostConfig.PortBindings = nat.PortMap{}
 	}
-}
-
-func setupIpsec(instance model.Instance, host model.Host, config *container.Config,
-	hostConfig *container.HostConfig) {
-	/*
-			If the supplied instance is a network agent, configures the ports needed
-		    to achieve multi-host networking.
-	*/
-	networkAgent := false
-	if instance.SystemContainer == "" || instance.SystemContainer == "NetworkAgent" {
-		networkAgent = true
-	}
-	if !networkAgent || !utils.HasService(instance, "ipsecTunnelService") {
-		return
-	}
-	hostID := strconv.Itoa(host.ID)
-	if endPoint, ok := instance.Data.IPSec[hostID]; ok {
-		natValue := endPoint.Nat
-		isakmp := endPoint.Isakmp
-		binding := hostConfig.PortBindings
-
-		port1 := nat.Port(fmt.Sprintf("%v/%v", 500, "udp"))
-		port2 := nat.Port(fmt.Sprintf("%v/%v", 4500, "udp"))
-		bind1 := nat.PortBinding{
-			HostIP:   "0.0.0.0",
-			HostPort: strconv.Itoa(int(isakmp)),
-		}
-		bind2 := nat.PortBinding{
-			HostIP:   "0.0.0.0",
-			HostPort: strconv.Itoa(int(natValue)),
-		}
-		exposedPorts := map[nat.Port]struct{}{
-			port1: {},
-			port2: {},
-		}
-		if _, ok := binding[port1]; ok {
-			binding[port1] = append(binding[port1], bind1)
-		} else {
-			binding[port1] = []nat.PortBinding{bind1}
-		}
-		if _, ok := binding[port2]; ok {
-			binding[port2] = append(binding[port2], bind1)
-		} else {
-			binding[port2] = []nat.PortBinding{bind2}
-		}
-		if len(config.ExposedPorts) > 0 {
-			existingMap := config.ExposedPorts
-			for port := range exposedPorts {
-				existingMap[port] = struct{}{}
-			}
-			config.ExposedPorts = existingMap
-		} else {
-			config.ExposedPorts = exposedPorts
-		}
-	}
-}
-
-func setupDNS(instance model.Instance) {
-	if !utils.HasService(instance, "dnsService") || instance.Kind == "virtualMachine" {
-		return
-	}
-	ipAddress, macAddress, subnet := utils.FindIPAndMac(instance)
-
-	if ipAddress == "" || macAddress == "" {
-		return
-	}
-
-	parts := strings.Split(ipAddress, ".")
-	if len(parts) != 4 {
-		return
-	}
-	part2, _ := strconv.Atoi(parts[2])
-	part3, _ := strconv.Atoi(parts[3])
-	mark := strconv.Itoa(part2*1000 + part3)
-
-	utils.CheckOutput([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_PREROUTING",
-		"!", "-s", subnet, "-d", "169.254.169.250", "-m", "mac",
-		"--mac-source", macAddress, "-j", "MARK", "--set-mark",
-		mark})
-	utils.CheckOutput([]string{"iptables", "-w", "-t", "nat", "-A", "CATTLE_POSTROUTING",
-		"!", "-s", subnet, "-d", "169.254.169.250", "-m", "mark", "--mark", mark,
-		"-j", "SNAT", "--to", ipAddress})
-
 }
 
 func setupLinksNetwork(instance model.Instance, config *container.Config,

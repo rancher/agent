@@ -185,17 +185,9 @@ func setupHeathConfig(instanceFields model.InstanceFields, config *container.Con
 	config.Healthcheck = healthConfig
 }
 
-func flagSystemContainer(instance model.Instance, config *container.Config) {
-	if instance.SystemContainer != "" {
-		utils.AddLabel(config, constants.SystemLabels, instance.SystemContainer)
-	}
-}
-
 func setupProxy(instance model.Instance, config *container.Config) {
-	if instance.SystemContainer != "" {
-		for _, i := range constants.HTTPProxyList {
-			config.Env = append(config.Env, fmt.Sprintf("%v=%v", i, os.Getenv(i)))
-		}
+	for _, i := range constants.HTTPProxyList {
+		config.Env = append(config.Env, fmt.Sprintf("%v=%v", i, os.Getenv(i)))
 	}
 }
 
