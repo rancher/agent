@@ -69,27 +69,6 @@ def test_volume_activate_driver2(agent):
 
 
 @if_docker
-def test_instance_activate_volume_driver(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-
-    def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
-        instance['data']['fields']['volumeDriver'] = 'local'
-
-    def post(req, resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        docker_inspect = instance_data['dockerInspect']
-        if newer_than('1.19'):
-            if newer_than('1.21'):
-                assert docker_inspect['HostConfig']['VolumeDriver'] == 'local'
-            else:
-                assert docker_inspect['Config']['VolumeDriver'] == 'local'
-        instance_activate_common_validation(resp)
-
-    event_test(agent, 'docker/instance_activate', pre_func=pre, post_func=post)
-
-
-@if_docker
 def test_volume_remove_driver(agent):
     def pre(req):
         v = DockerConfig.storage_api_version()
