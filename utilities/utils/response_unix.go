@@ -16,6 +16,7 @@ import (
 
 const (
 	cniLabels = "io.rancher.cni.network"
+	StartOnce = "io.rancher.container.start_once"
 	linkName  = "eth0"
 )
 
@@ -47,6 +48,10 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 	for {
 		ip, err := getIPForPID(inspect.State.Pid)
 		if err != nil || ip != "" {
+			// if it has a error and it is start-once container, ignore the error
+			if inspect.Config.Labels[StartOnce] == "true" {
+				return ip, nil
+			}
 			return ip, err
 		}
 
