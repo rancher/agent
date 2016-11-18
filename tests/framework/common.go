@@ -43,19 +43,19 @@ func (m *mockPublishOperations) Create(publish *client.Publish) (*client.Publish
 }
 
 func (m *mockPublishOperations) List(publish *client.ListOpts) (*client.PublishCollection, error) {
-	return nil, fmt.Errorf("Mock not implemented.")
+	return nil, fmt.Errorf("mock not implemented")
 }
 
 func (m *mockPublishOperations) Update(existing *client.Publish, updates interface{}) (*client.Publish, error) {
-	return nil, fmt.Errorf("Mock not implemented.")
+	return nil, fmt.Errorf("mock not implemented")
 }
 
 func (m *mockPublishOperations) ById(id string) (*client.Publish, error) { // golint_ignore
-	return nil, fmt.Errorf("Mock not implemented.")
+	return nil, fmt.Errorf("mock not implemented")
 }
 
 func (m *mockPublishOperations) Delete(existing *client.Publish) error {
-	return fmt.Errorf("Mock not implemented.")
+	return fmt.Errorf("mock not implemented")
 }
 
 type Worker struct {
