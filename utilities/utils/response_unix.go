@@ -41,6 +41,10 @@ func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
 }
 
 func lookUpIP(inspect types.ContainerJSON) (string, error) {
+	// if container is stopped just return empty ip
+	if inspect.State.Pid == 0 {
+		return "", nil
+	}
 	endTime := time.Now().Add(30 * time.Second)
 	initTime := 250 * time.Millisecond
 	maxTime := 2 * time.Second

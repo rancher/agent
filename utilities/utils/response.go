@@ -48,6 +48,14 @@ func ImageStoragePoolMapReply() (map[string]interface{}, error) {
 	}, nil
 }
 
+func isRunning(id string, client *client.Client) (bool, error) {
+	inspect, err := client.ContainerInspect(context.Background(), id)
+	if err != nil {
+		return false, err
+	}
+	return inspect.State.Pid != 0, nil
+}
+
 func getInstanceHostMapData(event *revents.Event, client *client.Client, cache *cache.Cache) (map[string]interface{}, error) {
 	instance, _, err := GetInstanceAndHost(event)
 	if err != nil {
@@ -91,16 +99,11 @@ func getInstanceHostMapData(event *revents.Event, client *client.Client, cache *
 		return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get mount data")
 	}
 	dockerIP, err := getIP(inspect, cache)
-	if err != nil {
-		// check if container is stopped, if so ignore the error and return empty ip
-		inspect, err := client.ContainerInspect(context.Background(), container.ID)
-		if err != nil {
-			return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to inspect container")
-		}
-		if inspect.State.Pid != 0 {
-			if !IsNoopEvent(event) {
-				return map[string]interface{}{}, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get ip of the container")
-			}
+	if err != nil && !IsNoopEvent(event) {
+		if running, err2 := isRunning(inspect.ID, client); err2 != nil {
+			return nil, errors.Wrap(err2, constants.GetInstanceHostMapDataError+"failed to inspect running container")
+		} else if running {
+			return nil, errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to get ip of the container")
 		}
 	}
 	if container.Ports != nil && len(container.Ports) > 0 {
