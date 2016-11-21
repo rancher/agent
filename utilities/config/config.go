@@ -171,10 +171,6 @@ func UpdatePyagent() bool {
 	return DefaultValue("CONFIG_UPDATE_PYAGENT", "true") == "true"
 }
 
-func CadvisorOpts() string {
-	return DefaultValue("CADVISOR_OPTS", "")
-}
-
 func HostAPIIP() string {
 	return DefaultValue("HOST_API_IP", "0.0.0.0")
 }
@@ -190,10 +186,6 @@ func JwtPublicKeyFile() string {
 
 func HostProxy() string {
 	return DefaultValue("HOST_API_PROXY", "")
-}
-
-func CadvisorWrapper() string {
-	return DefaultValue("CADVISOR_WRAPPER", "")
 }
 
 func Labels() map[string]string {
@@ -240,10 +232,6 @@ func CadvisorPort() string {
 	return DefaultValue("CADVISOR_PORT", "9344")
 }
 
-func CadvisorInterval() string {
-	return DefaultValue("CADVISOR_INTERVAL", "1s")
-}
-
 func DefaultValue(name string, df string) string {
 	if value, ok := constants.ConfigOverride[name]; ok {
 		return value
@@ -256,9 +244,4 @@ func DefaultValue(name string, df string) string {
 
 func Stamp() string {
 	return DefaultValue("STAMP_FILE", path.Join(Home(), ".pyagent-stamp"))
-}
-
-func TimeoutIP() int {
-	timeout, _ := strconv.Atoi(DefaultValue("IP_TIMEOUT", "60"))
-	return timeout
 }
