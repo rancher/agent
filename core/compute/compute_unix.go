@@ -186,7 +186,7 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 		} else if kind == "dockerContainer" {
 			portsSupported = false
 			hostnameSupported = false
-			id := instance.NetworkContainer.UUID
+			id := getContainerName(*instance.NetworkContainer)
 			other, err := utils.GetContainer(client, (*instance.NetworkContainer), false)
 			if err != nil {
 				if !utils.IsContainerNotFoundError(err) {
@@ -459,4 +459,10 @@ func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, con
 		return types.ContainerCreateResponse{}, err
 	}
 	return dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
+}
+
+func getContainerName(instance model.Instance) string {
+	instanceName := instance.Name
+	parts := strings.Split(instance.UUID, "-")
+	return fmt.Sprintf("r-%s-%s", instanceName, parts[0])
 }
