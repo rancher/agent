@@ -12,7 +12,6 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
@@ -334,12 +333,7 @@ func ParseRepoTag(name string) string {
 }
 
 func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) (types.Container, error) {
-	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
-	if err != nil {
-		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to get docker client")
-	}
-	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
-	containers, err := clientWithTimeout.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
 		return types.Container{}, errors.Wrap(err, constants.GetContainerError+"failed to list containers")
 	}
