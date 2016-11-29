@@ -42,13 +42,8 @@ func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClien
 
 func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *client.Client) (bool, error) {
 	if volume.DeviceNumber == 0 {
-		container, err := utils.GetContainer(client, volume.Instance, false)
-		if err != nil {
-			if !utils.IsContainerNotFoundError(err) {
-				return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to get container")
-			}
-		}
-		return container.ID == "", nil
+		// Root volume. The entire concept is legacy. Do nothing.
+		return true, nil
 	} else if isManagedVolume(volume) {
 		ok, err := IsVolumeActive(volume, storagePool, client)
 		if err != nil {
