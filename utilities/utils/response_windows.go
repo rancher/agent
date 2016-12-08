@@ -7,7 +7,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/patrickmn/go-cache"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"golang.org/x/net/context"
 	"regexp"
@@ -17,7 +16,7 @@ import (
 
 func getIP(inspect types.ContainerJSON, cache *cache.Cache) (string, error) {
 	containerID := inspect.ID
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.GetClient(docker.DefaultVersion)
 	execConfig := types.ExecConfig{
 		AttachStdout: true,
 		AttachStdin:  true,

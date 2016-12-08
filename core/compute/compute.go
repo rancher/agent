@@ -15,7 +15,6 @@ import (
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 )
@@ -201,15 +200,10 @@ func DoInstanceForceStop(request model.InstanceForceStop, dockerClient *client.C
 }
 
 func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Client) (types.ContainerJSON, error) {
-	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
-	if err != nil {
-		return types.ContainerJSON{}, errors.New("Can't initialize docker client")
-	}
-	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
 	containerID := inspect.ID
 	if containerID != "" {
 		// inspect by id
-		containerInspect, err := clientWithTimeout.ContainerInspect(context.Background(), containerID)
+		containerInspect, err := dockerClient.ContainerInspect(context.Background(), containerID)
 		if err != nil && !client.IsErrContainerNotFound(err) {
 			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"Failed to inspect container")
 		} else if err == nil {
@@ -218,7 +212,7 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 	}
 	if inspect.Name != "" {
 		// inspect by name
-		containerList, err := clientWithTimeout.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+		containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 		if err != nil {
 			return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to list containers")
 		}
@@ -233,7 +227,7 @@ func DoInstanceInspect(inspect model.InstanceInspect, dockerClient *client.Clien
 		}
 
 		if find {
-			inspectResp, err := clientWithTimeout.ContainerInspect(context.Background(), result.ID)
+			inspectResp, err := dockerClient.ContainerInspect(context.Background(), result.ID)
 			if err != nil && !client.IsErrContainerNotFound(err) {
 				return types.ContainerJSON{}, errors.Wrap(err, constants.DoInstanceInspectError+"failed to inspect container")
 			}

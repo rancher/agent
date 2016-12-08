@@ -9,7 +9,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/event-subscriber/locks"
@@ -32,7 +31,7 @@ func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
 }
 
 func deleteContainer(name string) {
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false
@@ -100,6 +99,14 @@ func marshalEvent(event interface{}, c *check.C) []byte {
 		c.Fatalf("Error marshalling event %v", err)
 	}
 	return b
+}
+
+func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},
+	map[string]interface{}) {
+	event := unmarshalEvent(rawEvent, c)
+	instance := event["data"].(map[string]interface{})["instanceHostMap"].(map[string]interface{})["instance"].(map[string]interface{})
+	fields := instance["data"].(map[string]interface{})["fields"].(map[string]interface{})
+	return event, instance, fields
 }
 
 func testEvent(rawEvent []byte, c *check.C) *client.Publish {

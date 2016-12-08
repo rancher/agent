@@ -9,7 +9,6 @@ import (
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"
@@ -141,13 +140,6 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	})
 	containers := []model.PingResource{}
 
-	clientTimeout := time.Duration(time.Second * 2)
-	dc, err := docker.NewEnvClientWithTimeout(clientTimeout)
-	if err != nil {
-		return errors.Wrap(err, constants.AddInstanceError+"failed to get docker client")
-	}
-	dc.UpdateClientVersion(constants.DefaultVersion)
-
 	// if we can not get all container in 2s, we will skip it
 	done := make(chan bool, 1)
 	timeout := make(chan bool, 1)
@@ -155,7 +147,7 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		time.Sleep(2 * time.Second)
 		timeout <- true
 	}()
-	running, nonrunning, err := getAllContainerByState(dc, done)
+	running, nonrunning, err := getAllContainerByState(dockerClient, done)
 	select {
 	case <-done:
 		if err != nil {

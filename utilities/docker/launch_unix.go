@@ -21,6 +21,8 @@ var (
 	clientLock     = sync.Mutex{}
 )
 
+const DefaultVersion = "1.22"
+
 func launchDefaultClient(version string) (*dclient.Client, error) {
 	clientLock.Lock()
 	defer clientLock.Unlock()

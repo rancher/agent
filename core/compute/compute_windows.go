@@ -3,8 +3,8 @@ package compute
 import (
 	"context"
 
-	"vendor.old2/github.com/docker/docker/api/types"
-	"vendor.old2/github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -19,7 +19,10 @@ func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) e
 
 func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {}
 
-func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client) error {
+func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client, infoData model.InfoData) error {
+	if len(instance.Nics) > 0 {
+		hostConfig.NetworkMode = container.NetworkMode(instance.Nics[0].Network.Kind)
+	}
 	return nil
 }
 
@@ -32,8 +35,6 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.Isolation = fields.Isolation
 
 	hostConfig.RestartPolicy = fields.RestartPolicy
-
-	hostConfig.ConsoleSize = fields.ConsoleSize
 
 	hostConfig.CPUCount = fields.CPUCount
 

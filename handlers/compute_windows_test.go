@@ -4,7 +4,6 @@ package handlers
 
 import (
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -20,8 +19,8 @@ func (s *ComputeTestSuite) TestInstanceActivateWindowsImage(c *check.C) {
 	if !ok {
 		c.Fatal("No ID found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
 	}
@@ -37,8 +36,8 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 	if !ok {
 		c.Fatal("No ID found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
 	}
@@ -50,9 +49,43 @@ func (s *ComputeTestSuite) TestInstanceDeactivateWindowsImage(c *check.C) {
 	if !ok {
 		c.Fatal("No ID found")
 	}
-	inspect, err = dockerClient.ContainerInspect(context.Background(), container.(*types.Container).ID)
+	inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
 	}
 	c.Check(inspect.State.Status, check.Equals, "exited")
+}
+
+func (s *ComputeTestSuite) TestInstanceActivateTransparentMode(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+	rawEvent := loadEvent("./test_events/instance_activate_transparent", c)
+	reply := testEvent(rawEvent, c)
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No ID found")
+	}
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+	c.Check(inspect.HostConfig.NetworkMode.NetworkName(), check.Equals, "transparent")
+}
+
+func (s *ComputeTestSuite) TestInstanceActivateNatMode(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+	rawEvent := loadEvent("./test_events/instance_activate_transparent", c)
+	reply := testEvent(rawEvent, c)
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No ID found")
+	}
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+	c.Check(inspect.HostConfig.NetworkMode.NetworkName(), check.Equals, "nat")
 }

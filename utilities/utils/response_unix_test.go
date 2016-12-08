@@ -28,7 +28,7 @@ func (s *UtilTestSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *UtilTestSuite) TestGetIP(c *check.C) {
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.GetClient(docker.DefaultVersion)
 	config := container.Config{
 		Image: "ibuildthecloud/helloworld:latest",
 		Labels: map[string]string{

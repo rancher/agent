@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
@@ -91,12 +90,12 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 }
 
 func initializeHandlers() *Handler {
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.GetClient(docker.DefaultVersion)
 	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
 	if err != nil {
 		logrus.Errorf("Err: %v. Can not initialize docker client. Exiting go-agent", err)
 	}
-	clientWithTimeout.UpdateClientVersion(constants.DefaultVersion)
+	clientWithTimeout.UpdateClientVersion(docker.DefaultVersion)
 	info := types.Info{}
 	version := types.Version{}
 	flags := [2]bool{}
