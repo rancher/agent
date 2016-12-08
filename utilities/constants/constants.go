@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	SystemLabels       = "io.rancher.container.system"
 	ContainerNameLabel = "io.rancher.container.name"
 	PullImageLabels    = "io.rancher.container.pull_image"
 	UUIDLabel          = "io.rancher.container.uuid"

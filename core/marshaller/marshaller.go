@@ -16,10 +16,6 @@ func FromString(rawstring string) map[string]interface{} {
 	return obj
 }
 
-func ToString(v interface{}) ([]byte, error) {
-	return json.Marshal(v)
-}
-
 func StructToMap(v interface{}) (map[string]interface{}, error) {
 	b, err := json.Marshal(v)
 	if err != nil {

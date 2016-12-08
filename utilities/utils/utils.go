@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	engineCli "github.com/docker/docker/client"
 
@@ -17,7 +16,6 @@ import (
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -80,10 +78,6 @@ func AddToEnv(config *container.Config, result map[string]string, args ...string
 func HasKey(m interface{}, key string) bool {
 	_, ok := m.(map[string]interface{})[key]
 	return ok
-}
-
-func CheckOutput(strs []string) {
-
 }
 
 func HasLabel(instance model.Instance) bool {
@@ -165,14 +159,6 @@ func InterfaceToBool(v interface{}) bool {
 	return false
 }
 
-func InterfaceToFloat(v interface{}) float64 {
-	value, ok := v.(float64)
-	if ok {
-		return value
-	}
-	return 0.0
-}
-
 func InterfaceToArray(v interface{}) []interface{} {
 	value, ok := v.([]interface{})
 	if ok {
@@ -187,54 +173,6 @@ func InterfaceToMap(v interface{}) map[string]interface{} {
 		return value
 	}
 	return map[string]interface{}{}
-}
-
-func SafeSplit(s string) []string {
-	split := strings.Split(s, " ")
-
-	var result []string
-	var inquote string
-	var block string
-	for _, i := range split {
-		if inquote == "" {
-			if strings.HasPrefix(i, "'") || strings.HasPrefix(i, "\"") {
-				inquote = string(i[0])
-				block = strings.TrimPrefix(i, inquote) + " "
-			} else {
-				result = append(result, i)
-			}
-		} else {
-			if !strings.HasSuffix(i, inquote) {
-				block += i + " "
-			} else {
-				block += strings.TrimSuffix(i, inquote)
-				inquote = ""
-				result = append(result, block)
-				block = ""
-			}
-		}
-	}
-
-	return result
-}
-
-func HasService(instance model.Instance, kind string) bool {
-	if instance.Nics != nil && len(instance.Nics) > 0 {
-		for _, nic := range instance.Nics {
-			if nic.DeviceNumber != 0 {
-				continue
-			}
-			if nic.Network.NetworkServices != nil && len(nic.Network.NetworkServices) > 0 {
-				for _, service := range nic.Network.NetworkServices {
-					if service.Kind == kind {
-						return true
-					}
-				}
-			}
-
-		}
-	}
-	return false
 }
 
 func AddLinkEnv(name string, link model.Link, result map[string]string, inIP string) {
@@ -310,19 +248,6 @@ func toEnvName(name string) string {
 		name = strings.Replace(name, r.FindStringSubmatch(name)[0], "_", -1)
 	}
 	return strings.ToUpper(name)
-}
-
-func FindIPAndMac(instance model.Instance) (string, string, string) {
-	for _, nic := range instance.Nics {
-		for _, ip := range nic.IPAddresses {
-			if ip.Role != "primary" {
-				continue
-			}
-			subnet := fmt.Sprintf("%s/%s", ip.Subnet.NetworkAddress, ip.Subnet.CidrSize)
-			return ip.Address, nic.MacAddress, subnet
-		}
-	}
-	return "", "", ""
 }
 
 func ParseRepoTag(name string) string {
@@ -469,24 +394,6 @@ func AddContainer(state string, container types.Container, containers []model.Pi
 	return append(containers, containerData)
 }
 
-func Get(url string) (map[string]interface{}, error) {
-	resp, err := http.Get(url)
-	if err == nil {
-		defer resp.Body.Close()
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, constants.GetCadvisorError)
-		}
-		var result map[string]interface{}
-		err1 := json.Unmarshal(data, &result)
-		if err1 != nil {
-			return nil, errors.Wrap(err, constants.GetCadvisorError)
-		}
-		return result, nil
-	}
-	return nil, errors.Wrap(err, constants.GetCadvisorError)
-}
-
 func IsContainerNotFoundError(e error) bool {
 	_, ok := e.(model.ContainerNotFoundError)
 	return ok
@@ -494,13 +401,6 @@ func IsContainerNotFoundError(e error) bool {
 
 func IsImageNoOp(image model.Image) bool {
 	return image.ProcessData.ContainerNoOpEvent
-}
-
-func IsPathExist(path string) bool {
-	if _, err := os.Stat(path); err == nil {
-		return true
-	}
-	return false
 }
 
 func GetProgress(request *revents.Event, cli *client.RancherClient) *progress.Progress {
