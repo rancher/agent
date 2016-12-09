@@ -13,9 +13,8 @@ const (
 	RancherAgentImage  = "io.rancher.host.agent_image"
 	RancherIPLabel     = "io.rancher.container.ip"
 
-	DefaultVersion = "1.22"
-	TempName       = "work"
-	TempPrefix     = "cattle-temp-"
+	TempName   = "work"
+	TempPrefix = "cattle-temp-"
 )
 
 var ConfigOverride = make(map[string]string)

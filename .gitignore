@@ -11,4 +11,3 @@ tests/.venv
 tests/.idea
 agent
 agent.iml
-logs

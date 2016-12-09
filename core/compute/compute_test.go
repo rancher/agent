@@ -15,7 +15,6 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -94,7 +93,7 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 
 func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	deleteContainer("/no-label-test")
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.GetClient(docker.DefaultVersion)
 	config := container.Config{Image: "ibuildthecloud/helloworld:latest"}
 	resp, err := client.ContainerCreate(context.Background(), &config, nil, nil, "no-label-test")
 	if err != nil {
@@ -205,7 +204,7 @@ func setupDeviceOptionsTest(hostConfig *container.HostConfig, instance *model.In
 }
 
 func deleteContainer(name string) {
-	client := docker.GetClient(constants.DefaultVersion)
+	client := docker.GetClient(docker.DefaultVersion)
 	containerList, _ := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false

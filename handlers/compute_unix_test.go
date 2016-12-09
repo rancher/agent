@@ -36,7 +36,7 @@ func (s *ComputeTestSuite) TestMillCpuReservation(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
@@ -60,7 +60,7 @@ func (s *ComputeTestSuite) TestMemoryReservation(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
@@ -102,7 +102,7 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
@@ -145,7 +145,7 @@ func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
@@ -177,7 +177,7 @@ func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
 
 // need docker daemon with version 1.12.1
 func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	version, err := dockerClient.ServerVersion(context.Background())
 	if err != nil {
 		c.Fatal(err)
@@ -233,7 +233,7 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(constants.DefaultVersion)
+	dockerClient := docker.GetClient(docker.DefaultVersion)
 	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
 	if err != nil {
 		c.Fatal("Inspect Err")
@@ -245,12 +245,4 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	c.Assert(ok1, check.Equals, true)
 	c.Assert(ok2, check.Equals, true)
 	c.Assert(ok3, check.Equals, true)
-}
-
-func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},
-	map[string]interface{}) {
-	event := unmarshalEvent(rawEvent, c)
-	instance := event["data"].(map[string]interface{})["instanceHostMap"].(map[string]interface{})["instance"].(map[string]interface{})
-	fields := instance["data"].(map[string]interface{})["fields"].(map[string]interface{})
-	return event, instance, fields
 }

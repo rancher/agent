@@ -65,7 +65,7 @@ func PhysicalHostUUID(forceWrite bool) (string, error) {
 
 func Home() string {
 	if runtime.GOOS == "windows" {
-		return DefaultValue("HOME", "c:/Cattle")
+		return DefaultValue("HOME", "c:/ProgramData/rancher")
 	}
 	return DefaultValue("HOME", "/var/lib/cattle")
 }

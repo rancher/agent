@@ -73,3 +73,21 @@ import:
 
 - package: github.com/vishvananda/netns
   version: 8ba1072b58e0c2a240eb5f6120165c7776c3e7b8
+
+- package: github.com/golang/glog
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+
+- package: github.com/dgrijalva/jwt-go
+  version: 47b263f020574c14765ecc3ea88f0e9447046632
+
+- package: github.com/rakyll/globalconf
+  version: 415abc325023f1a00cd2d9fa512e0e71745791a2
+
+- package: github.com/rancher/websocket-proxy
+  version: 846935d828eb7762562270ad5855029d422745c5
+
+- package: github.com/rakyll/goini
+  version: 907cca0f578a5316fb864ec6992dc3d9730ec58c
+
+- package: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
