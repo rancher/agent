@@ -3,10 +3,10 @@ import:
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
 - package: github.com/rancher/event-subscriber
-  version: 83dd12545ffa9b2f6730da14ba526b867029a062
+  version: adbd85ecc9cd88ec2b2d3a11197b13520a8ceda3
 
 - package: github.com/rancher/go-rancher
-  version: 09693a8743ba5ee58c58c1b1e8a4abd17af00d45
+  version: f4560b58215d7eefc74f867a450ded571b731609
 
 - package: github.com/gorilla/mux
   version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e

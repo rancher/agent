@@ -40,7 +40,8 @@ type Account struct {
 
 type AccountCollection struct {
 	Collection
-	Data []Account `json:"data,omitempty"`
+	Data   []Account `json:"data,omitempty"`
+	client *AccountClient
 }
 
 type AccountClient struct {
@@ -67,6 +68,8 @@ type AccountOperations interface {
 	ActionRestore(*Account) (*Account, error)
 
 	ActionUpdate(*Account) (*Account, error)
+
+	ActionUpgrade(*Account) (*Account, error)
 }
 
 func newAccountClient(rancherClient *RancherClient) *AccountClient {
@@ -90,7 +93,18 @@ func (c *AccountClient) Update(existing *Account, updates interface{}) (*Account
 func (c *AccountClient) List(opts *ListOpts) (*AccountCollection, error) {
 	resp := &AccountCollection{}
 	err := c.rancherClient.doList(ACCOUNT_TYPE, opts, resp)
+	resp.client = c
 	return resp, err
+}
+
+func (cc *AccountCollection) Next() (*AccountCollection, error) {
+	if cc != nil && cc.Pagination != nil && cc.Pagination.Next != "" {
+		resp := &AccountCollection{}
+		err := cc.client.rancherClient.doNext(cc.Pagination.Next, resp)
+		resp.client = cc.client
+		return resp, err
+	}
+	return nil, nil
 }
 
 func (c *AccountClient) ById(id string) (*Account, error) {
@@ -167,6 +181,15 @@ func (c *AccountClient) ActionUpdate(resource *Account) (*Account, error) {
 	resp := &Account{}
 
 	err := c.rancherClient.doAction(ACCOUNT_TYPE, "update", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *AccountClient) ActionUpgrade(resource *Account) (*Account, error) {
+
+	resp := &Account{}
+
+	err := c.rancherClient.doAction(ACCOUNT_TYPE, "upgrade", &resource.Resource, nil, resp)
 
 	return resp, err
 }

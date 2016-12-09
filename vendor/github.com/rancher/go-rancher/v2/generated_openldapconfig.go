@@ -15,7 +15,11 @@ type Openldapconfig struct {
 
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
+	GroupDNField string `json:"groupDNField,omitempty" yaml:"group_dnfield,omitempty"`
+
 	GroupMemberMappingAttribute string `json:"groupMemberMappingAttribute,omitempty" yaml:"group_member_mapping_attribute,omitempty"`
+
+	GroupMemberUserAttribute string `json:"groupMemberUserAttribute,omitempty" yaml:"group_member_user_attribute,omitempty"`
 
 	GroupNameField string `json:"groupNameField,omitempty" yaml:"group_name_field,omitempty"`
 
@@ -54,7 +58,8 @@ type Openldapconfig struct {
 
 type OpenldapconfigCollection struct {
 	Collection
-	Data []Openldapconfig `json:"data,omitempty"`
+	Data   []Openldapconfig `json:"data,omitempty"`
+	client *OpenldapconfigClient
 }
 
 type OpenldapconfigClient struct {
@@ -90,7 +95,18 @@ func (c *OpenldapconfigClient) Update(existing *Openldapconfig, updates interfac
 func (c *OpenldapconfigClient) List(opts *ListOpts) (*OpenldapconfigCollection, error) {
 	resp := &OpenldapconfigCollection{}
 	err := c.rancherClient.doList(OPENLDAPCONFIG_TYPE, opts, resp)
+	resp.client = c
 	return resp, err
+}
+
+func (cc *OpenldapconfigCollection) Next() (*OpenldapconfigCollection, error) {
+	if cc != nil && cc.Pagination != nil && cc.Pagination.Next != "" {
+		resp := &OpenldapconfigCollection{}
+		err := cc.client.rancherClient.doNext(cc.Pagination.Next, resp)
+		resp.client = cc.client
+		return resp, err
+	}
+	return nil, nil
 }
 
 func (c *OpenldapconfigClient) ById(id string) (*Openldapconfig, error) {

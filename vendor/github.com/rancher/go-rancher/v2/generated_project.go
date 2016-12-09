@@ -15,17 +15,17 @@ type Project struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	HealthState string `json:"healthState,omitempty" yaml:"health_state,omitempty"`
+
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	Kubernetes bool `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
-
-	Members []interface{} `json:"members,omitempty" yaml:"members,omitempty"`
-
-	Mesos bool `json:"mesos,omitempty" yaml:"mesos,omitempty"`
+	Members []ProjectMember `json:"members,omitempty" yaml:"members,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
-	PublicDns bool `json:"publicDns,omitempty" yaml:"public_dns,omitempty"`
+	Orchestration string `json:"orchestration,omitempty" yaml:"orchestration,omitempty"`
+
+	ProjectTemplateId string `json:"projectTemplateId,omitempty" yaml:"project_template_id,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
@@ -34,8 +34,6 @@ type Project struct {
 	ServicesPortRange *ServicesPortRange `json:"servicesPortRange,omitempty" yaml:"services_port_range,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
-
-	Swarm bool `json:"swarm,omitempty" yaml:"swarm,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
@@ -50,7 +48,8 @@ type Project struct {
 
 type ProjectCollection struct {
 	Collection
-	Data []Project `json:"data,omitempty"`
+	Data   []Project `json:"data,omitempty"`
+	client *ProjectClient
 }
 
 type ProjectClient struct {
@@ -79,6 +78,8 @@ type ProjectOperations interface {
 	ActionSetmembers(*Project, *SetProjectMembersInput) (*SetProjectMembersInput, error)
 
 	ActionUpdate(*Project) (*Account, error)
+
+	ActionUpgrade(*Project) (*Account, error)
 }
 
 func newProjectClient(rancherClient *RancherClient) *ProjectClient {
@@ -102,7 +103,18 @@ func (c *ProjectClient) Update(existing *Project, updates interface{}) (*Project
 func (c *ProjectClient) List(opts *ListOpts) (*ProjectCollection, error) {
 	resp := &ProjectCollection{}
 	err := c.rancherClient.doList(PROJECT_TYPE, opts, resp)
+	resp.client = c
 	return resp, err
+}
+
+func (cc *ProjectCollection) Next() (*ProjectCollection, error) {
+	if cc != nil && cc.Pagination != nil && cc.Pagination.Next != "" {
+		resp := &ProjectCollection{}
+		err := cc.client.rancherClient.doNext(cc.Pagination.Next, resp)
+		resp.client = cc.client
+		return resp, err
+	}
+	return nil, nil
 }
 
 func (c *ProjectClient) ById(id string) (*Project, error) {
@@ -188,6 +200,15 @@ func (c *ProjectClient) ActionUpdate(resource *Project) (*Account, error) {
 	resp := &Account{}
 
 	err := c.rancherClient.doAction(PROJECT_TYPE, "update", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ProjectClient) ActionUpgrade(resource *Project) (*Account, error) {
+
+	resp := &Account{}
+
+	err := c.rancherClient.doAction(PROJECT_TYPE, "upgrade", &resource.Resource, nil, resp)
 
 	return resp, err
 }
