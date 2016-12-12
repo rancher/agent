@@ -20,5 +20,5 @@ const (
 )
 
 var ConfigOverride = make(map[string]string)
-var HTTPProxyList = []string{"http_proxy", "https_proxy", "NO_PROXY"}
+var HTTPProxyList = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
 var NameRegexCompiler = regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_.-]+$")
