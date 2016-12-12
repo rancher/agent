@@ -186,18 +186,20 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 		} else if kind == "dockerContainer" {
 			portsSupported = false
 			hostnameSupported = false
-			id := getContainerName(*instance.NetworkContainer)
-			other, err := utils.GetContainer(client, (*instance.NetworkContainer), false)
-			if err != nil {
-				if !utils.IsContainerNotFoundError(err) {
-					return false, false, errors.Wrap(err, constants.SetupNetworkModeError+"failed to get container")
+			if instance.NetworkContainer != nil {
+				id := getContainerName(*instance.NetworkContainer)
+				other, err := utils.GetContainer(client, (*instance.NetworkContainer), false)
+				if err != nil {
+					if !utils.IsContainerNotFoundError(err) {
+						return false, false, errors.Wrap(err, constants.SetupNetworkModeError+"failed to get container")
+					}
 				}
+				if other.ID != "" {
+					id = other.ID
+				}
+				hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%v", id))
+				hostConfig.Links = nil
 			}
-			if other.ID != "" {
-				id = other.ID
-			}
-			hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%v", id))
-			hostConfig.Links = nil
 		} else if kind == "cni" {
 			config.Labels[cniWaitLabel] = "true"
 			if config.Labels[cniNetworkLabel] == "" && network.Name != "" {
