@@ -69,8 +69,17 @@ func IsNonrancherContainer(instance model.Instance) bool {
 
 func AddToEnv(config *container.Config, result map[string]string, args ...string) {
 	envs := config.Env
+	existKeys := map[string]struct{}{}
+	for _, key := range envs {
+		parts := strings.Split(key, "=")
+		if len(parts) > 0 {
+			existKeys[parts[0]] = struct{}{}
+		}
+	}
 	for key, value := range result {
-		envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+		if _, ok := existKeys[key]; !ok {
+			envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+		}
 	}
 	config.Env = envs
 }
