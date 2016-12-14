@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -23,6 +24,11 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
+)
+
+var (
+	dockerRootOnce = sync.Once{}
+	dockerRoot     = ""
 )
 
 func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkConfig *network.NetworkingConfig,
@@ -117,6 +123,17 @@ func setupPorts(config *container.Config, instance model.Instance, hostConfig *c
 	}
 }
 
+func getDockerRoot(client *client.Client) string {
+	dockerRootOnce.Do(func() {
+		info, err := client.Info(context.Background())
+		if err != nil {
+			panic(err.Error())
+		}
+		dockerRoot = info.DockerRootDir
+	})
+	return dockerRoot
+}
+
 func setupVolumes(config *container.Config, instance model.Instance, hostConfig *container.HostConfig, client *client.Client, progress *progress.Progress) error {
 
 	volumes := instance.Data.Fields.DataVolumes
@@ -135,6 +152,18 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 				} else {
 					mode = "rw"
 				}
+
+				// Redirect /var/lib/docker:/var/lib/docker to where Docker root really is
+				if parts[0] == "/var/lib/docker" && parts[1] == "/var/lib/docker" {
+					root := getDockerRoot(client)
+					if root != "/var/lib/docker" {
+						volumesMap[root] = struct{}{}
+						binds = append(binds, fmt.Sprintf("%s:%s:%s", root, parts[1], mode))
+						binds = append(binds, fmt.Sprintf("%s:%s:%s", root, root, mode))
+						continue
+					}
+				}
+
 				bind := fmt.Sprintf("%s:%s:%s", parts[0], parts[1], mode)
 				binds = append(binds, bind)
 			}
