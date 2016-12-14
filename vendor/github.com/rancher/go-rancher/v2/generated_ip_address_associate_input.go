@@ -6,13 +6,12 @@ const (
 
 type IpAddressAssociateInput struct {
 	Resource
-
-	IpAddressId string `json:"ipAddressId,omitempty" yaml:"ip_address_id,omitempty"`
 }
 
 type IpAddressAssociateInputCollection struct {
 	Collection
-	Data []IpAddressAssociateInput `json:"data,omitempty"`
+	Data   []IpAddressAssociateInput `json:"data,omitempty"`
+	client *IpAddressAssociateInputClient
 }
 
 type IpAddressAssociateInputClient struct {
@@ -48,7 +47,18 @@ func (c *IpAddressAssociateInputClient) Update(existing *IpAddressAssociateInput
 func (c *IpAddressAssociateInputClient) List(opts *ListOpts) (*IpAddressAssociateInputCollection, error) {
 	resp := &IpAddressAssociateInputCollection{}
 	err := c.rancherClient.doList(IP_ADDRESS_ASSOCIATE_INPUT_TYPE, opts, resp)
+	resp.client = c
 	return resp, err
+}
+
+func (cc *IpAddressAssociateInputCollection) Next() (*IpAddressAssociateInputCollection, error) {
+	if cc != nil && cc.Pagination != nil && cc.Pagination.Next != "" {
+		resp := &IpAddressAssociateInputCollection{}
+		err := cc.client.rancherClient.doNext(cc.Pagination.Next, resp)
+		resp.client = cc.client
+		return resp, err
+	}
+	return nil, nil
 }
 
 func (c *IpAddressAssociateInputClient) ById(id string) (*IpAddressAssociateInput, error) {

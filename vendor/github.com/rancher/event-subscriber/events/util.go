@@ -20,8 +20,8 @@ func waitForTransition(waitFunc doneTranitioningFunc) error {
 			return nil
 		}
 		if tick.After(timeoutAt) {
-			return fmt.Errorf("Timed out waiting for transtion.")
+			return fmt.Errorf("Timed out waiting for transtion")
 		}
 	}
-	return fmt.Errorf("Timed out waiting for transtion.")
+	return fmt.Errorf("Timed out waiting for transtion")
 }

@@ -54,7 +54,7 @@ func NewEventRouter(name string, priority int, apiURL string, accessKey string, 
 	}
 
 	// TODO Get subscribe collection URL from API instead of hard coding
-	subscribeURL := strings.Replace(apiURL+"/subscribe", "http", "ws", -1)
+	subscribeURL := strings.Replace(apiURL+"/subscribe", "http", "ws", 1)
 
 	return &EventRouter{
 		name:          name,
@@ -190,4 +190,8 @@ func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey stri
 		return nil, err
 	}
 	return ws, nil
+}
+
+func (router *EventRouter) GetWebSocketConn() *websocket.Conn {
+	return router.eventStream
 }

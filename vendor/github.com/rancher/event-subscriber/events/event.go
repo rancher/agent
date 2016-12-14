@@ -14,6 +14,7 @@ type Event struct {
 	TransitioningMessage         string                 `json:"transitioningMessage,omitempty"`
 	TransitioningProgress        string                 `json:"transitioningProgress,omitempty"`
 	Data                         map[string]interface{} `json:"data,omitempty"`
+	Time                         float64                `json:"time,omitempty"`
 }
 
 type ReplyEvent struct {
