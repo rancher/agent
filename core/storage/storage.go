@@ -58,7 +58,7 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 }
 
 func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
-	dockerCli := docker.GetClient(docker.DefaultVersion)
+	dockerCli := docker.GetClient(constants.DefaultVersion)
 	return DoImageActivate(image, model.StoragePool{}, progress, dockerCli, imageUUID)
 }
 
