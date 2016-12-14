@@ -13,6 +13,7 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 )
@@ -57,7 +58,8 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 }
 
 func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
-	return DoImageActivate(image, model.StoragePool{}, progress, client, imageUUID)
+	dockerCli := docker.GetClient(docker.DefaultVersion)
+	return DoImageActivate(image, model.StoragePool{}, progress, dockerCli, imageUUID)
 }
 
 func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
