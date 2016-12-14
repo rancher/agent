@@ -53,8 +53,6 @@ func getContainerStats(reader *bufio.Reader, count int, id string, pid int) (con
 				return containerInfo{}, err
 			}
 		case <-time.After(time.Second):
-			// append empty stats
-			stats = append(stats, containerStats{})
 		}
 
 	}
