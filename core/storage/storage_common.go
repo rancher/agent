@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -125,12 +126,9 @@ func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePull
 }
 
 func wrapAuth(auth types.AuthConfig) string {
-	username := auth.Username
-	password := auth.Password
-	email := auth.Email
-	if username == "" {
+	buf, err := json.Marshal(auth)
+	if err != nil {
 		return ""
 	}
-	str := fmt.Sprintf("{ \"username\": \"%s\", \"password\": \"%s\", \"email\": \"%s\" }", username, password, email)
-	return base64.StdEncoding.EncodeToString([]byte(str))
+	return base64.URLEncoding.EncodeToString(buf)
 }
