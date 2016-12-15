@@ -25,8 +25,9 @@ import (
 )
 
 var (
-	cniWaitLabel    = "io.rancher.cni.wait"
-	cniNetworkLabel = "io.rancher.cni.network"
+	cniWaitLabel       = "io.rancher.cni.wait"
+	cniNetworkLabel    = "io.rancher.cni.network"
+	rancherDNSPriority = "io.rancher.container.dns.priority"
 )
 
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {
@@ -36,6 +37,7 @@ func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance
 func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) error {
 	// if only rancher search is specified,
 	// prepend search with params read from the system
+	last := instance.Data.Fields.Labels[rancherDNSPriority] == "service_last"
 	allRancher := true
 	dnsSearch := hostConfig.DNSSearch
 
@@ -68,11 +70,20 @@ func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) e
 		if strings.HasPrefix(line, "search") {
 			// in case multiple search lines
 			// respect the last one
-			s = strings.Split(line, " ")[1:]
+			s = strings.Fields(line)[1:]
 			for i := range s {
-				search := s[len(s)-i-1]
+				var search string
+				if last {
+					search = s[len(s)-i-1]
+				} else {
+					search = s[i]
+				}
 				if !utils.SearchInList(dnsSearch, search) {
-					dnsSearch = append([]string{search}, dnsSearch...)
+					if last {
+						dnsSearch = append([]string{search}, dnsSearch...)
+					} else {
+						dnsSearch = append(dnsSearch, []string{search}...)
+					}
 				}
 			}
 			hostConfig.DNSSearch = dnsSearch
