@@ -214,9 +214,47 @@ func setupHeathConfig(instanceFields model.InstanceFields, config *container.Con
 	config.Healthcheck = healthConfig
 }
 
-func setupProxy(instance model.Instance, config *container.Config) {
-	for _, i := range constants.HTTPProxyList {
-		config.Env = append(config.Env, fmt.Sprintf("%v=%v", i, os.Getenv(i)))
+func setupProxy(instance model.Instance, config *container.Config, hostEntries map[string]string) {
+	// only setup envs for system container
+	if instance.System {
+		envMap := map[string]string{}
+		envList := []string{}
+		for _, env := range config.Env {
+			/*
+				3 case:
+				1. foo=bar. Parse as normal
+				2. foo=. Parse as foo=
+				3. foo. Parse as foo
+			*/
+			part := strings.SplitN(env, "=", 2)
+			if len(part) == 1 {
+
+				if strings.Contains(env, "=") {
+					//case 2
+					envMap[part[0]] = ""
+				} else {
+					envList = append(envList, env)
+				}
+			} else if len(part) == 2 {
+				envMap[part[0]] = part[1]
+			}
+		}
+		for _, key := range constants.HTTPProxyList {
+			if hostEntries[key] != "" {
+				envMap[key] = hostEntries[key]
+			}
+		}
+		envs := []string{}
+		for _, env := range envList {
+			if _, ok := envMap[env]; ok {
+				continue
+			}
+			envs = append(envs, env)
+		}
+		for key, value := range envMap {
+			envs = append(envs, fmt.Sprintf("%v=%v", key, value))
+		}
+		config.Env = envs
 	}
 }
 
@@ -341,4 +379,14 @@ func isRunning(dockerClient *client.Client, container types.Container) (bool, er
 		return false, nil
 	}
 	return false, err
+}
+
+func getHostEntries() map[string]string {
+	data := map[string]string{}
+	for _, env := range constants.HTTPProxyList {
+		if os.Getenv(env) != "" {
+			data[env] = os.Getenv(env)
+		}
+	}
+	return data
 }
