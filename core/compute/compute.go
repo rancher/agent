@@ -81,7 +81,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up networking")
 	}
 
-	setupProxy(instance, &config)
+	setupProxy(instance, &config, getHostEntries())
 
 	setupCattleConfigURL(instance, &config)
 

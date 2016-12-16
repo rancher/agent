@@ -50,6 +50,7 @@ type Instance struct {
 	Token                       string
 	MilliCPUReservation         int64
 	MemoryReservation           int64
+	System                      bool
 }
 
 type InstanceFieldsData struct {
