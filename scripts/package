@@ -12,6 +12,10 @@ rm -rf dist/artifacts
 mkdir -p build/${CONTENT}/bin
 mkdir -p dist/artifacts
 
+if [ ! -e bin/agent ]; then
+    ./scripts/build
+fi
+
 cp -rf apply.sh build/${CONTENT}
 cp -rf bin/agent build/${CONTENT}/bin
 
