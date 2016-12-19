@@ -22,9 +22,10 @@ import (
 // credits for https://github.com/docker/docker/blob/5c1826ec4de381df9f739ce0de28e37d4f734d47/cmd/dockerd/service_windows.go
 
 const (
-	ServiceName = "rancher-agent"
-	logFile     = "C:/ProgramData/rancher/agent.log"
-	homeDir     = "C:/ProgramData/rancher"
+	ServiceName      = "rancher-agent"
+	logFile          = "C:/ProgramData/rancher/agent.log"
+	rancherPanicFile = "C:/ProgramData/rancher/panic.log"
+	homeDir          = "C:/ProgramData/rancher"
 	// These should match the values in event_messages.mc.
 	eventInfo  = 1
 	eventWarn  = 1
@@ -306,7 +307,7 @@ func initService(register string, unregister bool) error {
 }
 
 func (h *handler) started() error {
-	err := initPanicFile(logFile)
+	err := initPanicFile(rancherPanicFile)
 	if err != nil {
 		return err
 	}
@@ -362,6 +363,10 @@ Loop:
 
 func initPanicFile(path string) error {
 	var err error
+	_, err = os.Create(rancherPanicFile)
+	if err != nil {
+		return err
+	}
 	panicFile, err = os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
 		return err
