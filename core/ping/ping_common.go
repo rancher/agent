@@ -81,7 +81,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	if storageOverride := getResourceOverride("CATTLE_LOCAL_STORAGE_MB_OVERRIDE"); storageOverride != 0 {
 		compute.LocalStorageMb = storageOverride
 	} else {
-		usage, err := disk.Usage("/var/lib/docker")
+		usage, err := disk.Usage(".")
 		if err != nil {
 			logrus.Errorf("Error getting local storage usage: %v", err)
 		} else {
