@@ -68,7 +68,7 @@ type ContainerJSON struct {
 	Created         string
 	Path            string
 	Args            []string
-	State           types.ContainerState
+	State           interface{}
 	Image           string
 	ResolvConfPath  string
 	HostnamePath    string
