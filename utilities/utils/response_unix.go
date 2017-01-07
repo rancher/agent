@@ -91,3 +91,6 @@ func getIPForPID(pid int) (string, error) {
 	}
 	return "", nil
 }
+
+func setupDNS(containerID string) {
+}

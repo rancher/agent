@@ -142,6 +142,14 @@ func SetAPIURL(value string) {
 	constants.ConfigOverride["URL"] = value
 }
 
+func SetDNSAddresses(value string) {
+	constants.ConfigOverride["DNS_ADDRESSES"] = value
+}
+
+func DNSAddresses() string {
+	return DefaultValue("DNS_ADDRESSES", "")
+}
+
 func agentIP() string {
 	return DefaultValue("AGENT_IP", "")
 }

@@ -4,9 +4,11 @@ package utils
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/patrickmn/go-cache"
+	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/docker"
 	"golang.org/x/net/context"
 	"regexp"
@@ -48,4 +50,40 @@ func getIP(inspect types.ContainerJSON, cache *cache.Cache) (string, error) {
 	}
 	hijack.Close()
 	return ip, nil
+}
+
+func setupDNS(containerID string) {
+	command := []string{"powershell", "Get-NetAdapter", "|", "Set-DnsClientServerAddress", "-ServerAddresses"}
+	addressesArg := ""
+	for i, ip := range strings.Split(config.DNSAddresses(), ",") {
+		if i > 0 {
+			addressesArg += ","
+		}
+		addressesArg += fmt.Sprintf("'%s'", ip)
+	}
+	command = append(command, fmt.Sprintf("(%s)", addressesArg))
+	createAndStart(containerID, command)
+}
+
+func createAndStart(containerID string, command []string) {
+	client := docker.GetClient(docker.DefaultVersion)
+	execConfig := types.ExecConfig{
+		AttachStdout: true,
+		AttachStdin:  true,
+		AttachStderr: true,
+		Privileged:   true,
+		Tty:          false,
+		Detach:       false,
+		Cmd:          command,
+	}
+
+	execObj, err := client.ContainerExecCreate(context.Background(), containerID, execConfig)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	err = client.ContainerExecStart(context.Background(), execObj.ID, types.ExecStartCheck{})
+	if err != nil {
+		logrus.Error(err)
+	}
 }

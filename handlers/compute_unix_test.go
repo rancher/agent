@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -172,7 +173,10 @@ func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
 			}
 		}
 	}
-	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
+	dnsSearch = append(dnsSearch, "rancher.internal")
+	sort.Strings(inspect.HostConfig.DNSSearch)
+	sort.Strings(dnsSearch)
+	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, dnsSearch)
 }
 
 // need docker daemon with version 1.12.1

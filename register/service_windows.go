@@ -1,22 +1,23 @@
 package register
 
 import (
+	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"syscall"
 	"time"
 	"unsafe"
 
-	"bytes"
-	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/utilities/config"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
-	"os/exec"
-	"path/filepath"
-	"syscall"
 )
 
 // credits for https://github.com/docker/docker/blob/5c1826ec4de381df9f739ce0de28e37d4f734d47/cmd/dockerd/service_windows.go
@@ -164,8 +165,10 @@ func registerService(url string) error {
 	}
 
 	// Configure the service to launch with the arguments that were just passed.
-	args := []string{"-url"}
-	args = append(args, url)
+	args := []string{"-url", url}
+	if config.DNSAddresses() != "" {
+		args = append(args, "-dns-address", config.DNSAddresses())
+	}
 
 	s, err := m.CreateService(ServiceName, p, c, args...)
 	if err != nil {
