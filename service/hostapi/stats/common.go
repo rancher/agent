@@ -6,6 +6,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/shirou/gopsutil/mem"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -29,6 +30,7 @@ func getContainerStats(reader *bufio.Reader, count int, id string, pid int) (con
 	contInfo := containerInfo{}
 	contInfo.ID = id
 	stats := []containerStats{}
+	mu := &sync.Mutex{}
 	for i := 0; i < count; i++ {
 		flag := make(chan error)
 		// detect empty stats stream and skip that after 1s
@@ -43,6 +45,8 @@ func getContainerStats(reader *bufio.Reader, count int, id string, pid int) (con
 				flag <- err
 			}
 			contStats = convertDockerStats(dockerStats, pid)
+			mu.Lock()
+			defer mu.Unlock()
 			stats = append(stats, contStats)
 			flag <- nil
 
