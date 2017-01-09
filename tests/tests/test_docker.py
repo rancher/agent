@@ -166,6 +166,8 @@ def test_instance_activate_mac_address(agent):
         mac_nic_received = docker_inspect['NetworkSettings']['MacAddress']
         assert mac_nic_received == '02:03:04:05:06:07'
         assert mac_received == '02:03:04:05:06:07'
+        l = docker_inspect['Config']['Labels']
+        assert l['io.rancher.container.mac_address'] == '02:03:04:05:06:07'
         instance_activate_common_validation(resp)
 
     event_test(agent, 'docker/instance_activate', post_func=post)
