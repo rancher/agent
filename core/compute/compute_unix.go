@@ -143,8 +143,12 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 			deviceNumber = nic.DeviceNumber
 		}
 	}
-	if setMac {
-		config.MacAddress = macAddress
+
+	if macAddress != "" {
+		if setMac {
+			config.MacAddress = macAddress
+		}
+		utils.AddLabel(config, constants.RancherMacLabel, macAddress)
 	}
 
 	if !setHostname {

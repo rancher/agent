@@ -15,6 +15,7 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
@@ -56,18 +57,19 @@ c.Assert(reply.Name, check.Equals, "new-reply-to")
 func (s *ComputeTestSuite) TestMultiNicsPickMac(c *check.C) {
 	instance := model.Instance{}
 	instance.Nics = []model.Nic{
-		model.Nic{
+		{
 			MacAddress:   "02:03:04:05:06:07",
 			DeviceNumber: 0,
 		},
-		model.Nic{
+		{
 			MacAddress:   "02:03:04:05:06:09",
 			DeviceNumber: 1,
 		},
 	}
-	config := container.Config{}
+	config := container.Config{Labels: map[string]string{}}
 	setupMacAndIP(instance, &config, true, true)
 	c.Assert(config.MacAddress, check.Equals, "02:03:04:05:06:07")
+	c.Assert(config.Labels, check.DeepEquals, map[string]string{constants.RancherMacLabel: "02:03:04:05:06:07"})
 }
 
 func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
@@ -76,7 +78,7 @@ func (s *ComputeTestSuite) TestDefaultDisk(c *check.C) {
 	instance.Data = model.InstanceFieldsData{
 		Fields: model.InstanceFields{
 			BlkioDeviceOptions: map[string]model.DeviceOptions{
-				"DEFAULT_DISK": model.DeviceOptions{
+				"DEFAULT_DISK": {
 					ReadIops: 10,
 				},
 			},

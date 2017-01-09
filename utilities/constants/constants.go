@@ -12,6 +12,7 @@ const (
 	AgentIDLabel       = "io.rancher.container.agent_id"
 	RancherAgentImage  = "io.rancher.host.agent_image"
 	RancherIPLabel     = "io.rancher.container.ip"
+	RancherMacLabel    = "io.rancher.container.mac_address"
 
 	TempName   = "work"
 	TempPrefix = "cattle-temp-"
