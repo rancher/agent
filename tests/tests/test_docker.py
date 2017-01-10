@@ -938,7 +938,7 @@ def test_instance_activate_device_options(agent):
 
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
     # Note, can't test weight as it isn't supported in kernel by default
-    device_options = {'/dev/sda': {
+    device_options = {'/dev/null': {
         'readIops': 1000,
         'writeIops': 2000,
         'readBps': 1024,
@@ -955,13 +955,13 @@ def test_instance_activate_device_options(agent):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         host_config = instance_data['dockerInspect']['HostConfig']
         assert host_config['BlkioDeviceReadIOps'] == [
-            {'Path': '/dev/sda', 'Rate': 1000}]
+            {'Path': '/dev/null', 'Rate': 1000}]
         assert host_config['BlkioDeviceWriteIOps'] == [
-            {'Path': '/dev/sda', 'Rate': 2000}]
+            {'Path': '/dev/null', 'Rate': 2000}]
         assert host_config['BlkioDeviceReadBps'] == [
-            {'Path': '/dev/sda', 'Rate': 1024}]
+            {'Path': '/dev/null', 'Rate': 1024}]
         assert host_config['BlkioDeviceWriteBps'] == [
-            {'Path': '/dev/sda', 'Rate': 2048}]
+            {'Path': '/dev/null', 'Rate': 2048}]
         container_field_test_boiler_plate(resp)
 
         docker_container = instance_data['dockerContainer']
@@ -1002,7 +1002,7 @@ def test_instance_activate_device_options(agent):
 @if_docker
 def test_instance_activate_single_device_option(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-    device_options = {'/dev/sda': {
+    device_options = {'/dev/null': {
         'writeIops': 2000,
     }
     }
@@ -1016,7 +1016,7 @@ def test_instance_activate_single_device_option(agent):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']
         host_config = instance_data['dockerInspect']['HostConfig']
         assert host_config['BlkioDeviceWriteIOps'] == [
-            {'Path': '/dev/sda', 'Rate': 2000}]
+            {'Path': '/dev/null', 'Rate': 2000}]
         assert host_config['BlkioDeviceReadIOps'] is None
         assert host_config['BlkioDeviceReadBps'] is None
         assert host_config['BlkioDeviceWriteBps'] is None
