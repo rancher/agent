@@ -193,12 +193,18 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 	if vMounts := instance.VolumesFromDataVolumeMounts; len(vMounts) > 0 {
 		for _, vMount := range vMounts {
 			storagePool := model.StoragePool{}
+			// volume active == exists, possibly not attached to this host
 			if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
 				if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
 					return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
 				}
 			} else if err != nil {
 				return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
+			}
+			if storage.IsRancherVolume(vMount) {
+				if err := storage.RancherStorageVolumeAttach(vMount); err != nil {
+					return errors.Wrap(err, constants.SetupVolumesError+"failed to attach volume")
+				}
 			}
 		}
 	}

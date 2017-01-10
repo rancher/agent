@@ -9,6 +9,11 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
+	"path/filepath"
+)
+
+const (
+	rancherSockDir = "/var/run/rancher/storage"
 )
 
 func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
@@ -25,6 +30,21 @@ func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerCl
 		return vol.Mountpoint != "moved", nil
 	}
 	return true, nil
+}
+
+func rancherStorageSockPath(volume model.Volume) string {
+	return filepath.Join(rancherSockDir, volume.Data.Fields.Driver+".sock")
+}
+
+func IsRancherVolume(volume model.Volume) bool {
+	if !isManagedVolume(volume) {
+		return false
+	}
+	sockFile := rancherStorageSockPath(volume)
+	if _, err := os.Stat(sockFile); err == nil {
+		return true
+	}
+	return false
 }
 
 func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {

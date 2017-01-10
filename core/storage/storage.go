@@ -57,6 +57,13 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 	return nil
 }
 
+func RancherStorageVolumeAttach(volume model.Volume) error {
+	if err := callRancherStorageVolumeAttach(volume); err != nil {
+		return errors.Wrap(err, constants.RancherStorageVolumeAttachError+"failed to attach volume")
+	}
+	return nil
+}
+
 func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
 	dockerCli := docker.GetClient(docker.DefaultVersion)
 	return DoImageActivate(image, model.StoragePool{}, progress, dockerCli, imageUUID)
