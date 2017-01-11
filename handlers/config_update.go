@@ -7,14 +7,38 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
+	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 type ConfigUpdateHandler struct {
 }
 
 func (h *ConfigUpdateHandler) ConfigUpdate(event *revents.Event, cli *client.RancherClient) error {
+	if runtime.GOOS == "windows" {
+		// if os is windows, do a fake reply and manually touch some urls as @ibuildthecloud suggested
+		items := getItemList(event.Data)
+		urls := []string{}
+		for _, item := range items {
+			url := config.APIURL("") + fmt.Sprintf("/configcontent/%v?version=latest", item)
+			urls = append(urls, url)
+		}
+		for _, url := range urls {
+			req, err := http.NewRequest("PUT", url, nil)
+			if err != nil {
+				return err
+			}
+			req.SetBasicAuth(config.AccessKey(), config.SecretKey())
+			httpClient := &http.Client{}
+			_, err = httpClient.Do(req)
+			if err != nil {
+				return err
+			}
+		}
+		return reply(map[string]interface{}{}, event, cli)
+	}
 	if event.Name != "config.update" || event.ReplyTo == "" {
 		return nil
 	}
@@ -56,4 +80,24 @@ func (h *ConfigUpdateHandler) ConfigUpdate(event *revents.Event, cli *client.Ran
 		return nil
 	}
 	return reply(map[string]interface{}{}, event, cli)
+}
+
+func getItemList(data map[string]interface{}) []string {
+	items := []string{}
+	maps, ok := data["items"].([]interface{})
+	if !ok {
+		return items
+	}
+	for _, m := range maps {
+		m1, ok := m.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, ok := m1["name"].(string)
+		if !ok {
+			continue
+		}
+		items = append(items, name)
+	}
+	return items
 }
