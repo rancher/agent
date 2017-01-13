@@ -3,6 +3,10 @@
 package utils
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -15,8 +19,9 @@ import (
 )
 
 const (
-	cniLabels = "io.rancher.cni.network"
-	linkName  = "eth0"
+	cniLabels       = "io.rancher.cni.network"
+	linkName        = "eth0"
+	cniStateBaseDir = "/var/lib/rancher/state/cni"
 )
 
 func getIP(inspect types.ContainerJSON, c *cache.Cache) (string, error) {
@@ -49,6 +54,14 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 	initTime := 250 * time.Millisecond
 	maxTime := 2 * time.Second
 	for {
+		if ip, cniError := getIPFromStateFile(inspect); ip != "" || cniError != "" {
+			var err error
+			if cniError != "" {
+				err = errors.New(cniError)
+			}
+			return ip, err
+		}
+
 		ip, err := getIPForPID(inspect.State.Pid)
 		if err != nil || ip != "" {
 			return ip, err
@@ -63,6 +76,36 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 		if time.Now().After(endTime) {
 			return "", errors.New("Timeout getting IP address")
 		}
+	}
+}
+
+func getIPFromStateFile(inspect types.ContainerJSON) (string, string) {
+	if inspect.ID == "" || inspect.State == nil || inspect.State.StartedAt == "" {
+		return "", ""
+	}
+	filename := path.Join(cniStateBaseDir, inspect.ID, inspect.State.StartedAt)
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logrus.Warnf("Error reading cni state file %v: %v. Falling back to container inspection logic.", filename, err)
+		}
+		return "", ""
+	}
+
+	var state cniState
+	if err := json.Unmarshal(data, &state); err != nil {
+		logrus.Warnf("Error unmarshalling cni state data %s: %v. Falling back to container inspection logic.", data, err)
+		return "", ""
+	}
+
+	return state.IP4.IP, state.Error
+}
+
+type cniState struct {
+	Error string
+	IP4   struct {
+		IP string
 	}
 }
 
