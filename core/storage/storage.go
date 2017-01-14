@@ -94,18 +94,8 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to check whether volume is removed")
 	}
 	if volume.DeviceNumber == 0 {
-		container, err := utils.GetContainer(dockerClient, volume.Instance, false)
-		if err != nil {
-			if !utils.IsContainerNotFoundError(err) {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"faild to get container")
-			}
-		}
-		if container.ID == "" {
-			return nil
-		}
-		if err := utils.RemoveContainer(dockerClient, container.ID); !engineCli.IsErrContainerNotFound(err) {
-			return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove container")
-		}
+		// Root volume. The entire concept is legacy. Do nothing.
+		return nil
 	} else if isManagedVolume(volume) {
 		err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)
 		if err != nil {
