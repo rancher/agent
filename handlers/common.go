@@ -123,6 +123,7 @@ func initializeHandlers() *Handler {
 		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
+	storageCache := cache.New(5*time.Minute, 30*time.Second)
 	cache := cache.New(5*time.Minute, 30*time.Second)
 	Collectors := []hostInfo.Collector{
 		hostInfo.CPUCollector{},
@@ -154,6 +155,7 @@ func initializeHandlers() *Handler {
 	}
 	storageHandler := StorageHandler{
 		dockerClient: client,
+		cache:        storageCache,
 	}
 	pingHandler := PingHandler{
 		dockerClient: clientWithTimeout,

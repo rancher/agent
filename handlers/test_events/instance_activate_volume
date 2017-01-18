@@ -1,0 +1,104 @@
+{
+    "data": {
+        "instanceHostMap": {
+            "host": {
+                "agentId": 91,
+                "data": {
+                    "fields": {
+                        "accountId": 1
+                    }
+                },
+                "id": 5,
+                "kind": "docker",
+                "state": "active",
+                "type": "host",
+                "uuid": "dockerhost1"
+            },
+            "hostId": 5,
+            "id": 50,
+            "instance": {
+                "accountId": 1,
+                "allocationState": "active",
+                "created": 1389396144000,
+                "data": {
+                    "fields": {
+                        "imageUuid": "docker:ubuntu:14.04.3",
+                        "tty": true,
+                        "stdinOpen": true,
+                        "startOnCreate": true,
+                        "dataVolumes": ["/foo"]
+                    }
+                },
+                "id": 211,
+                "image": {
+                    "accountId": 110,
+                    "created": 1388791201000,
+                    "data": {
+                        "dockerImage": {
+                            "fullName": "ubuntu:14.04.3",
+                            "namespace": "cattle",
+                            "qualifiedName": "ubuntu",
+                            "repository": "ubuntu",
+                            "tag": "latest"
+                        }
+                    },
+                    "id": 14,
+                    "isPublic": true,
+                    "name": "ubuntu:14.04.3",
+                    "type": "image",
+                    "uuid": "docker:ubuntu:14.04.3"
+                },
+                "imageId": 14,
+                "kind": "container",
+                "name": "test",
+                "onCrash": "stop",
+                "postComputeState": "inactive",
+                "state": "starting",
+                "type": "instance",
+                "uuid": "c861f990-4472-4fa1-960f-65171b544c28",
+                "volumes": [
+                    {
+                        "accountId": 1,
+                        "allocationState": "active",
+                        "attachedState": "active",
+                        "created": 1389396144000,
+                        "deviceNumber": 0,
+                        "id": 178,
+                        "imageId": 14,
+                        "state": "active",
+                        "type": "volume",
+                        "uuid": "9bd4d257-e288-4cbd-b496-21310d64772f"
+                    }
+                ],
+                "nics": [
+                    {
+                        "macAddress": "02:03:04:05:06:07",
+                        "deviceNumber": 0,
+                        "ipAddresses": [
+                            {
+                                "address": "10.10.10.10",
+                                "role": "primary",
+                                "subnet" : {
+                                    "cidrSize": 24
+                                }
+                            }
+                        ],
+                        "network": {
+                            "kind": "dockerBridge"
+                        }
+                    }
+                ],
+                "zoneId": 1
+            },
+            "instanceId": 211,
+            "state": "activating",
+            "type": "instanceHostMap"
+        }
+    },
+    "id": "fe8fe34c-1b13-4287-a094-a2c5f902722b",
+    "name": "compute.instance.activate",
+    "replyTo": "reply.6533363327570546786",
+    "resourceId": "211",
+    "resourceType": "instanceHostMap",
+    "time": 1389656010338
+}
