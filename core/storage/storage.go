@@ -3,12 +3,10 @@ package storage
 import (
 	"fmt"
 
-	"os"
-	"strings"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	engineCli "github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
@@ -16,6 +14,8 @@ import (
 	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
+	"os"
+	"time"
 )
 
 func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
@@ -87,7 +87,11 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	return pullImageWrap(client, imageName, pullOption, progress)
 }
 
-func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client) error {
+func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client, ca *cache.Cache, resourceID string) error {
+	if _, ok := ca.Get(resourceID); ok {
+		ca.Delete(resourceID)
+		return nil
+	}
 	if ok, err := IsVolumeRemoved(volume, storagePool, dockerClient); ok {
 		return nil
 	} else if err != nil {
@@ -103,18 +107,33 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		if container.ID == "" {
 			return nil
 		}
-		if err := utils.RemoveContainer(dockerClient, container.ID); !engineCli.IsErrContainerNotFound(err) {
-			return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove container")
+		errorList := []error{}
+		for i := 0; i < 3; i++ {
+			if err := utils.RemoveContainer(dockerClient, container.ID); !engineCli.IsErrContainerNotFound(err) {
+				errorList = append(errorList, err)
+			} else {
+				break
+			}
+			time.Sleep(time.Second * 1)
+		}
+		if len(errorList) == 3 {
+			ca.Add(resourceID, true, cache.DefaultExpiration)
+			logrus.Warnf("Failed to remove container id [%v]. Tried three times and failed. Error msg: %v", container.ID, errorList)
 		}
 	} else if isManagedVolume(volume) {
-		err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)
-		if err != nil {
-			if strings.Contains(err.Error(), "409") {
-				logrus.Error(fmt.Errorf("encountered conflict (%s) while deleting volume. Orphaning volume",
-					err.Error()))
+		errorList := []error{}
+		for i := 0; i < 3; i++ {
+			err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)
+			if err != nil {
+				errorList = append(errorList, err)
 			} else {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove volume")
+				break
 			}
+			time.Sleep(time.Second * 1)
+		}
+		if len(errorList) == 3 {
+			ca.Add(resourceID, true, cache.DefaultExpiration)
+			logrus.Warnf("Failed to remove volume name [%v]. Tried three times and failed. Error msg: %v", volume.Name, errorList)
 		}
 		return nil
 	}

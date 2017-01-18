@@ -4,6 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
@@ -15,6 +16,7 @@ import (
 
 type StorageHandler struct {
 	dockerClient *engineCli.Client
+	cache        *cache.Cache
 }
 
 func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -92,7 +94,7 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 	progress := utils.GetProgress(event, cli)
 
 	if ok, err := storage.IsVolumeRemoved(volume, storagePool, h.dockerClient); err == nil && !ok {
-		rmErr := storage.DoVolumeRemove(volume, storagePool, progress, h.dockerClient)
+		rmErr := storage.DoVolumeRemove(volume, storagePool, progress, h.dockerClient, h.cache, event.ResourceID)
 		if rmErr != nil {
 			return errors.Wrap(rmErr, constants.VolumeRemoveError+"failed to remove volume")
 		}
