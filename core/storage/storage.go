@@ -109,7 +109,7 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		}
 		errorList := []error{}
 		for i := 0; i < 3; i++ {
-			if err := utils.RemoveContainer(dockerClient, container.ID); !engineCli.IsErrContainerNotFound(err) {
+			if err := utils.RemoveContainer(dockerClient, container.ID); err != nil && !engineCli.IsErrContainerNotFound(err) {
 				errorList = append(errorList, err)
 			} else {
 				break
@@ -145,7 +145,6 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 				return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to remove directory")
 			}
 		}
-		return errors.Wrap(existErr, constants.DoVolumeRemoveError+"failed to find the path")
 	}
 	return nil
 }
