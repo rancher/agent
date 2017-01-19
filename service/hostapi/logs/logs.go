@@ -2,20 +2,20 @@ package logs
 
 import (
 	"bufio"
-	"io"
+	"bytes"
 	"net/url"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 
-	"bytes"
-	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -73,49 +73,51 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		Tail:       tail,
 	}
 
-	stdoutReader, err := client.ContainerLogs(context.Background(), container, logOpts)
+	ctx, cancelFnc := context.WithCancel(context.Background())
+	stdout, err := client.ContainerLogs(ctx, container, logOpts)
 	if err != nil {
 		log.Error(err)
 		return
 	}
+	defer stdout.Close()
 
 	go func() {
 		for {
 			_, ok := <-incomingMessages
 			if !ok {
+				cancelFnc()
 				return
 			}
 		}
 	}()
 
-	go func(stdout io.ReadCloser) {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			body := ""
-			data := scanner.Bytes()
-			if bytes.Contains(data, stdoutHead) {
-				if len(data) > 8 {
-					body = stdoutPrefix + string(data[8:])
-				}
-			} else if bytes.Contains(data, stderrHead) {
-				if len(data) > 8 {
-					body = stderrPrefix + string(data[8:])
-				}
-			} else {
-				body = bothPrefix + string(data)
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		body := ""
+		data := scanner.Bytes()
+		if bytes.Contains(data, stdoutHead) {
+			if len(data) > 8 {
+				body = stdoutPrefix + string(data[8:])
 			}
-			message := common.Message{
-				Key:  key,
-				Type: common.Body,
-				Body: body,
+		} else if bytes.Contains(data, stderrHead) {
+			if len(data) > 8 {
+				body = stderrPrefix + string(data[8:])
 			}
-			response <- message
+		} else {
+			body = bothPrefix + string(data)
 		}
-		if err := scanner.Err(); err != nil {
+		message := common.Message{
+			Key:  key,
+			Type: common.Body,
+			Body: body,
+		}
+		response <- message
+	}
+	if err := scanner.Err(); err != nil {
+		// hacky, but can't do a type assertion on the cancellation error, which is the "normal" error received
+		// when the logs are closed properly
+		if !strings.Contains(err.Error(), "request canceled") {
 			log.WithFields(log.Fields{"error": err}).Error("Error with the container log scanner.")
 		}
-		stdout.Close()
-	}(stdoutReader)
-
-	select {}
+	}
 }

@@ -71,26 +71,22 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		}
 	}(hijackResp.Conn)
 
-	go func(r io.Reader) {
-		buffer := make([]byte, 4096, 4096)
-		for {
-			c, err := r.Read(buffer)
-			if c > 0 {
-				text := base64.StdEncoding.EncodeToString(buffer[:c])
-				message := common.Message{
-					Key:  key,
-					Type: common.Body,
-					Body: text,
-				}
-				response <- message
+	buffer := make([]byte, 4096, 4096)
+	for {
+		c, err := hijackResp.Reader.Read(buffer)
+		if c > 0 {
+			text := base64.StdEncoding.EncodeToString(buffer[:c])
+			message := common.Message{
+				Key:  key,
+				Type: common.Body,
+				Body: text,
 			}
-			if err != nil {
-				break
-			}
+			response <- message
 		}
-	}(hijackResp.Reader)
-
-	select {}
+		if err != nil {
+			break
+		}
+	}
 }
 
 func convert(execMap map[string]interface{}) (types.ExecConfig, string) {
