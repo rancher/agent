@@ -144,6 +144,7 @@ func initializeHandlers() *Handler {
 				Version: version,
 			},
 		},
+		hostInfo.KeyCollector{},
 	}
 	computerHandler := ComputeHandler{
 		dockerClient: clientWithTimeout,

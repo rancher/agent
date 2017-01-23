@@ -54,6 +54,11 @@ func StateDir() string {
 	return DefaultValue("STATE_DIR", Home())
 }
 
+func KeyFile() string {
+	defValue := fmt.Sprintf("%s/../etc/ssl/host.key", StateDir())
+	return DefaultValue("HOST_KEY_FILE", defValue)
+}
+
 func physicalHostUUIDFile() string {
 	defValue := fmt.Sprintf("%s/.physical_host_uuid", StateDir())
 	return DefaultValue("PHYSICAL_HOST_UUID_FILE", defValue)
