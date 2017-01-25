@@ -20,6 +20,12 @@ import (
 	"time"
 )
 
+const (
+	ipLabel    = "io.rancher.scheduler.ips"
+	agentImage = "RANCHER_AGENT_IMAGE"
+	ipset      = "CATTLE_SCHEDULER_IPS"
+)
+
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
 	if !pingIncludeResource(ping) {
 		return nil
@@ -43,8 +49,11 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	if err != nil {
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
 	}
-	rancherImage := os.Getenv("RANCHER_AGENT_IMAGE")
+	rancherImage := os.Getenv(agentImage)
 	labels[constants.RancherAgentImage] = rancherImage
+	if os.Getenv(ipset) != "" {
+		labels[ipLabel] = os.Getenv(ipset)
+	}
 	uuid, err := config.DockerUUID()
 	if err != nil {
 		return errors.Wrap(err, constants.AddResourceError+"failed to get docker UUID")
