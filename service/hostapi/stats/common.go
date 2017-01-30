@@ -2,12 +2,14 @@ package stats
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"strings"
+	"time"
+
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/shirou/gopsutil/mem"
-	"strings"
-	"sync"
-	"time"
 )
 
 func pathParts(path string) []string {
@@ -26,41 +28,23 @@ func parseRequestToken(tokenString string, parsedPublicKey interface{}) (*jwt.To
 	})
 }
 
-func getContainerStats(reader *bufio.Reader, count int, id string, pid int) (containerInfo, error) {
+func getContainerStats(reader io.ReadCloser, id string, pid int) (containerInfo, error) {
 	contInfo := containerInfo{}
 	contInfo.ID = id
-	stats := []containerStats{}
-	mu := &sync.Mutex{}
-	for i := 0; i < count; i++ {
-		flag := make(chan error)
-		// detect empty stats stream and skip that after 1s
-		go func() {
-			str, err := reader.ReadString([]byte("\n")[0])
-			if err != nil {
-				flag <- err
-			}
-			contStats := containerStats{}
-			dockerStats, err := FromString(str)
-			if err != nil {
-				flag <- err
-			}
-			contStats = convertDockerStats(dockerStats, pid)
-			mu.Lock()
-			defer mu.Unlock()
-			stats = append(stats, contStats)
-			flag <- nil
-
-		}()
-		select {
-		case err := <-flag:
-			if err != nil {
-				return containerInfo{}, err
-			}
-		case <-time.After(time.Second):
-		}
-
+	result := []containerStats{}
+	contStats := containerStats{}
+	bufioReader := bufio.NewReader(reader)
+	data, err := bufioReader.ReadBytes('\n')
+	if err != nil {
+		return containerInfo{}, err
 	}
-	contInfo.Stats = stats
+	dockerStats, err := convertStatsFromRaw(bytes.TrimSuffix(data, []byte("\n")))
+	if err != nil {
+		return containerInfo{}, err
+	}
+	contStats = convertDockerStats(dockerStats, pid)
+	result = append(result, contStats)
+	contInfo.Stats = result
 	return contInfo, nil
 }
 

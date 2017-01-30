@@ -68,7 +68,6 @@ func (s *HostStatsHandler) Handle(key string, initialMessage string, incomingMes
 		}
 	}(reader)
 
-	count := 1
 	memLimit, err := getMemCapcity()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Error getting memory capacity.")
@@ -78,7 +77,7 @@ func (s *HostStatsHandler) Handle(key string, initialMessage string, incomingMes
 	for {
 		infos := []containerInfo{}
 
-		cInfo, err := getRootContainerInfo(count)
+		cInfo, err := getRootContainerInfo()
 		if err != nil {
 			return
 		}
@@ -96,6 +95,5 @@ func (s *HostStatsHandler) Handle(key string, initialMessage string, incomingMes
 		}
 
 		time.Sleep(1 * time.Second)
-		count = 1
 	}
 }
