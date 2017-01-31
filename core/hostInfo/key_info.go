@@ -37,7 +37,7 @@ func (k KeyCollector) getKey() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		os.MkdirAll(path.Base(fileName), 0400)
+		os.MkdirAll(path.Dir(fileName), 0400)
 		err = ioutil.WriteFile(fileName, bytes, 0400)
 		if err != nil {
 			return "", err
