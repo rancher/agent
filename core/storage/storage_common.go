@@ -1,9 +1,13 @@
 package storage
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
@@ -14,8 +18,6 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
-	"strings"
 )
 
 func isManagedVolume(volume model.Volume) bool {
@@ -105,17 +107,14 @@ func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePull
 		return errors.Wrap(err, "Failed to pull image")
 	}
 	defer reader.Close()
-	buffer := utils.ReadBuffer(reader)
-	statusList := strings.Split(buffer, "\r\n")
-	for _, rawStatus := range statusList {
-		if rawStatus != "" {
-			status := marshaller.FromString(rawStatus)
-			if utils.HasKey(status, "error") {
-				return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
-			}
-			if utils.HasKey(status, "status") {
-				message = utils.InterfaceToString(status["status"])
-			}
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		status := marshaller.FromString(scanner.Text())
+		if utils.HasKey(status, "error") {
+			return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
+		}
+		if utils.HasKey(status, "status") {
+			message = utils.InterfaceToString(status["status"])
 		}
 		if lastMessage != message && progress != nil {
 			progress.Update(message, "yes", nil)
