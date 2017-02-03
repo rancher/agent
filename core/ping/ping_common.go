@@ -1,6 +1,11 @@
 package ping
 
 import (
+	"net"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -13,11 +18,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -149,32 +149,19 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	})
 	containers := []model.PingResource{}
 
-	// if we can not get all container in 2s, we will skip it
-	done := make(chan bool, 1)
-	timeout := make(chan bool, 1)
-	go func() {
-		time.Sleep(2 * time.Second)
-		timeout <- true
-	}()
-	running, nonrunning, err := getAllContainerByState(dockerClient, done)
-	select {
-	case <-done:
-		if err != nil {
-			return errors.Wrap(err, constants.AddInstanceError+"failed to get all containers")
-		}
-		for _, container := range running {
-			containers = utils.AddContainer("running", container, containers, dockerClient)
-		}
-		for _, container := range nonrunning {
-			containers = utils.AddContainer("stopped", container, containers, dockerClient)
-		}
-		pong.Resources = append(pong.Resources, containers...)
-		pong.Options.Instances = true
-		return nil
-	case <-timeout:
-		logrus.Warn("Can not get response from docker daemon")
-		return nil
+	running, nonrunning, err := getAllContainerByState(dockerClient)
+	if err != nil {
+		return errors.Wrap(err, constants.AddInstanceError+"failed to get all containers")
 	}
+	for _, container := range running {
+		containers = utils.AddContainer("running", container, containers, dockerClient)
+	}
+	for _, container := range nonrunning {
+		containers = utils.AddContainer("stopped", container, containers, dockerClient)
+	}
+	pong.Resources = append(pong.Resources, containers...)
+	pong.Options.Instances = true
+	return nil
 }
 
 func pingIncludeResource(ping *revents.Event) bool {
@@ -205,7 +192,7 @@ func getHostLabels(collectors []hostInfo.Collector) (map[string]string, error) {
 	return hostInfo.HostLabels("io.rancher.host", collectors)
 }
 
-func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[string]types.Container, map[string]types.Container, error) {
+func getAllContainerByState(dockerClient *client.Client) (map[string]types.Container, map[string]types.Container, error) {
 	// avoid calling API twice
 	nonrunningContainers := map[string]types.Container{}
 	containerList, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -225,6 +212,5 @@ func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[st
 			delete(nonrunningContainers, c.ID)
 		}
 	}
-	done <- true
 	return runningContainers, nonrunningContainers, nil
 }
