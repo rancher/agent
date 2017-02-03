@@ -1,12 +1,13 @@
 package events
 
 import (
+	"context"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
-	"time"
 )
 
 const workerTimeout = 60 * time.Second
@@ -50,18 +51,23 @@ func (e *EventRouter) Start() error {
 	go func() {
 	loop:
 		for {
-			messages, errs := e.dockerClient.Events(context.Background(), types.EventsOptions{})
-			select {
-			case flag := <-e.flag:
-				if flag {
-					break loop
+			ctx, cancelFnc := context.WithCancel(context.Background())
+			messages, errs := e.dockerClient.Events(ctx, types.EventsOptions{})
+			for {
+				select {
+				case flag := <-e.flag:
+					if flag {
+						cancelFnc()
+						break loop
+					}
+				case err := <-errs:
+					if err != nil {
+						cancelFnc()
+						continue loop
+					}
+				case m := <-messages:
+					e.listener <- &m
 				}
-			case err := <-errs:
-				if err != nil {
-					continue loop
-				}
-			case m := <-messages:
-				e.listener <- &m
 			}
 		}
 	}()
