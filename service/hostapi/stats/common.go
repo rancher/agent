@@ -56,7 +56,8 @@ func getContainerStats(reader *bufio.Reader, count int, id string, pid int) (con
 			if err != nil {
 				return containerInfo{}, err
 			}
-		case <-time.After(time.Second):
+		case <-time.After(2 * time.Second):
+			return contInfo, nil
 		}
 
 	}
