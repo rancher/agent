@@ -1,6 +1,12 @@
 package ping
 
 import (
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -13,11 +19,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -50,10 +51,11 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
 	}
 	rancherImage := os.Getenv(agentImage)
-	labels[constants.RancherAgentImage] = rancherImage
+	createLabels := config.Labels()
 	if os.Getenv(ipset) != "" {
-		labels[ipLabel] = os.Getenv(ipset)
+		createLabels[ipLabel] = os.Getenv(ipset)
 	}
+	labels[constants.RancherAgentImage] = rancherImage
 	uuid, err := config.DockerUUID()
 	if err != nil {
 		return errors.Wrap(err, constants.AddResourceError+"failed to get docker UUID")
@@ -62,7 +64,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		Type:             "host",
 		Kind:             "docker",
 		HostName:         hostname,
-		CreateLabels:     config.Labels(),
+		CreateLabels:     createLabels,
 		Labels:           labels,
 		UUID:             uuid,
 		PhysicalHostUUID: physicalHost.UUID,
