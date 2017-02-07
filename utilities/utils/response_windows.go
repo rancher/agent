@@ -52,7 +52,7 @@ func getIP(inspect types.ContainerJSON, cache *cache.Cache) (string, error) {
 	return ip, nil
 }
 
-func setupDNS(containerID string) {
+func setupDNS(containerID string) error {
 	command := []string{"powershell", "Get-NetAdapter", "|", "Set-DnsClientServerAddress", "-ServerAddresses"}
 	addressesArg := ""
 	for i, ip := range strings.Split(config.DNSAddresses(), ",") {
@@ -62,10 +62,12 @@ func setupDNS(containerID string) {
 		addressesArg += fmt.Sprintf("'%s'", ip)
 	}
 	command = append(command, fmt.Sprintf("(%s)", addressesArg))
-	createAndStart(containerID, command)
+	return createAndStart(containerID, command)
 }
 
-func createAndStart(containerID string, command []string) {
+func createAndStart(containerID string, command []string) error {
+	var err error
+	var execObj types.ContainerExecCreateResponse
 	client := docker.GetClient(docker.DefaultVersion)
 	execConfig := types.ExecConfig{
 		AttachStdout: true,
@@ -77,13 +79,10 @@ func createAndStart(containerID string, command []string) {
 		Cmd:          command,
 	}
 
-	execObj, err := client.ContainerExecCreate(context.Background(), containerID, execConfig)
-	if err != nil {
-		logrus.Error(err)
+	execObj, err = client.ContainerExecCreate(context.Background(), containerID, execConfig)
+	if err == nil {
+		err = client.ContainerExecStart(context.Background(), execObj.ID, types.ExecStartCheck{})
 	}
 
-	err = client.ContainerExecStart(context.Background(), execObj.ID, types.ExecStartCheck{})
-	if err != nil {
-		logrus.Error(err)
-	}
+	return err
 }
