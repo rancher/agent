@@ -1,4 +1,4 @@
-FROM golang:1.7.3
+FROM golang:1.7.5
 RUN apt-get update && \
     apt-get install -y uuid-runtime iptables
 RUN go get github.com/rancher/trash
