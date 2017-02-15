@@ -17,7 +17,7 @@ func convertDockerStats(stats DockerStats, pid int) containerStats {
 		containerStats.CPU.Usage.PerCPU = append(containerStats.CPU.Usage.PerCPU, uint64(value))
 	}
 	containerStats.CPU.Usage.System = uint64(stats.CPUStats.CPUUsage.UsageInKernelmode)
-	containerStats.CPU.Usage.User = uint64(stats.CPUStats.CPUUsage.UsageInKernelmode)
+	containerStats.CPU.Usage.User = uint64(stats.CPUStats.CPUUsage.UsageInUsermode)
 	containerStats.Memory.Usage = uint64(stats.MemoryStats.Usage)
 	containerStats.Network.Interfaces = []InterfaceStats{}
 	for name, netStats := range getLinkStats(pid) {
@@ -43,9 +43,9 @@ func convertDockerStats(stats DockerStats, pid int) containerStats {
 	return containerStats
 }
 
-func FromString(rawstring string) (DockerStats, error) {
+func convertStatsFromRaw(raw []byte) (DockerStats, error) {
 	obj := DockerStats{}
-	err := json.Unmarshal([]byte(rawstring), &obj)
+	err := json.Unmarshal(raw, &obj)
 	if err != nil {
 		return obj, err
 	}

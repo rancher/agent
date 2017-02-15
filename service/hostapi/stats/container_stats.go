@@ -7,7 +7,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/events"
@@ -90,7 +89,6 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			log.WithFields(log.Fields{"error": err}).Error("Error with the container stat scanner.")
 		}
 	}(reader)
-	count := 1
 	memLimit, err := getMemCapcity()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting memory capacity.")
@@ -103,18 +101,16 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			log.WithFields(log.Fields{"error": err}).Error("Can not inspect containers")
 			return
 		}
+		pid := inspect.State.Pid
 		statsReader, err := dclient.ContainerStats(context.Background(), id, true)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Can not get stats reader from docker")
 			return
 		}
 		defer statsReader.Body.Close()
-		pid := inspect.State.Pid
-
-		bufioReader := bufio.NewReader(statsReader.Body)
 		for {
 			infos := []containerInfo{}
-			cInfo, err := getContainerStats(bufioReader, count, id, pid)
+			cInfo, err := getContainerStats(statsReader.Body, id, pid)
 			if err != nil {
 				log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
 				return
@@ -130,9 +126,6 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			if err != nil {
 				return
 			}
-
-			time.Sleep(1 * time.Second)
-			count = 1
 		}
 	} else {
 		contList, err := dclient.ContainerList(context.Background(), types.ContainerListOptions{})
@@ -140,9 +133,8 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			log.WithFields(log.Fields{"error": err}).Error("Can not list containers")
 			return
 		}
-		IDList := []string{}
-		pids := []int{}
-		bufioReaders := []*bufio.Reader{}
+		readerMap := map[string]io.ReadCloser{}
+		pidMap := map[string]int{}
 		for _, cont := range contList {
 			if _, ok := containerIds[cont.ID]; ok {
 				inspect, err := dclient.ContainerInspect(context.Background(), cont.ID)
@@ -156,30 +148,25 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 					return
 				}
 				defer statsReader.Body.Close()
-				pids = append(pids, inspect.State.Pid)
-				bufioReader := bufio.NewReader(statsReader.Body)
-				bufioReaders = append(bufioReaders, bufioReader)
-				IDList = append(IDList, cont.ID)
+				pid := inspect.State.Pid
+				readerMap[cont.ID] = statsReader.Body
+				pidMap[cont.ID] = pid
 			}
 		}
 		for {
 			infos := []containerInfo{}
-			allInfos, err := getAllDockerContainers(bufioReaders, count, IDList, pids)
-			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Error getting all container info.")
-				return
-			}
-			infos = append(infos, allInfos...)
-			for i := range infos {
-				if len(infos[i].Stats) > 0 {
-					infos[i].Stats[0].Timestamp = time.Now()
+			for id, r := range readerMap {
+				cInfo, err := getContainerStats(r, id, pidMap[id])
+				if err != nil {
+					log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
+					return
 				}
+				infos = append(infos, cInfo)
 			}
 			err = writeAggregatedStats(id, containerIds, "container", infos, uint64(memLimit), writer)
 			if err != nil {
 				return
 			}
-			time.Sleep(1 * time.Second)
 		}
 	}
 }

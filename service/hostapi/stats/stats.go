@@ -66,8 +66,6 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		}
 	}(reader)
 
-	count := 1
-
 	memLimit, err := getMemCapcity()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting memory capacity.")
@@ -77,7 +75,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		for {
 			infos := []containerInfo{}
 
-			cInfo, err := getRootContainerInfo(count)
+			cInfo, err := getRootContainerInfo()
 			if err != nil {
 				return
 			}
@@ -95,7 +93,6 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			}
 
 			time.Sleep(1 * time.Second)
-			count = 1
 		}
 	} else {
 		inspect, err := dclient.ContainerInspect(context.Background(), id)
@@ -110,10 +107,9 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		}
 		defer statsReader.Body.Close()
 		pid := inspect.State.Pid
-		bufioReader := bufio.NewReader(statsReader.Body)
 		for {
 			infos := []containerInfo{}
-			cInfo, err := getContainerStats(bufioReader, count, id, pid)
+			cInfo, err := getContainerStats(statsReader.Body, id, pid)
 
 			if err != nil {
 				log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
@@ -132,7 +128,6 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			}
 
 			time.Sleep(1 * time.Second)
-			count = 1
 		}
 	}
 }

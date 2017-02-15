@@ -100,9 +100,9 @@ func convertDockerStats(stats DockerStatsWindows, pid int) containerStats {
 	return containerStats
 }
 
-func FromString(rawstring string) (DockerStatsWindows, error) {
+func convertStatsFromRaw(raw []byte) (DockerStatsWindows, error) {
 	obj := DockerStatsWindows{}
-	err := json.Unmarshal([]byte(rawstring), &obj)
+	err := json.Unmarshal(raw, &obj)
 	if err != nil {
 		return obj, err
 	}
