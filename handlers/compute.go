@@ -6,7 +6,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	engineCli "github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
-	"github.com/patrickmn/go-cache"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/compute"
 	"github.com/rancher/agent/core/marshaller"
@@ -18,9 +18,10 @@ import (
 )
 
 type ComputeHandler struct {
-	dockerClient *engineCli.Client
-	infoData     model.InfoData
-	memCache     *cache.Cache
+	dockerClient            *engineCli.Client
+	dockerClientWithTimeout *engineCli.Client
+	infoData                model.InfoData
+	memCache                *cache.Cache
 }
 
 func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
@@ -35,16 +36,16 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 		instance.ProcessData.ContainerNoOpEvent = utils.InterfaceToBool(noOp)
 	}
 
-	if ok, err := compute.IsInstanceActive(instance, host, h.dockerClient); ok {
-		return instanceHostMapReply(event, cli, h.dockerClient, h.memCache)
+	if ok, err := compute.IsInstanceActive(instance, host, h.dockerClientWithTimeout); ok {
+		return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, h.memCache)
 	} else if err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to check whether instance is activated")
 	}
 
-	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClient, h.infoData); err != nil {
+	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClientWithTimeout, h.infoData); err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to activate instance")
 	}
-	return instanceHostMapReply(event, cli, h.dockerClient, h.memCache)
+	return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, h.memCache)
 }
 
 func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
@@ -97,7 +98,7 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *client.Ranch
 	if err := mapstructure.Decode(event.Data["instanceInspect"], &inspect); err != nil {
 		return errors.Wrap(err, constants.InstanceInspectError+"failed to marshall incoming request")
 	}
-	inspectResp, err := compute.DoInstanceInspect(inspect, h.dockerClient)
+	inspectResp, err := compute.DoInstanceInspect(inspect, h.dockerClientWithTimeout)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return errors.Wrap(err, constants.InstanceInspectError+"failed to inspect instance")
 	}
@@ -125,7 +126,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 		ImageUUID: instancePull.Image.Data.DockerImage.FullName,
 	}
 
-	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
+	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClientWithTimeout)
 	if pullErr != nil {
 		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}
@@ -143,14 +144,14 @@ func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.Ranche
 		instance.ProcessData.ContainerNoOpEvent = utils.InterfaceToBool(noOp)
 	}
 
-	if ok, err := compute.IsInstanceRemoved(instance, h.dockerClient); ok {
+	if ok, err := compute.IsInstanceRemoved(instance, h.dockerClientWithTimeout); ok {
 		return reply(map[string]interface{}{}, event, cli)
 	} else if err != nil {
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to check whether instance is removed")
 	}
 
-	if err := compute.DoInstanceRemove(instance, h.dockerClient); err != nil {
+	if err := compute.DoInstanceRemove(instance, h.dockerClientWithTimeout); err != nil {
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to remove instance")
 	}
-	return instanceHostMapReply(event, cli, h.dockerClient, nil)
+	return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, nil)
 }

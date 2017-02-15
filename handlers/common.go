@@ -147,7 +147,8 @@ func initializeHandlers() *Handler {
 		hostInfo.KeyCollector{},
 	}
 	computerHandler := ComputeHandler{
-		dockerClient: clientWithTimeout,
+		dockerClientWithTimeout: clientWithTimeout,
+		dockerClient:            client,
 		infoData: model.InfoData{
 			Info:    info,
 			Version: version,
