@@ -22,9 +22,11 @@ import (
 )
 
 const (
-	ipLabel    = "io.rancher.scheduler.ips"
-	agentImage = "RANCHER_AGENT_IMAGE"
-	ipset      = "CATTLE_SCHEDULER_IPS"
+	ipLabel         = "io.rancher.scheduler.ips"
+	agentImage      = "RANCHER_AGENT_IMAGE"
+	ipset           = "CATTLE_SCHEDULER_IPS"
+	requireAny      = "CATTLE_SCHEDULER_REQUIRE_ANY"
+	requireAnyLabel = "io.rancher.scheduler.require_any"
 )
 
 func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -54,6 +56,9 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	createLabels := config.Labels()
 	if os.Getenv(ipset) != "" {
 		createLabels[ipLabel] = os.Getenv(ipset)
+	}
+	if os.Getenv(requireAny) != "" {
+		createLabels[requireAnyLabel] = os.Getenv(requireAny)
 	}
 	labels[constants.RancherAgentImage] = rancherImage
 	uuid, err := config.DockerUUID()
