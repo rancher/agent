@@ -28,6 +28,7 @@ func ParseTestPrivateKey() interface{} {
 func GetTestConfig(addr string) *proxy.Config {
 	config := &proxy.Config{
 		ListenAddr: addr,
+		CattleAddr: "127.0.0.1:8081",
 	}
 
 	pubKey, err := proxy.ParsePublicKey("../testutils/public.pem")
