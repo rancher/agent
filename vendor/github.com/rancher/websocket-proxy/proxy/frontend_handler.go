@@ -124,7 +124,7 @@ func (h *FrontendHandler) auth(req *http.Request) (*jwt.Token, string, error) {
 	}
 
 	if !token.Valid {
-		return nil, "", fmt.Errorf("Token not valid. Token parameter: %v.", tokenParam)
+		return nil, "", fmt.Errorf("Token not valid. Token parameter: %v", tokenParam)
 	}
 
 	hostUUID, found := token.Claims["hostUuid"]
@@ -134,7 +134,7 @@ func (h *FrontendHandler) auth(req *http.Request) (*jwt.Token, string, error) {
 		}
 	}
 
-	return nil, "", fmt.Errorf("Invalid backend host requested: %v.", hostUUID)
+	return nil, "", fmt.Errorf("Invalid backend host requested: %v", hostUUID)
 }
 
 func closeConnection(ws *websocket.Conn) {
