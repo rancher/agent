@@ -50,7 +50,7 @@ func main() {
 	accessKey := os.Getenv("CATTLE_ACCESS_KEY")
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
 	logrus.Info(url, accessKey, secretKey)
-	workerCount := 50
+	workerCount := 250
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {
