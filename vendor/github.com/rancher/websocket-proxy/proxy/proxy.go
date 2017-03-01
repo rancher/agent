@@ -10,17 +10,16 @@ import (
 	"net/http/httputil"
 	"os"
 	"regexp"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	"github.com/docker/docker/pkg/tlsconfig"
-
 	log "github.com/Sirupsen/logrus"
+	"github.com/docker/docker/pkg/tlsconfig"
 	"github.com/gorilla/mux"
-
+	"github.com/pkg/errors"
 	"github.com/rancher/websocket-proxy/k8s"
+	"github.com/rancher/websocket-proxy/proxy/apiinterceptor"
 	"github.com/rancher/websocket-proxy/proxy/proxyprotocol"
 	proxyTls "github.com/rancher/websocket-proxy/proxy/tls"
 )
@@ -38,37 +37,42 @@ type Starter struct {
 }
 
 func (s *Starter) StartProxy() error {
+	switcher := NewSwitcher(s.Config)
+
 	backendMultiplexers := make(map[string]*multiplexer)
 	bpm := &backendProxyManager{
 		multiplexers: backendMultiplexers,
 		mu:           &sync.RWMutex{},
 	}
 
-	frontendHandler := &FrontendHandler{
+	frontendHandler := switcher.Wrap(&FrontendHandler{
 		backend:         bpm,
 		parsedPublicKey: s.Config.PublicKey,
-	}
+	})
 
-	statsHandler := &StatsHandler{
+	statsHandler := switcher.Wrap(&StatsHandler{
 		backend:         bpm,
 		parsedPublicKey: s.Config.PublicKey,
-	}
+	})
 
-	backendHandler := &BackendHandler{
+	backendHandler := switcher.Wrap(&BackendHandler{
 		proxyManager:    bpm,
 		parsedPublicKey: s.Config.PublicKey,
-	}
+	})
 
-	frontendHTTPHandler := &FrontendHTTPHandler{
+	frontendHTTPHandler := switcher.Wrap(&FrontendHTTPHandler{
 		FrontendHandler: FrontendHandler{
 			backend:         bpm,
 			parsedPublicKey: s.Config.PublicKey,
 		},
 		HTTPSPorts:  s.Config.ProxyProtoHTTPSPorts,
 		TokenLookup: NewTokenLookup(s.Config.CattleAddr),
-	}
+	})
 
-	cattleProxy, cattleWsProxy := newCattleProxies(s.Config)
+	cattleProxy, cattleWsProxy, err := newCattleProxies(s.Config)
+	if err != nil {
+		log.Fatalf("Couldn't create cattle proxies: %v", err)
+	}
 
 	router := mux.NewRouter()
 
@@ -209,20 +213,21 @@ func (p *pathCleaner) cleanPath(path string) string {
 	return slashRegex.ReplaceAllString(path, "/")
 }
 
-func newCattleProxies(config *Config) (*proxyProtocolConverter, *cattleWSProxy) {
+func newWSProxy(config *Config) http.Handler {
 	cattleAddr := config.CattleAddr
 	director := func(req *http.Request) {
 		req.URL.Scheme = "http"
 		req.URL.Host = cattleAddr
 	}
+
 	cattleProxy := &httputil.ReverseProxy{
 		Director:      director,
 		FlushInterval: time.Millisecond * 100,
 	}
 
 	reverseProxy := &proxyProtocolConverter{
-		reverseProxy: cattleProxy,
-		httpsPorts:   config.ProxyProtoHTTPSPorts,
+		p:          cattleProxy,
+		httpsPorts: config.ProxyProtoHTTPSPorts,
 	}
 
 	wsProxy := &cattleWSProxy{
@@ -230,17 +235,38 @@ func newCattleProxies(config *Config) (*proxyProtocolConverter, *cattleWSProxy) 
 		cattleAddr:   cattleAddr,
 	}
 
-	return reverseProxy, wsProxy
+	return wsProxy
+}
+
+func newCattleProxies(config *Config) (*proxyProtocolConverter, *cattleWSProxy, error) {
+	cattleAddr := config.CattleAddr
+
+	apiProxyHandler, err := apiinterceptor.NewInterceptor(config.APIInterceptorConfigFile, cattleAddr)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Couldn't create API interceptor")
+	}
+
+	reverseProxy := &proxyProtocolConverter{
+		httpsPorts: config.ProxyProtoHTTPSPorts,
+		p:          apiProxyHandler,
+	}
+
+	wsProxy := &cattleWSProxy{
+		reverseProxy: reverseProxy,
+		cattleAddr:   cattleAddr,
+	}
+
+	return reverseProxy, wsProxy, nil
 }
 
 type proxyProtocolConverter struct {
-	reverseProxy *httputil.ReverseProxy
-	httpsPorts   map[int]bool
+	httpsPorts map[int]bool
+	p          http.Handler
 }
 
 func (h *proxyProtocolConverter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	proxyprotocol.AddHeaders(req, h.httpsPorts)
-	h.reverseProxy.ServeHTTP(rw, req)
+	h.p.ServeHTTP(rw, req)
 }
 
 type cattleWSProxy struct {
@@ -249,7 +275,7 @@ type cattleWSProxy struct {
 }
 
 func (h *cattleWSProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	if strings.EqualFold(req.Header.Get("Upgrade"), "websocket") {
+	if len(req.Header.Get("Upgrade")) > 0 {
 		proxyprotocol.AddHeaders(req, h.reverseProxy.httpsPorts)
 		h.serveWebsocket(rw, req)
 	} else {

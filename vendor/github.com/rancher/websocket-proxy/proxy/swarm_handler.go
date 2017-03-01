@@ -3,7 +3,7 @@ package proxy
 import "net/http"
 
 type SwarmHandler struct {
-	FrontendHandler *FrontendHTTPHandler
+	FrontendHandler http.Handler
 	DefaultHandler  http.Handler
 }
 

@@ -37,6 +37,7 @@ func (h *pongHandler) startTimer(checkInterval, maxWait int) {
 		if time.Now().After(timeoutAt) {
 			logrus.Warnf("Hit websocket pong timeout. Last websocket ping received at %v. Closing connection.", t)
 			h.ws.Close()
+			return
 		}
 	}
 }
