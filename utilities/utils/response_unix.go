@@ -5,6 +5,7 @@ package utils
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 	"time"
@@ -54,12 +55,10 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 	initTime := 250 * time.Millisecond
 	maxTime := 2 * time.Second
 	for {
-		if ip, cniError := getIPFromStateFile(inspect); ip != "" || cniError != "" {
-			var err error
-			if cniError != "" {
-				err = errors.New(cniError)
-			}
-			return ip, err
+		if ip, cniError := getIPFromStateFile(inspect); cniError != nil {
+			return "", cniError
+		} else if ip != "" {
+			return ip, nil
 		}
 
 		ip, err := getIPForPID(inspect.State.Pid)
@@ -79,9 +78,9 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 	}
 }
 
-func getIPFromStateFile(inspect types.ContainerJSON) (string, string) {
+func getIPFromStateFile(inspect types.ContainerJSON) (string, error) {
 	if inspect.ID == "" || inspect.State == nil || inspect.State.StartedAt == "" {
-		return "", ""
+		return "", nil
 	}
 	filename := path.Join(cniStateBaseDir, inspect.ID, inspect.State.StartedAt)
 
@@ -90,16 +89,27 @@ func getIPFromStateFile(inspect types.ContainerJSON) (string, string) {
 		if !os.IsNotExist(err) {
 			logrus.Warnf("Error reading cni state file %v: %v. Falling back to container inspection logic.", filename, err)
 		}
-		return "", ""
+		return "", nil
 	}
 
 	var state cniState
 	if err := json.Unmarshal(data, &state); err != nil {
 		logrus.Warnf("Error unmarshalling cni state data %s: %v. Falling back to container inspection logic.", data, err)
-		return "", ""
+		return "", nil
 	}
 
-	return state.IP4.IP, state.Error
+	if state.Error != "" {
+		return "", errors.New(state.Error)
+	}
+
+	if state.IP4.IP != "" {
+		ip, _, err := net.ParseCIDR(state.IP4.IP)
+		if err != nil {
+			return "", errors.Wrapf(err, "Unable to parse recorded IP address %v", state.IP4.IP)
+		}
+		return ip.String(), nil
+	}
+	return "", nil
 }
 
 type cniState struct {
