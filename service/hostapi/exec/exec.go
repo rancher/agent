@@ -4,17 +4,20 @@ import (
 	"encoding/base64"
 	"io"
 	"net/url"
+	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 
+	"runtime"
+
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
-	"runtime"
 )
 
 type Handler struct {
@@ -61,6 +64,29 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 				}
 				w.Close()
 				return
+			}
+			if strings.HasPrefix(msg, ":resizeTTY:") {
+				resizeCommand := strings.Split(strings.Split(msg, ":")[2], ",")
+				if len(resizeCommand) != 2 {
+					continue
+				}
+				var width uint64
+				width, err = strconv.ParseUint(resizeCommand[0], 10, 64)
+				if err != nil {
+					log.WithFields(log.Fields{"error": err}).Error("Error decoding TTY width.")
+					continue
+				}
+				var height uint64
+				height, err = strconv.ParseUint(resizeCommand[1], 10, 64)
+				if err != nil {
+					log.WithFields(log.Fields{"error": err}).Error("Error decoding TTY height.")
+					continue
+				}
+				resizeOptions := types.ResizeOptions{}
+				resizeOptions.Width = uint(width)
+				resizeOptions.Height = uint(height)
+				client.ContainerExecResize(context.Background(), execObj.ID, resizeOptions)
+				continue
 			}
 			data, err := base64.StdEncoding.DecodeString(msg)
 			if err != nil {
