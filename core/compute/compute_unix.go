@@ -161,8 +161,10 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 		ipAddress := ""
 		for _, ip := range nic.IPAddresses {
 			if ip.Role == "primary" {
-				ipAddress = fmt.Sprintf("%s/%s", ip.Address, strconv.Itoa(ip.Subnet.CidrSize))
-				break
+				if ip.Address != "" && ip.Subnet.CidrSize != 0 {
+					ipAddress = fmt.Sprintf("%s/%s", ip.Address, strconv.Itoa(ip.Subnet.CidrSize))
+					break
+				}
 			}
 		}
 		if ipAddress != "" {
