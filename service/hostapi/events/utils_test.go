@@ -91,6 +91,9 @@ func pullTestImages(client *client.Client) {
 
 	imageName = "busybox:latest"
 	pullImage(imageName)
+
+	imageName = "hello-world:latest"
+	pullImage(imageName)
 }
 
 func TestMain(m *testing.M) {
