@@ -91,3 +91,12 @@ import:
 
 - package: github.com/pborman/uuid
   version: c55201b036063326c5b1b89ccfe45a184973d073
+
+- package: github.com/aws/aws-sdk-go
+  version: 2c0ef11c03b8f28d694021d4a6bda2e24b040cd4
+
+- package: github.com/go-ini/ini
+  version: 1730955e3146956d6a087861380f9b4667ed5071
+
+- package: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
