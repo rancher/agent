@@ -43,6 +43,8 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.IOMaximumIOps = fields.IOMaximumIOps
 
 	hostConfig.IOMaximumBandwidth = fields.IOMaximumBandwidth
+
+	hostConfig.SecurityOpt = fields.SecurityOpt
 }
 
 func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instance, infoData model.InfoData) {
