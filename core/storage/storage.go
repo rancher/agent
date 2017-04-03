@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -132,6 +133,9 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		for i := 0; i < 3; i++ {
 			err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)
 			if err != nil {
+				if strings.Contains(err.Error(), "Should retry") {
+					return errors.Wrap(err, constants.DoVolumeRemoveError+"Error removing volume")
+				}
 				errorList = append(errorList, err)
 			} else {
 				break
