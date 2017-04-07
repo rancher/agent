@@ -42,7 +42,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to check whether instance is activated")
 	}
 
-	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClientWithTimeout, h.infoData); err != nil {
+	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClient, h.infoData); err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to activate instance")
 	}
 	return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, h.memCache)
@@ -126,7 +126,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 		ImageUUID: instancePull.Image.Data.DockerImage.FullName,
 	}
 
-	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClientWithTimeout)
+	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
 	if pullErr != nil {
 		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}
