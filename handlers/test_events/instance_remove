@@ -38,7 +38,7 @@
         "data": {
           "fields": {
             "networkIds": [2],
-            "imageUuid": "docker:ubuntu:14.04.1",
+            "imageUuid": "docker:busybox:1",
             "requestedHostId": 1,
             "transitioningProgress": 95,
             "dockerHostIp": "192.168.99.100",

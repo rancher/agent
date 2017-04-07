@@ -22,7 +22,7 @@
                 "created": 1389396144000,
                 "data": {
                     "fields": {
-                        "imageUuid": "docker:ubuntu:14.04.3",
+                        "imageUuid": "docker:busybox:1",
                         "tty": true,
                         "stdinOpen": true,
                         "startOnCreate": true,
@@ -35,18 +35,18 @@
                     "created": 1388791201000,
                     "data": {
                         "dockerImage": {
-                            "fullName": "ubuntu:14.04.3",
+                            "fullName": "busybox:1",
                             "namespace": "cattle",
-                            "qualifiedName": "ubuntu",
-                            "repository": "ubuntu",
+                            "qualifiedName": "busybox",
+                            "repository": "busybox",
                             "tag": "latest"
                         }
                     },
                     "id": 14,
                     "isPublic": true,
-                    "name": "ubuntu:14.04.3",
+                    "name": "busybox:1",
                     "type": "image",
-                    "uuid": "docker:ubuntu:14.04.3"
+                    "uuid": "docker:busybox:1"
                 },
                 "imageId": 14,
                 "kind": "container",
