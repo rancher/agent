@@ -113,7 +113,8 @@ func testEvent(rawEvent []byte, c *check.C) *client.Publish {
 	apiClient, mockPublish := newTestClient()
 	workers := make(chan *Worker, 1)
 	worker := &Worker{}
-	worker.DoWork(rawEvent, GetHandlers(), apiClient, workers)
+	handlers, _ := GetHandlers()
+	worker.DoWork(rawEvent, handlers, apiClient, workers)
 	return mockPublish.publishedResponse
 }
 

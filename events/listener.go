@@ -34,7 +34,11 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 		}
 	}()
 
-	eventHandlers := handlers.GetHandlers()
+	eventHandlers, err := handlers.GetHandlers()
+	if err != nil {
+		return err
+	}
+
 	pingConfig := revents.PingConfig{
 		SendPingInterval:  5000,
 		CheckPongInterval: 5000,
