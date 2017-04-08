@@ -22,7 +22,7 @@
                 "created": 1389396144000,
                 "data": {
                     "fields": {
-                        "imageUuid": "docker:busybox:1",
+                        "imageUuid": "docker:ibuildthecloud/helloworld:latest",
                         "tty": true,
                         "stdinOpen": true,
                         "startOnCreate": true
@@ -34,18 +34,16 @@
                     "created": 1388791201000,
                     "data": {
                         "dockerImage": {
-                            "fullName": "busybox:1",
+                            "fullName": "ibuildthecloud/helloworld:latest",
                             "namespace": "cattle",
-                            "qualifiedName": "busybox",
-                            "repository": "busybox",
                             "tag": "latest"
                         }
                     },
                     "id": 14,
                     "isPublic": true,
-                    "name": "busybox:1",
+                    "name": "ibuildthecloud/helloworld:latest",
                     "type": "image",
-                    "uuid": "docker:busybox:1"
+                    "uuid": "docker:ibuildthecloud/helloworld:latest"
                 },
                 "imageId": 14,
                 "kind": "container",
