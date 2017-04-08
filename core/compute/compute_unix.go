@@ -21,6 +21,7 @@ import (
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	dutils "github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 )
 
@@ -474,10 +475,18 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 }
 
 func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) (types.ContainerCreateResponse, error) {
+	var (
+		ret types.ContainerCreateResponse
+		err error
+	)
 	if err := modifyForCNI(dockerClient, config, hostConfig); err != nil {
 		return types.ContainerCreateResponse{}, err
 	}
-	return dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
+	dutils.Serialize(func() error {
+		ret, err = dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
+		return err
+	})
+	return ret, err
 }
 
 func getContainerName(instance model.Instance) string {
