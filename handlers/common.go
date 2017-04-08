@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -17,11 +16,6 @@ import (
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-)
-
-var (
-	serializeCompute = false
-	computeLock      = sync.Mutex{}
 )
 
 type Handler struct {
@@ -38,39 +32,22 @@ func GetHandlers() (map[string]revents.EventHandler, error) {
 		return nil, err
 	}
 
-	serializeCompute = (info.Driver == "devicemapper")
-	logrus.Infof("Serialize compute requests: %v, driver: %s", serializeCompute, info.Driver)
+	docker.SerializeCompute = (info.Driver == "devicemapper")
+	logrus.Infof("Serialize compute requests: %v, driver: %s", docker.SerializeCompute, info.Driver)
 
 	return map[string]revents.EventHandler{
-		"compute.instance.activate":   serialize(cleanLog(logRequest(handler.compute.InstanceActivate))),
-		"compute.instance.deactivate": serialize(cleanLog(logRequest(handler.compute.InstanceDeactivate))),
-		"compute.instance.force.stop": serialize(cleanLog(logRequest(handler.compute.InstanceForceStop))),
+		"compute.instance.activate":   cleanLog(logRequest(handler.compute.InstanceActivate)),
+		"compute.instance.deactivate": docker.SerializeHandler(cleanLog(logRequest(handler.compute.InstanceDeactivate))),
+		"compute.instance.force.stop": docker.SerializeHandler(cleanLog(logRequest(handler.compute.InstanceForceStop))),
 		"compute.instance.inspect":    cleanLog(logRequest(handler.compute.InstanceInspect)),
 		"compute.instance.pull":       cleanLog(logRequest(handler.compute.InstancePull)),
-		"compute.instance.remove":     serialize(cleanLog(logRequest(handler.compute.InstanceRemove))),
+		"compute.instance.remove":     docker.SerializeHandler(cleanLog(logRequest(handler.compute.InstanceRemove))),
 		"storage.image.activate":      cleanLog(logRequest(handler.storage.ImageActivate)),
 		"storage.volume.activate":     cleanLog(logRequest(handler.storage.VolumeActivate)),
 		"storage.volume.remove":       cleanLog(logRequest(handler.storage.VolumeRemove)),
 		"ping":                        cleanLog(handler.ping.Ping),
 		"config.update":               cleanLog(logRequest(handler.configUpdate.ConfigUpdate)),
 	}, nil
-}
-
-func serialize(f revents.EventHandler) revents.EventHandler {
-	return func(event *revents.Event, cli *client.RancherClient) error {
-		if !serializeCompute {
-			return f(event, cli)
-		}
-
-		computeLock.Lock()
-		logrus.Info("Compute lock")
-		defer func() {
-			logrus.Info("Compute unlock")
-			computeLock.Unlock()
-		}()
-
-		return f(event, cli)
-	}
 }
 
 func logRequest(f revents.EventHandler) revents.EventHandler {

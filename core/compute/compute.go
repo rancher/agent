@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	dutils "github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 )
@@ -115,7 +116,10 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		created = true
 	}
 
-	if startErr := dockerClient.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{}); startErr != nil {
+	startErr := dutils.Serialize(func() error {
+		return dockerClient.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{})
+	})
+	if startErr != nil {
 		if created {
 			if err := utils.RemoveContainer(dockerClient, containerID); err != nil {
 				return errors.Wrap(err, constants.DoInstanceActivateError+"failed to remove container")
