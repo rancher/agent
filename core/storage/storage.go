@@ -91,7 +91,20 @@ func DoImageActivate(image model.Image, storagePool model.StoragePool, progress 
 	pullOption := types.ImagePullOptions{
 		RegistryAuth: registryAuth,
 	}
-	return pullImageWrap(client, imageName, pullOption, progress)
+	withCredential := false
+	if auth.Username != "" && auth.Password != "" {
+		withCredential = true
+	}
+	// if the first pull is w/o credential, failed directly. If it is w/ credential, then store the error and try pull w/o credential again
+	if withCredential {
+		if pullErr := pullImageWrap(client, imageName, pullOption, progress, true); pullErr != nil {
+			if err := pullImageWrap(client, imageName, pullOption, progress, false); err != nil {
+				return pullErr
+			}
+		}
+		return nil
+	}
+	return pullImageWrap(client, imageName, pullOption, progress, withCredential)
 }
 
 func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client, ca *cache.Cache, resourceID string) error {

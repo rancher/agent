@@ -18,6 +18,7 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
+	"io"
 )
 
 func isManagedVolume(volume model.Volume) bool {
@@ -99,14 +100,22 @@ func pathToVolume(volume model.Volume) string {
 	return strings.Replace(volume.URI, "file://", "", -1)
 }
 
-func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePullOptions, progress *progress.Progress) error {
-	lastMessage := ""
-	message := ""
+func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePullOptions, progress *progress.Progress, withCredential bool) error {
+	if !withCredential {
+		opts = types.ImagePullOptions{}
+	}
+
 	reader, err := client.ImagePull(context.Background(), imageUUID, opts)
 	if err != nil {
 		return errors.Wrap(err, "Failed to pull image")
 	}
 	defer reader.Close()
+	return wrapReader(reader, imageUUID, progress)
+}
+
+func wrapReader(reader io.ReadCloser, imageUUID string, progress *progress.Progress) error {
+	lastMessage := ""
+	message := ""
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		status := marshaller.FromString(scanner.Text())
