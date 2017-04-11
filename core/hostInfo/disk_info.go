@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-func (d DiskCollector) convertUnits(number uint64) float64 {
+func (d *DiskCollector) convertUnits(number uint64) float64 {
 	// return in MB
 	return math.Floor(float64(number/d.Unit*1000)) / 1000.0
 }
 
-func (d DiskCollector) getDockerStorageInfo(infoData model.InfoData) map[string]interface{} {
+func (d *DiskCollector) getDockerStorageInfo(infoData model.InfoData) map[string]interface{} {
 	data := map[string]interface{}{}
 
 	info := infoData.Info
@@ -23,7 +23,7 @@ func (d DiskCollector) getDockerStorageInfo(infoData model.InfoData) map[string]
 	return data
 }
 
-func (d DiskCollector) includeInFilesystem(infoData model.InfoData, device string) bool {
+func (d *DiskCollector) includeInFilesystem(infoData model.InfoData, device string) bool {
 	include := true
 	if infoData.Info.Driver == "devicemapper" {
 		pool := d.getDockerStorageInfo(infoData)
@@ -42,7 +42,7 @@ func (d DiskCollector) includeInFilesystem(infoData model.InfoData, device strin
 	return include
 }
 
-func (d DiskCollector) getMountPoints() (map[string]interface{}, error) {
+func (d *DiskCollector) getMountPoints() (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	partitions, err := disk.Partitions(false)
 	if err != nil {
@@ -54,16 +54,13 @@ func (d DiskCollector) getMountPoints() (map[string]interface{}, error) {
 			return map[string]interface{}{}, err
 		}
 		data[partition.Device] = map[string]interface{}{
-			"free":       d.convertUnits(usage.Free),
-			"total":      d.convertUnits(usage.Total),
-			"used":       d.convertUnits(usage.Used),
-			"percentage": usage.UsedPercent,
+			"total": d.convertUnits(usage.Total),
 		}
 	}
 	return data, nil
 }
 
-func (d DiskCollector) getMachineFilesystems(infoData model.InfoData) (map[string]interface{}, error) {
+func (d *DiskCollector) getMachineFilesystems(infoData model.InfoData) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	partitions, err := disk.Partitions(false)
 	if err != nil {

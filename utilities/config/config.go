@@ -229,14 +229,14 @@ func dockerUUIDFile() string {
 	return DefaultValue("DOCKER_UUID_FILE", defValue)
 }
 
-func CadvisorIP() string {
-	return DefaultValue("CADVISOR_IP", "127.0.0.1")
+func RefreshInterval() int {
+	interval := DefaultValue("REFRESH_INTERVAL", "15")
+	value, err := strconv.Atoi(interval)
+	if err != nil {
+		return 60
+	}
+	return value
 }
-
-func CadvisorPort() string {
-	return DefaultValue("CADVISOR_PORT", "9344")
-}
-
 func DefaultValue(name string, df string) string {
 	if value, ok := constants.ConfigOverride[name]; ok {
 		return value

@@ -126,8 +126,8 @@ func initializeHandlers() *Handler {
 	storageCache := cache.New(5*time.Minute, 30*time.Second)
 	cache := cache.New(5*time.Minute, 30*time.Second)
 	Collectors := []hostInfo.Collector{
-		hostInfo.CPUCollector{},
-		hostInfo.DiskCollector{
+		&hostInfo.CPUCollector{},
+		&hostInfo.DiskCollector{
 			Unit: 1048576,
 			InfoData: model.InfoData{
 				Info:    info,
@@ -135,7 +135,7 @@ func initializeHandlers() *Handler {
 			},
 		},
 		hostInfo.IopsCollector{},
-		hostInfo.MemoryCollector{
+		&hostInfo.MemoryCollector{
 			Unit: 1024.00,
 		},
 		hostInfo.OSCollector{

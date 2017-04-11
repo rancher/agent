@@ -3,16 +3,24 @@ package hostInfo
 import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
+	"time"
 )
 
 type DiskCollector struct {
 	Unit                uint64
 	InfoData            model.InfoData
 	DockerStorageDriver string
+	cacheData           map[string]interface{}
+	lastRead            time.Time
 }
 
-func (d DiskCollector) GetData() (map[string]interface{}, error) {
+func (d *DiskCollector) GetData() (map[string]interface{}, error) {
+	if d.cacheData != nil && time.Now().Before(d.lastRead.Add(time.Minute*time.Duration(config.RefreshInterval()))) {
+		return d.cacheData, nil
+	}
+
 	infoData := d.InfoData
 	data := map[string]interface{}{
 		"fileSystems":               map[string]interface{}{},
@@ -35,14 +43,15 @@ func (d DiskCollector) GetData() (map[string]interface{}, error) {
 	for key, value := range mp {
 		data["mountPoints"].(map[string]interface{})[key] = value
 	}
-
+	d.cacheData = data
+	d.lastRead = time.Now()
 	return data, nil
 }
 
-func (d DiskCollector) KeyName() string {
+func (d *DiskCollector) KeyName() string {
 	return "diskInfo"
 }
 
-func (d DiskCollector) GetLabels(prefix string) (map[string]string, error) {
+func (d *DiskCollector) GetLabels(prefix string) (map[string]string, error) {
 	return map[string]string{}, nil
 }
