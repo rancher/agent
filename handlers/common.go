@@ -153,6 +153,7 @@ func initializeHandlers() *Handler {
 			},
 		},
 		hostInfo.KeyCollector{},
+		hostInfo.CloudProviderCollector{},
 	}
 	computerHandler := ComputeHandler{
 		dockerClientWithTimeout: clientWithTimeout,
