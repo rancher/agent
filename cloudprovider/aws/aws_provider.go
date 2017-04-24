@@ -18,6 +18,7 @@ const (
 	availabilityZoneLabel = "ec2.availability_zone"
 	infoFile              = "info.json"
 	tempFile              = "temp.json"
+	ec2_key               = "ec2_instance"
 )
 
 type Provider struct {
@@ -79,6 +80,7 @@ func (p Provider) GetCloudProviderInfo() bool {
 		i.Labels = map[string]string{}
 		i.Labels[regionLabel] = document.Region
 		i.Labels[availabilityZoneLabel] = document.AvailabilityZone
+		i.Labels[ec2_key] = "true"
 		bytes, err := json.Marshal(i)
 		if err != nil {
 			logrus.Error(err)
