@@ -363,6 +363,8 @@ func setupFieldsConfig(fields model.InstanceFields, config *container.Config) {
 
 	config.StopSignal = fields.StopSignal
 
+	config.StopTimeout = &fields.StopTimeout
+
 	config.User = fields.User
 }
 

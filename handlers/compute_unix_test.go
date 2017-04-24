@@ -199,6 +199,7 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 		fields["healthInterval"] = 5
 		fields["healthRetries"] = 3
 		fields["healthTimeout"] = 60
+		fields["stopTimeout"] = 10
 		rawEvent = marshalEvent(event, c)
 		reply := testEvent(rawEvent, c)
 		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
@@ -220,6 +221,7 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 			"/run": "rw,noexec,nosuid,size=65536k",
 		})
 		c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
+		c.Assert(*(inspect.Config.StopTimeout), check.Equals, 10)
 	}
 }
 
