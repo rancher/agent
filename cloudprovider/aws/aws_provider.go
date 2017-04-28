@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	regionLabel           = "ec2.region"
-	availabilityZoneLabel = "ec2.availability_zone"
+	cloudProviderLabel    = "io.rancher.host.provider"
+	regionLabel           = "io.rancher.host.region"
+	availabilityZoneLabel = "io.rancher.host.zone"
 	infoFile              = "info.json"
 	tempFile              = "temp.json"
+	awsTag                = "aws"
 )
 
 type Provider struct {
@@ -79,6 +81,7 @@ func (p Provider) GetCloudProviderInfo() bool {
 		i.Labels = map[string]string{}
 		i.Labels[regionLabel] = document.Region
 		i.Labels[availabilityZoneLabel] = document.AvailabilityZone
+		i.Labels[cloudProviderLabel] = awsTag
 		bytes, err := json.Marshal(i)
 		if err != nil {
 			logrus.Error(err)
