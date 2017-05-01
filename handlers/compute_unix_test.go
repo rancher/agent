@@ -5,6 +5,10 @@ package handlers
 import (
 	"bufio"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
@@ -14,9 +18,6 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
-	"os"
-	"strings"
-	"time"
 )
 
 type mt map[string]interface{}
@@ -245,44 +246,6 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	c.Assert(ok1, check.Equals, true)
 	c.Assert(ok2, check.Equals, true)
 	c.Assert(ok3, check.Equals, true)
-}
-
-func (s *ComputeTestSuite) TestExternalIDInstanceActivate(c *check.C) {
-	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
-
-	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
-	event, instance, _ := unmarshalEventAndInstanceFields(rawEvent, c)
-
-	instance["externalId"] = "123456"
-	rawEvent = marshalEvent(event, c)
-	reply := testEvent(rawEvent, c)
-	_, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if ok {
-		c.Fatal("Should error out. ExternalID is present but container is not on the host")
-	}
-
-	//launch a container. Stop it and then start it again with external ID, should succeed.
-	rawEvent = loadEvent("./test_events/instance_activate_basic", c)
-	reply = testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No id found")
-	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	t := time.Duration(0)
-	err := dockerClient.ContainerStop(context.Background(), container.(types.Container).ID, &t)
-	if err != nil {
-		c.Fatal(err)
-	}
-	rawEvent = loadEvent("./test_events/instance_activate_basic", c)
-	event, instance, _ = unmarshalEventAndInstanceFields(rawEvent, c)
-	instance["externalId"] = container.(types.Container).ID
-	rawEvent = marshalEvent(event, c)
-	reply = testEvent(rawEvent, c)
-	_, ok = utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
-	if !ok {
-		c.Fatal("No id found")
-	}
 }
 
 func (s *ComputeTestSuite) TestPullImage(c *check.C) {
