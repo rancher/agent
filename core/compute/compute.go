@@ -105,9 +105,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	containerID := container.ID
 	created := false
 	if containerID == "" {
-		if instance.ExternalID != "" {
-			return errors.New(constants.DoInstanceActivateError + "ExternalID is present in instance but can't be found on the host")
-		}
 		newID, err := createContainer(dockerClient, &config, &hostConfig, &networkConfig, imageTag, instance, name, progress)
 		if err != nil {
 			return errors.Wrap(err, constants.DoInstanceActivateError+"failed to create container")
