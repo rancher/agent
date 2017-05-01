@@ -1,0 +1,33 @@
+{
+  "id": "d3de8aa6-6ed7-4b79-964c-9c6a4a3dadfd",
+  "name": "compute.instance.pull",
+  "replyTo": "reply.402719472243191890",
+  "resourceId": null,
+  "resourceType": "instancePull",
+  "publisher": null,
+  "transitioning": null,
+  "transitioningMessage": null,
+  "transitioningInternalMessage": null,
+  "previousIds": null,
+  "previousNames": null,
+  "data": {
+    "instancePull": {
+      "kind": "docker",
+      "image": {
+        "data": {
+          "dockerImage": {
+            "fullName": "strongmonkey/echo-hello:latest",
+            "server": "quay.io"
+          }
+        }
+      },
+      "mode": "all",
+      "complete": false,
+      "tag": "random"
+    }
+  },
+  "time": 1431116165921,
+  "timeoutMillis": 15000,
+  "transitioningProgress": null,
+  "context": null
+}

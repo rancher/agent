@@ -284,3 +284,9 @@ func (s *ComputeTestSuite) TestExternalIDInstanceActivate(c *check.C) {
 		c.Fatal("No id found")
 	}
 }
+
+func (s *ComputeTestSuite) TestPullImage(c *check.C) {
+	rawEvent := loadEvent("./test_events/instance_pull", c)
+	reply := testEvent(rawEvent, c)
+	c.Assert(reply.Transitioning, check.Not(check.Equals), "error")
+}

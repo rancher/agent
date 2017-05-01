@@ -118,12 +118,16 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 	if err != nil {
 		return errors.Wrap(err, constants.InstancePullError+"failed to marshall incoming request")
 	}
+	imageUUID := instancePull.Image.Data.DockerImage.FullName
+	if instancePull.Image.Data.DockerImage.Server != "" {
+		imageUUID = instancePull.Image.Data.DockerImage.Server + "/" + imageUUID
+	}
 	imageParams := model.ImageParams{
 		Image:     instancePull.Image,
 		Mode:      instancePull.Mode,
 		Complete:  instancePull.Complete,
 		Tag:       instancePull.Tag,
-		ImageUUID: instancePull.Image.Data.DockerImage.FullName,
+		ImageUUID: imageUUID,
 	}
 
 	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
