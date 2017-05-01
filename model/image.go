@@ -55,12 +55,8 @@ type CredentialFields struct {
 }
 
 type DockerImage struct {
-	FullName      string `json:"fullName"`
-	ID            string `json:"id"`
-	Namespace     string `json:"namespace"`
-	QualifiedName string `json:"qualifiedName"`
-	Repository    string `json:"repository"`
-	Tag           string `json:"tag"`
+	FullName string `json:"fullName"`
+	Server   string `json:"server"`
 }
 
 type RepoTag struct {
