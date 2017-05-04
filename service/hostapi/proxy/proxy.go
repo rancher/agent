@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,17 @@ import (
 
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
+)
+
+var (
+	httpClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: 60 * time.Second,
+	}
 )
 
 type Handler struct {
@@ -64,7 +76,14 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 		return
 	}
 
-	conn, err := net.Dial("tcp", u.Host)
+	var conn net.Conn
+	if req.URL.Scheme == "https" || req.URL.Scheme == "wss" {
+		conn, err = tls.Dial("tcp", u.Host, &tls.Config{
+			InsecureSkipVerify: true,
+		})
+	} else {
+		conn, err = net.Dial("tcp", u.Host)
+	}
 	if err != nil {
 		log.WithField("error", err).Errorf("Failed to connect to %s", u.Host)
 		return
@@ -150,10 +169,7 @@ func (s *Handler) doHTTP(message *common.HTTPMessage, key string, incomingMessag
 		return
 	}
 
-	client := http.Client{}
-	client.Timeout = 60 * time.Second
-
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.WithField("error", err).Error("Failed to make request")
 		return
