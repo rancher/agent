@@ -70,6 +70,40 @@ func (s *ComputeTestSuite) TestMemoryReservation(c *check.C) {
 	c.Assert(inspect.HostConfig.MemoryReservation, check.Equals, int64(4194304))
 }
 
+func (s *ComputeTestSuite) TestLabelOverride(c *check.C) {
+	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+	rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+	event, instance, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+
+	fields["labels"] = map[string]string{
+		"io.rancher.container.uuid": "111",
+		"foo": "bar",
+	}
+	rawEvent = marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	if !ok {
+		c.Fatal("No id found")
+	}
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+	if err != nil {
+		c.Fatal("Inspect Err")
+	}
+
+	expectedLabels := map[string]string{
+		"foo": "bar",
+		"io.rancher.container.uuid": instance["uuid"].(string),
+		"io.rancher.container.name": instance["name"].(string),
+		// cheating on these two because they are complicated to get at in the instance
+		"io.rancher.container.mac_address": "02:03:04:05:06:07",
+		"io.rancher.container.ip":          "10.10.10.10/24",
+	}
+	c.Assert(inspect.Config.Labels, check.DeepEquals, expectedLabels)
+}
+
 func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
 	rawEvent := loadEvent("./test_events/instance_activate_basic", c)

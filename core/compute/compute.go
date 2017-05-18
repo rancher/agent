@@ -52,6 +52,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 
 	initializeMaps(&config, &hostConfig)
 
+	setupLabels(instance.Data.Fields.Labels, &config)
+
 	utils.AddLabel(&config, constants.UUIDLabel, instance.UUID)
 
 	if len(instanceName) > 0 {
@@ -93,8 +95,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	setupComputeResourceFields(&hostConfig, instance)
 
 	setupHeathConfig(instance.Data.Fields, &config)
-
-	setupLabels(instance.Data.Fields.Labels, &config)
 
 	container, err := utils.GetContainer(dockerClient, instance, false)
 	if err != nil {
