@@ -357,10 +357,6 @@ func setupFieldsConfig(fields model.InstanceFields, config *container.Config) {
 
 	config.Domainname = fields.DomainName
 
-	for k, v := range fields.Labels {
-		config.Labels[k] = v
-	}
-
 	config.StopSignal = fields.StopSignal
 
 	config.User = fields.User
