@@ -126,6 +126,7 @@ type HostConfig struct {
 	UsernsMode      container.UsernsMode // The user namespace to use for the container
 	ShmSize         int64                // Total shm memory usage
 	Sysctls         map[string]string    `json:",omitempty"` // List of Namespaced sysctls used for the container
+	Init            *bool                `json:",omitempty"` // Should init be run in the container
 	Runtime         string               `json:",omitempty"` // Runtime to use with this container
 
 	// Applicable to Windows
@@ -229,6 +230,7 @@ type InstanceFields struct {
 	StopSignal         string
 	User               string
 	Sysctls            map[string]string
+	Init               *bool
 	HealthCmd          []string
 	HealthTimeout      int
 	HealthInterval     int
