@@ -258,6 +258,57 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 	}
 }
 
+// need docker daemon with version 1.13.1
+func (s *ComputeTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	version, err := dockerClient.ServerVersion(context.Background())
+	if err != nil {
+		c.Fatal(err)
+	}
+	if version.Version == "1.13.1" {
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+		rawEvent := loadEvent("./test_events/instance_activate_basic", c)
+		event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+		fields["sysctls"] = map[string]string{
+			"net.ipv4.ip_forward": "1",
+		}
+		fields["init"] = true
+		fields["tmpfs"] = map[string]string{
+			"/run": "rw,noexec,nosuid,size=65536k",
+		}
+		fields["healthCmd"] = []string{
+			"ls",
+		}
+		fields["usernsMode"] = "host"
+		fields["healthInterval"] = 5
+		fields["healthRetries"] = 3
+		fields["healthTimeout"] = 60
+		rawEvent = marshalEvent(event, c)
+		reply := testEvent(rawEvent, c)
+		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No id found")
+		}
+		inspect, err := dockerClient.ContainerInspect(context.Background(), cont.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
+			"net.ipv4.ip_forward": "1",
+		})
+		c.Assert(inspect.Config.Healthcheck.Test, check.DeepEquals, []string{"ls"})
+		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
+		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
+		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
+		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
+			"/run": "rw,noexec,nosuid,size=65536k",
+		})
+		c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
+		c.Assert(inspect.HostConfig.Init, check.NotNil)
+		c.Assert(*inspect.HostConfig.Init, check.Equals, true)
+	}
+}
+
 func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 	constants.ConfigOverride["CONFIG_URL"] = "https://localhost:1234/a/path"
 	deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
