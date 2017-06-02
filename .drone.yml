@@ -4,6 +4,7 @@ matrix:
   - 1.10.3
   - 1.12.1
   - 1.13.1
+  - 17.03.0-ce
 pipeline:
   build:
     privileged: true
