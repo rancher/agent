@@ -27,6 +27,9 @@ var (
 			},
 		},
 		Timeout: 60 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 )
 
