@@ -377,6 +377,8 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.Sysctls = fields.Sysctls
 
+	hostConfig.Init = fields.Init
+
 	hostConfig.StorageOpt = fields.StorageOpt
 
 	hostConfig.PidsLimit = fields.PidsLimit
