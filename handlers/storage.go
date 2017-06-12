@@ -19,42 +19,6 @@ type StorageHandler struct {
 	cache        *cache.Cache
 }
 
-func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.RancherClient) error {
-	var imageStoragePoolMap model.ImageStoragePoolMap
-	if err := mapstructure.Decode(event.Data["imageStoragePoolMap"], &imageStoragePoolMap); err != nil {
-		return errors.Wrap(err, constants.ImageActivateError+"failed to marshall incoming request")
-	}
-	image := imageStoragePoolMap.Image
-	storagePool := imageStoragePoolMap.StoragePool
-
-	progress := utils.GetProgress(event, cli)
-
-	if image.ID >= 0 && event.Data["processData"] != nil {
-		if err := mapstructure.Decode(event.Data["processData"], &image.ProcessData); err != nil {
-			return errors.Wrap(err, constants.ImageActivateError+"failed to marshall image process data")
-		}
-	}
-
-	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); ok {
-		return imageStoragePoolMapReply(event, cli)
-	} else if err != nil {
-		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
-	}
-
-	err := storage.DoImageActivate(image, storagePool, progress, h.dockerClient, image.Name)
-	if err != nil {
-		return errors.Wrap(err, constants.ImageActivateError+"failed to do image activate")
-	}
-
-	if ok, err := storage.IsImageActive(image, storagePool, h.dockerClient); !ok && err != nil {
-		return errors.Wrap(err, constants.ImageActivateError+"failed to check whether image is activated")
-	} else if !ok && err == nil {
-		return errors.New(constants.ImageActivateError + "failed to activate image")
-	}
-	logrus.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ResourceID, image.Name)
-	return imageStoragePoolMapReply(event, cli)
-}
-
 func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
 	var volumeStoragePoolMap model.VolumeStoragePoolMap
 	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)

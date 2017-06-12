@@ -42,7 +42,6 @@ func GetHandlers() (map[string]revents.EventHandler, error) {
 		"compute.instance.inspect":    cleanLog(logRequest(handler.compute.InstanceInspect)),
 		"compute.instance.pull":       cleanLog(logRequest(handler.compute.InstancePull)),
 		"compute.instance.remove":     docker.SerializeHandler(cleanLog(logRequest(handler.compute.InstanceRemove))),
-		"storage.image.activate":      cleanLog(logRequest(handler.storage.ImageActivate)),
 		"storage.volume.activate":     cleanLog(logRequest(handler.storage.VolumeActivate)),
 		"storage.volume.remove":       cleanLog(logRequest(handler.storage.VolumeRemove)),
 		"ping":                        cleanLog(handler.ping.Ping),

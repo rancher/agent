@@ -16,15 +16,9 @@ def _test_docker_build_from_remote(agent, remote=None,
         instance.data.fields['build'] = JsonObject({
             'remote': remote,
             'context': context,
+            'tag': image_uuid,
         })
         instance.data.fields.imageUuid = image_uuid
-        instance.image.data['fields'] = JsonObject({
-            'build': {
-                'remote': remote,
-                'context': context,
-                'tag': image_uuid,
-            },
-        })
 
     def post(req, resp):
         instance_data = resp['data']['instanceHostMap']['instance']['+data']

@@ -5,18 +5,6 @@ from .common import docker_client, event_test, instance_only_activate, \
     delete_container, json_data, random_str
 
 
-def test_image_activate(agent):
-    try:
-        docker_client().remove_image('ibuildthecloud/helloworld:latest')
-    except APIError:
-        pass
-
-    def post(req, resp):
-        del resp['links']
-        del resp['actions']
-    event_test(agent, 'docker/image_activate', post_func=post)
-
-
 def test_instance_activate_need_pull_image(agent):
     try:
         docker_client().remove_image('ibuildthecloud/helloworld:latest')
@@ -24,23 +12,6 @@ def test_instance_activate_need_pull_image(agent):
         pass
 
     instance_only_activate(agent)
-
-
-def test_image_activate_no_reg_cred_pull_image(agent):
-    try:
-        docker_client().remove_image('ibuildthecloud/helloworld:latest')
-    except APIError:
-        pass
-
-    def pre(req):
-        image = req['data']['imageStoragePoolMap']['image']
-        image['registryCredential'] = None
-
-    def post(req, resp):
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/image_activate', pre_func=pre, post_func=post)
 
 
 @pytest.mark.skipif('True')
@@ -279,33 +250,3 @@ def test_image_pull_invalid_image(agent):
     # with pytest.raises(ImageValidationError) as e:
     agent.execute(req)
     # assert 'not found' in e.value.message
-
-
-def test_image_activate_no_op(agent):
-    delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
-    repo = 'ubuntu'
-    tag = '10.04'
-    image_name = repo + ':' + tag
-    client = docker_client()
-    try:
-        client.remove_image(image_name)
-    except APIError:
-        pass
-
-    def pre(req):
-        image = req['data']['imageStoragePoolMap']['image']
-        remap_dockerImage(image, image_name)
-        image['processData'] = {}
-        image['processData']['containerNoOpEvent'] = True
-
-    def post(req, resp):
-        images = client.images(name=repo)
-        for i in images:
-            for t in i['RepoTags']:
-                assert tag not in t
-        assert not resp['data']['imageStoragePoolMap']
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/image_activate', pre_func=pre,
-               post_func=post, diff=False)

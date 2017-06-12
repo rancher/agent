@@ -7,7 +7,6 @@ type Volume struct {
 	Created         int64  `json:"created"`
 	Data            VolumeData
 	Description     interface{} `json:"description"`
-	DeviceNumber    int         `json:"deviceNumber"`
 	Format          string      `json:"format"`
 	ID              int         `json:"id"`
 	Image           Image       `json:"image"`

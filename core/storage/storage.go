@@ -2,6 +2,9 @@ package storage
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
@@ -11,12 +14,8 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
-	"os"
-	"strings"
-	"time"
 )
 
 func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
@@ -65,20 +64,11 @@ func RancherStorageVolumeAttach(volume model.Volume) error {
 	return nil
 }
 
-func PullImage(image model.Image, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
-	dockerCli := docker.GetClient(docker.DefaultVersion)
-	return DoImageActivate(image, model.StoragePool{}, progress, dockerCli, imageUUID)
-}
-
-func DoImageActivate(image model.Image, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client, imageUUID string) error {
-	if utils.IsImageNoOp(image) {
-		return nil
-	}
+func PullImage(progress *progress.Progress, client *engineCli.Client, imageUUID string, buildOptions model.BuildOptions, rc model.RegistryCredential) error {
 	imageName := utils.ParseRepoTag(imageUUID)
-	if isBuild(image) {
-		return imageBuild(image, progress, client)
+	if isBuild(buildOptions) {
+		return imageBuild(buildOptions, progress, client)
 	}
-	rc := image.RegistryCredential
 	auth := types.AuthConfig{
 		Username:      rc.PublicValue,
 		Email:         rc.Data.Fields.Email,
@@ -118,30 +108,7 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 	} else if err != nil {
 		return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to check whether volume is removed")
 	}
-	if volume.DeviceNumber == 0 {
-		container, err := utils.GetContainer(dockerClient, volume.Instance, false)
-		if err != nil {
-			if !utils.IsContainerNotFoundError(err) {
-				return errors.Wrap(err, constants.DoVolumeRemoveError+"faild to get container")
-			}
-		}
-		if container.ID == "" {
-			return nil
-		}
-		errorList := []error{}
-		for i := 0; i < 3; i++ {
-			if err := utils.RemoveContainer(dockerClient, container.ID); err != nil && !engineCli.IsErrContainerNotFound(err) {
-				errorList = append(errorList, err)
-			} else {
-				break
-			}
-			time.Sleep(time.Second * 1)
-		}
-		if len(errorList) == 3 {
-			ca.Add(resourceID, true, cache.DefaultExpiration)
-			logrus.Warnf("Failed to remove container id [%v]. Tried three times and failed. Error msg: %v", container.ID, errorList)
-		}
-	} else if isManagedVolume(volume) {
+	if isManagedVolume(volume) {
 		errorList := []error{}
 		for i := 0; i < 3; i++ {
 			err := dockerClient.VolumeRemove(context.Background(), volume.Name, false)

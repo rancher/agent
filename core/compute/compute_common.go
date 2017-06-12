@@ -36,13 +36,12 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	labels := config.Labels
 	if labels[constants.PullImageLabels] == "always" {
 		params := model.ImageParams{
-			Image:     instance.Image,
 			Tag:       "",
 			Mode:      "all",
 			Complete:  false,
 			ImageUUID: instance.Data.Fields.ImageUUID,
 		}
-		_, err := DoInstancePull(params, progress, dockerClient)
+		_, err := DoInstancePull(params, progress, dockerClient, instance.Data.Fields.Build, instance.ImageCredential)
 		if err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull instance")
 		}
@@ -53,7 +52,7 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
-		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
+		if err := storage.PullImage(progress, dockerClient, imageTag, instance.Data.Fields.Build, instance.ImageCredential); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
 		containerResponse, err1 := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)

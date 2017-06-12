@@ -408,10 +408,6 @@ func IsContainerNotFoundError(e error) bool {
 	return ok
 }
 
-func IsImageNoOp(image model.Image) bool {
-	return image.ProcessData.ContainerNoOpEvent
-}
-
 func GetProgress(request *revents.Event, cli *client.RancherClient) *progress.Progress {
 	progress := progress.Progress{
 		Request: request,

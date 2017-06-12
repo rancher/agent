@@ -19,7 +19,6 @@ type Instance struct {
 	Description                 string `json:"description"`
 	Hostname                    string `json:"hostname"`
 	ID                          int    `json:"id"`
-	Image                       Image
 	ImageID                     int    `json:"imageId"`
 	Kind                        string `json:"kind"`
 	Name                        string `json:"name"`
@@ -51,6 +50,7 @@ type Instance struct {
 	MilliCPUReservation         int64
 	MemoryReservation           int64
 	System                      bool
+	ImageCredential             RegistryCredential
 }
 
 type InstanceFieldsData struct {
@@ -238,6 +238,7 @@ type InstanceFields struct {
 	Cgroup             container.CgroupSpec
 	DiskQuota          int64
 	UsernsMode         container.UsernsMode
+	Build              BuildOptions
 }
 
 type LogConfig struct {

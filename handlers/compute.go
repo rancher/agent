@@ -123,14 +123,13 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 		imageUUID = instancePull.Image.Data.DockerImage.Server + "/" + imageUUID
 	}
 	imageParams := model.ImageParams{
-		Image:     instancePull.Image,
 		Mode:      instancePull.Mode,
 		Complete:  instancePull.Complete,
 		Tag:       instancePull.Tag,
 		ImageUUID: imageUUID,
 	}
 
-	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient)
+	inspect, pullErr := compute.DoInstancePull(imageParams, progress, h.dockerClient, model.BuildOptions{}, instancePull.Image.RegistryCredential)
 	if pullErr != nil {
 		return errors.Wrap(pullErr, constants.InstancePullError+"failed to pull instance")
 	}

@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
 	"golang.org/x/net/context"
 	"path/filepath"
 )
@@ -47,29 +46,8 @@ func IsRancherVolume(volume model.Volume) bool {
 	return false
 }
 
-func IsImageActive(image model.Image, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
-	if utils.IsImageNoOp(image) {
-		return true, nil
-	}
-	_, _, err := dockerClient.ImageInspectWithRaw(context.Background(), image.Name)
-	if err == nil {
-		return true, nil
-	} else if client.IsErrImageNotFound(err) {
-		return false, nil
-	}
-	return false, errors.Wrap(err, constants.IsImageActiveError)
-}
-
 func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *client.Client) (bool, error) {
-	if volume.DeviceNumber == 0 {
-		container, err := utils.GetContainer(client, volume.Instance, false)
-		if err != nil {
-			if !utils.IsContainerNotFoundError(err) {
-				return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to get container")
-			}
-		}
-		return container.ID == "", nil
-	} else if isManagedVolume(volume) {
+	if isManagedVolume(volume) {
 		ok, err := IsVolumeActive(volume, storagePool, client)
 		if err != nil {
 			return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to check whether volume is activated")
