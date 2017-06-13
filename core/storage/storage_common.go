@@ -107,6 +107,10 @@ func pullImageWrap(client *client.Client, imageUUID string, opts types.ImagePull
 		return errors.Wrap(err, "Failed to pull image")
 	}
 	defer reader.Close()
+	message := fmt.Sprintf("Pulling image %s", imageUUID)
+	if progress != nil {
+		progress.Update(message, "yes", nil)
+	}
 	return wrapReader(reader, imageUUID, progress)
 }
 
@@ -123,7 +127,6 @@ func wrapReader(reader io.ReadCloser, imageUUID string, progress *progress.Progr
 			message = utils.InterfaceToString(status["status"])
 		}
 		if lastMessage != message && progress != nil {
-			progress.Update(message, "yes", nil)
 			lastMessage = message
 		}
 	}
