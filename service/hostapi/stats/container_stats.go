@@ -126,6 +126,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			if err != nil {
 				return
 			}
+			time.Sleep(time.Second * 1)
 		}
 	} else {
 		contList, err := dclient.ContainerList(context.Background(), types.ContainerListOptions{})
@@ -167,6 +168,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			if err != nil {
 				return
 			}
+			time.Sleep(time.Second * 1)
 		}
 	}
 }
