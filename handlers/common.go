@@ -53,7 +53,10 @@ func GetHandlers() (map[string]revents.EventHandler, error) {
 func logRequest(f revents.EventHandler) revents.EventHandler {
 	return func(event *revents.Event, cli *client.RancherClient) error {
 		logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
-		return f(event, cli)
+		startTime := time.Now()
+		err := f(event, cli)
+		logrus.Infof("Name: %s, Event Id: %s, Resource Id: %s, Process duration: %.4f seconds", event.Name, event.ID, event.ResourceID, time.Now().Sub(startTime).Seconds())
+		return err
 	}
 }
 
