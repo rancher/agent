@@ -32,9 +32,7 @@ func isManagedVolume(volume model.Volume) bool {
 	return true
 }
 
-func imageBuild(image model.Image, progress *progress.Progress, dockerClient *client.Client) error {
-	opts := image.Data.Fields.Build
-
+func imageBuild(opts model.BuildOptions, progress *progress.Progress, dockerClient *client.Client) error {
 	if opts.Context != "" {
 		file, err := utils.DownloadFile(opts.Context, config.Builds(), nil, "")
 		if err == nil {
@@ -88,9 +86,8 @@ func doBuild(opts model.BuildOptions, progress *progress.Progress, client *clien
 	return nil
 }
 
-func isBuild(image model.Image) bool {
-	build := image.Data.Fields.Build
-	if build.Context != "" || build.Remote != "" {
+func isBuild(options model.BuildOptions) bool {
+	if options.Context != "" || options.Remote != "" {
 		return true
 	}
 	return false

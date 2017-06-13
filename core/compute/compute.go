@@ -129,7 +129,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	return nil
 }
 
-func DoInstancePull(params model.ImageParams, progress *progress.Progress, dockerClient *client.Client) (types.ImageInspect, error) {
+func DoInstancePull(params model.ImageParams, progress *progress.Progress, dockerClient *client.Client, opts model.BuildOptions, rc model.RegistryCredential) (types.ImageInspect, error) {
 	imageName := utils.ParseRepoTag(params.ImageUUID)
 	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), imageName)
 	if err != nil && !client.IsErrImageNotFound(err) {
@@ -145,7 +145,7 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 		}
 		return types.ImageInspect{}, nil
 	}
-	if err := storage.PullImage(params.Image, progress, dockerClient, params.ImageUUID); err != nil {
+	if err := storage.PullImage(progress, dockerClient, params.ImageUUID, opts, rc); err != nil {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to pull image")
 	}
 

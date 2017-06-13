@@ -23,10 +23,8 @@ func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *ComputeTestSuite) TestDoImageActivate(c *check.C) {
-	image := model.Image{}
-	storagePool := model.StoragePool{}
 	imageUUID := "docker:badimage"
 	client := docker.GetClient(docker.DefaultVersion)
-	err := DoImageActivate(image, storagePool, nil, client, imageUUID)
+	err := PullImage(nil, client, imageUUID, model.BuildOptions{}, model.RegistryCredential{})
 	c.Check(err, check.NotNil)
 }
