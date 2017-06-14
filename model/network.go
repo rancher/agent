@@ -23,24 +23,18 @@ type Nic struct {
 		Address string `json:"address"`
 		Role    string `json:"role"`
 		Subnet  struct {
-			CidrSize       int `json:"cidrSize"`
-			NetworkAddress string
+			CidrSize int `json:"cidrSize"`
 		} `json:"subnet"`
 	} `json:"ipAddresses"`
 	Network struct {
-		Name            string `json:"name"`
-		Kind            string `json:"kind"`
-		NetworkServices []Service
+		Name string `json:"name"`
+		Kind string `json:"kind"`
 	} `json:"network"`
 }
 
 type HostBind struct {
 	BindAddr   string
 	PublicPort int
-}
-
-type Service struct {
-	Kind string
 }
 
 type Link struct {

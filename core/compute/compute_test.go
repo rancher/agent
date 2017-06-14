@@ -56,7 +56,7 @@ c.Assert(reply.Name, check.Equals, "new-reply-to")
 */
 func (s *ComputeTestSuite) TestMultiNicsPickMac(c *check.C) {
 	instance := model.Instance{}
-	instance.Nics = []model.Nic{
+	instance.Data.Fields.Nics = []model.Nic{
 		{
 			MacAddress:   "02:03:04:05:06:07",
 			DeviceNumber: 0,
