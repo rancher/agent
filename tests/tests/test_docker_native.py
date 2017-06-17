@@ -1,5 +1,5 @@
 from common import delete_container, docker_client, \
-    container_field_test_boiler_plate, event_test, trim, \
+    container_field_test_boiler_plate, event_test, \
     get_container
 
 
@@ -16,19 +16,15 @@ def test_native_container_activate_only(agent):
     inspect = docker_client().inspect_container(c['Id'])
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert docker_inspect['Id'] == inspect['Id']
         assert docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_activate',
                pre_func=pre, post_func=post)
@@ -46,19 +42,15 @@ def test_native_container_activate_not_running(agent):
     inspect = docker_client().inspect_container(c['Id'])
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert docker_inspect['Id'] == inspect['Id']
         assert not docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_not_running',
                pre_func=pre, post_func=post)
@@ -75,17 +67,14 @@ def test_native_container_activate_removed(agent):
     delete_container('/native_container')
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         assert not instance_data['dockerInspect']
-        assert not instance_data['dockerContainer']
         fields = instance_data['+fields']
         assert not fields['dockerIp']
-        assert not fields['dockerPorts']
-        # assert fields['dockerHostIp']
         assert not get_container('/native_container')
 
     event_test(agent, 'docker/native_container_not_running',
@@ -99,37 +88,29 @@ def test_native_container_deactivate_only(agent):
     c = get_container('/native_container')
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert not docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_deactivate',
                pre_func=pre, post_func=post)
 
     def pre_second_start(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
         instance['firstRunning'] = 1389656010338
         del req['data']['processData']['containerNoOpEvent']
 
     def post_second_start(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_activate',
                pre_func=pre_second_start, post_func=post_second_start)
@@ -143,23 +124,17 @@ def test_native_container_deactivate_no_op(agent):
     c = get_container('/native_container')
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
         req['data']['processData'] = {}
         req['data']['processData']['containerNoOpEvent'] = True
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        del instance_data['dockerContainer']['Ports'][0]
-        del instance_data['+fields']['dockerPorts'][0]
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_deactivate',
                pre_func=pre, post_func=post)
@@ -174,21 +149,14 @@ def test_native_container_activate_no_op(agent):
     docker_client().stop(c)
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         instance['externalId'] = c['Id']
 
     def post(req, resp, valid_resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
-        instance_data['dockerContainer']['Ports'].append(
-            {'Type': 'tcp', 'PrivatePort': 8080})
-        instance_data['+fields']['dockerPorts'].append('8080/tcp')
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         assert not docker_inspect['State']['Running']
         container_field_test_boiler_plate(resp)
-
-        docker_container = instance_data['dockerContainer']
-        fields = instance_data['+fields']
-        trim(docker_container, fields, resp, valid_resp)
 
     event_test(agent, 'docker/native_container_activate',
                pre_func=pre, post_func=post)

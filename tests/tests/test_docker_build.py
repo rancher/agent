@@ -11,7 +11,7 @@ def _test_docker_build_from_remote(agent, remote=None,
     image_uuid = 'image-' + random_string(12)
 
     def pre(req):
-        instance = req.data.instanceHostMap.instance
+        instance = req.data.instance
         # tag is not on the instance, only the image
         instance.data.fields['build'] = JsonObject({
             'remote': remote,
@@ -21,7 +21,7 @@ def _test_docker_build_from_remote(agent, remote=None,
         instance.data.fields.imageUuid = image_uuid
 
     def post(req, resp):
-        instance_data = resp['data']['instanceHostMap']['instance']['+data']
+        instance_data = resp['data']['instance']['+data']
         docker_inspect = instance_data['dockerInspect']
         image = docker_inspect['Config']['Image']
         assert image_uuid == image
