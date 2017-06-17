@@ -14,13 +14,13 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	dutils "github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	dutils "github.com/rancher/agent/utils/docker"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 )
 
-func DoInstanceActivate(instance model.Instance, host model.Host, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData) error {
+func DoInstanceActivate(instance model.Instance, progress *progress.Progress, dockerClient *client.Client, infoData model.InfoData) error {
 	if utils.IsNoOp(instance.ProcessData) {
 		return nil
 	}
@@ -70,8 +70,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up DNS search")
 	}
 
-	setupLinks(&hostConfig, instance)
-
 	setupHostname(&config, instance)
 
 	setupPorts(&config, instance, &hostConfig)
@@ -80,7 +78,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up volumes")
 	}
 
-	if err := setupNetworking(instance, host, &config, &hostConfig, dockerClient, infoData); err != nil {
+	if err := setupNetworking(instance, &config, &hostConfig, dockerClient, infoData); err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up networking")
 	}
 

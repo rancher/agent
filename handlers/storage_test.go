@@ -5,8 +5,8 @@ import (
 	"github.com/docker/docker/api/types"
 	con "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/docker"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 )
@@ -20,15 +20,12 @@ func (s *ComputeTestSuite) TestConflictVolumeRemove(c *check.C) {
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
+	inspect := insp.(types.ContainerJSON)
 	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
 	volumeName := ""
 	volume := ""
 	for _, mounts := range inspect.Mounts {
@@ -45,7 +42,7 @@ func (s *ComputeTestSuite) TestConflictVolumeRemove(c *check.C) {
 	config.Volumes = map[string]struct{}{
 		volume: {},
 	}
-	_, err = dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, "test")
+	_, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, "test")
 	if err != nil {
 		c.Fatal(err)
 	}

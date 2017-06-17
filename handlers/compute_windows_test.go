@@ -4,8 +4,8 @@ package handlers
 
 import (
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/docker"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 )

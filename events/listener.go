@@ -4,7 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utils/config"
 	revents "github.com/rancher/event-subscriber/events"
 	"os"
 	"time"

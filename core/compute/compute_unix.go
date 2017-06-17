@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	dutils "github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	dutils "github.com/rancher/agent/utils/docker"
+	"github.com/rancher/agent/utils/utils"
 )
 
 var (
@@ -93,22 +93,7 @@ func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) e
 	return nil
 }
 
-func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {
-	links := []string{}
-
-	if instance.InstanceLinks == nil {
-		return
-	}
-	for _, link := range instance.InstanceLinks {
-		if link.TargetInstance.UUID != "" {
-			linkStr := fmt.Sprintf("%s:%s", link.TargetInstance.UUID, link.LinkName)
-			links = append(links, linkStr)
-		}
-	}
-	hostConfig.Links = links
-}
-
-func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client,
+func setupNetworking(instance model.Instance, config *container.Config, hostConfig *container.HostConfig, client *client.Client,
 	infoData model.InfoData) error {
 	portsSupported, hostnameSupported, err := setupNetworkMode(instance, client, config, hostConfig, infoData)
 	if err != nil {
@@ -116,7 +101,6 @@ func setupNetworking(instance model.Instance, host model.Host, config *container
 	}
 	setupMacAndIP(instance, config, portsSupported, hostnameSupported)
 	setupPortsNetwork(instance, config, hostConfig, portsSupported)
-	setupLinksNetwork(instance, config, hostConfig)
 	return nil
 }
 
@@ -249,51 +233,6 @@ func setupPortsNetwork(instance model.Instance, config *container.Config,
 		config.ExposedPorts = map[nat.Port]struct{}{}
 		hostConfig.PortBindings = nat.PortMap{}
 	}
-}
-
-func setupLinksNetwork(instance model.Instance, config *container.Config,
-	hostConfig *container.HostConfig) {
-	/*
-			Sets up a container's config for rancher-managed links by removing the
-		    docker native link configuration and emulating links through environment
-		    variables.
-
-		    Note that a non-rancher container (one created and started outside the
-		    rancher API) container will not have its link configuration manipulated.
-		    This is because on a container restart, we would not be able to properly
-		    rebuild the link configuration because it depends on manipulating the
-		    createConfig.
-	*/
-	if utils.IsNonrancherContainer(instance) {
-		return
-	}
-
-	hostConfig.Links = nil
-
-	result := map[string]string{}
-	if instance.InstanceLinks != nil {
-		for _, link := range instance.InstanceLinks {
-			linkName := link.LinkName
-			utils.AddLinkEnv(linkName, link, result, "")
-			utils.CopyLinkEnv(linkName, link, result)
-			names := link.Data.Fields.InstanceNames
-			for _, name := range names {
-				utils.AddLinkEnv(name, link, result, linkName)
-				utils.CopyLinkEnv(name, link, result)
-				// This does assume the format {env}_{name}
-				parts := strings.SplitN(name, "_", 2)
-				if len(parts) == 1 {
-					continue
-				}
-				utils.AddLinkEnv(parts[1], link, result, linkName)
-				utils.CopyLinkEnv(parts[1], link, result)
-			}
-		}
-		if len(result) > 0 {
-			utils.AddToEnv(config, result)
-		}
-	}
-
 }
 
 // this method convert fields data to fields in host configuration

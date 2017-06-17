@@ -5,7 +5,7 @@ package hostInfo
 import (
 	"bufio"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 	"os"
 	"regexp"
 )

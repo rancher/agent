@@ -12,10 +12,10 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/docker"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/config"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/docker"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 )
@@ -33,15 +33,11 @@ func (s *ComputeTestSuite) TestMillCpuReservation(c *check.C) {
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 
 	// Value should be 20% of 1024, rounded down
 	c.Assert(inspect.HostConfig.CPUShares, check.Equals, int64(204))
@@ -57,15 +53,11 @@ func (s *ComputeTestSuite) TestMemoryReservation(c *check.C) {
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 
 	c.Assert(inspect.HostConfig.MemoryReservation, check.Equals, int64(4194304))
 }
@@ -83,15 +75,11 @@ func (s *ComputeTestSuite) TestLabelOverride(c *check.C) {
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 
 	expectedLabels := map[string]string{
 		"foo": "bar",
@@ -133,15 +121,11 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 
 	c.Assert(inspect.HostConfig.BlkioWeight, check.Equals, uint16(100))
 	c.Assert(inspect.HostConfig.CPUPeriod, check.Equals, int64(100000))
@@ -176,15 +160,11 @@ func (s *ComputeTestSuite) TestDNSFields(c *check.C) {
 	fields["dnsSearch"] = []string{"rancher.internal"}
 	rawEvent = marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 	file, err := os.Open("/etc/resolv.conf")
 	if err != nil {
 		c.Fatal(err)
@@ -236,14 +216,11 @@ func (s *ComputeTestSuite) TestNewFieldsExtra(c *check.C) {
 		fields["healthTimeout"] = 60
 		rawEvent = marshalEvent(event, c)
 		reply := testEvent(rawEvent, c)
-		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 		if !ok {
 			c.Fatal("No id found")
 		}
-		inspect, err := dockerClient.ContainerInspect(context.Background(), cont.(types.Container).ID)
-		if err != nil {
-			c.Fatal("Inspect Err")
-		}
+		inspect := insp.(types.ContainerJSON)
 		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
 			"net.ipv4.ip_forward": "1",
 		})
@@ -285,14 +262,11 @@ func (s *ComputeTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 		fields["healthTimeout"] = 60
 		rawEvent = marshalEvent(event, c)
 		reply := testEvent(rawEvent, c)
-		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 		if !ok {
 			c.Fatal("No id found")
 		}
-		inspect, err := dockerClient.ContainerInspect(context.Background(), cont.(types.Container).ID)
-		if err != nil {
-			c.Fatal("Inspect Err")
-		}
+		inspect := insp.(types.ContainerJSON)
 		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
 			"net.ipv4.ip_forward": "1",
 		})
@@ -315,15 +289,11 @@ func (s *ComputeTestSuite) TestInstanceActivateAgent(c *check.C) {
 
 	rawEvent := loadEvent("./test_events/instance_activate_agent_instance", c)
 	reply := testEvent(rawEvent, c)
-	container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+	insp, ok := utils.GetFieldsIfExist(reply.Data, "instance", "+data", "dockerInspect")
 	if !ok {
 		c.Fatal("No id found")
 	}
-	dockerClient := docker.GetClient(docker.DefaultVersion)
-	inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
-	if err != nil {
-		c.Fatal("Inspect Err")
-	}
+	inspect := insp.(types.ContainerJSON)
 	port := config.APIProxyListenPort()
 	ok1 := checkStringInArray(inspect.Config.Env, "CATTLE_CONFIG_URL_SCHEME=https")
 	ok2 := checkStringInArray(inspect.Config.Env, "CATTLE_CONFIG_URL_PATH=/a/path")

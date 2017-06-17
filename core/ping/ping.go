@@ -5,8 +5,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/config"
+	"github.com/rancher/agent/utils/constants"
 	revents "github.com/rancher/event-subscriber/events"
 )
 

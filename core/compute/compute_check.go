@@ -4,11 +4,11 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 )
 
-func IsInstanceActive(instance model.Instance, host model.Host, client *client.Client) (bool, error) {
+func IsInstanceActive(instance model.Instance, client *client.Client) (bool, error) {
 	if utils.IsNoOp(instance.ProcessData) {
 		return true, nil
 	}

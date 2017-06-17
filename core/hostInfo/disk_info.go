@@ -2,7 +2,7 @@ package hostInfo
 
 import (
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/utils"
 	"github.com/shirou/gopsutil/disk"
 	"math"
 	"strings"

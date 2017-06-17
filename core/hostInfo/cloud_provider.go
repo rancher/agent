@@ -2,7 +2,7 @@ package hostInfo
 
 import (
 	"encoding/json"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utils/config"
 	"io/ioutil"
 	"os"
 	"path"
