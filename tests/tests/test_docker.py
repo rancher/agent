@@ -16,57 +16,6 @@ from cattle.plugins.host_info.main import HostInfo
 
 
 @if_docker
-def test_volume_activate(agent):
-
-    def post(req, resp):
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', post_func=post)
-
-
-@if_docker
-def test_volume_activate_driver1(agent):
-    def pre(req):
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local',
-                                  'driverOpts': None}}
-        vol['name'] = 'test_vol'
-
-    def post(req, resp):
-        v = DockerConfig.storage_api_version()
-        vol = docker_client(version=v).inspect_volume('test_vol')
-        assert vol['Driver'] == 'local'
-        assert vol['Name'] == 'test_vol'
-        docker_client(version=v).remove_volume('test_vol')
-
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
-
-
-@if_docker
-def test_volume_activate_driver2(agent):
-    def pre(req):
-        vol = req['data']['volumeStoragePoolMap']['volume']
-        vol['data'] = {'fields': {'driver': 'local'}}
-        vol['name'] = 'test_vol'
-
-    def post(req, resp):
-        v = DockerConfig.storage_api_version()
-        vol = docker_client(version=v).inspect_volume('test_vol')
-        assert vol['Driver'] == 'local'
-        assert vol['Name'] == 'test_vol'
-        docker_client(version=v).remove_volume('test_vol')
-
-        del resp['links']
-        del resp['actions']
-
-    event_test(agent, 'docker/volume_activate', pre_func=pre, post_func=post)
-
-
-@if_docker
 def test_volume_remove_driver(agent):
     def pre(req):
         v = DockerConfig.storage_api_version()
@@ -1447,7 +1396,7 @@ def test_volume_delete_orphaning(agent):
     client.start(c)
 
     def pre(req):
-        vol = req['data']['volumeStoragePoolMap']['volume']
+        vol = req['data']['volume']
         vol['name'] = vol_name
         vol['data'] = {'fields': {'driver': 'local'}}
         vol['uri'] = 'local:///%s' % vol_name

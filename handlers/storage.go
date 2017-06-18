@@ -18,39 +18,12 @@ type StorageHandler struct {
 	cache        *cache.Cache
 }
 
-func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.RancherClient) error {
-	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
-	if err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError+"failed to marshall incoming request")
-	}
-	volume := volumeStoragePoolMap.Volume
-
-	if ok, err := storage.IsVolumeActive(volume, h.dockerClient); ok {
-		return volumeStoragePoolMapReply(event, cli)
-	} else if err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError+"failed to check whether volume is activated")
-	}
-
-	if err := storage.DoVolumeActivate(volume, h.dockerClient); err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError+"failed to activate volume")
-	}
-	if ok, err := storage.IsVolumeActive(volume, h.dockerClient); !ok && err != nil {
-		return errors.Wrap(err, constants.VolumeActivateError)
-	} else if !ok && err == nil {
-		return errors.New(constants.VolumeActivateError + "volume is not activated")
-	}
-	logrus.Infof("rancher id [%v]: Volume with name [%v] has been activated", event.ResourceID, volume.Name)
-	return volumeStoragePoolMapReply(event, cli)
-}
-
 func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherClient) error {
-	var volumeStoragePoolMap model.VolumeStoragePoolMap
-	err := mapstructure.Decode(event.Data["volumeStoragePoolMap"], &volumeStoragePoolMap)
+	volume := model.Volume{}
+	err := mapstructure.Decode(event.Data["volume"], &volume)
 	if err != nil {
 		return errors.Wrap(err, constants.VolumeRemoveError+"failed to marshall incoming request")
 	}
-	volume := volumeStoragePoolMap.Volume
 
 	if ok, err := storage.IsVolumeRemoved(volume, h.dockerClient); err == nil && !ok {
 		rmErr := storage.DoVolumeRemove(volume, h.dockerClient, h.cache, event.ResourceID)

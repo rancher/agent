@@ -56,7 +56,7 @@ func (s *ComputeTestSuite) TestConflictVolumeRemove(c *check.C) {
 
 	rawEvent3 := loadEvent("./test_events/volume_remove", c)
 	event3 := unmarshalEvent(rawEvent3, c)
-	event3["data"].(map[string]interface{})["volumeStoragePoolMap"].(map[string]interface{})["volume"].(map[string]interface{})["name"] = volume
+	event3["data"].(map[string]interface{})["volume"].(map[string]interface{})["name"] = volume
 	rawEvent3 = marshalEvent(event3, c)
 	reply = testEvent(rawEvent3, c)
 	c.Assert(reply.Transitioning, check.Not(check.Equals), "error")
