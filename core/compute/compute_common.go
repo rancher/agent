@@ -201,6 +201,7 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 				return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
 			}
 			if storage.IsRancherVolume(vMount) {
+				progress.Update(fmt.Sprintf("Attaching volume %s", vMount.Name), "yes", nil)
 				if err := storage.RancherStorageVolumeAttach(vMount); err != nil {
 					return errors.Wrap(err, constants.SetupVolumesError+"failed to attach volume")
 				}
