@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/cloudprovider/aws"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/events"
 	"github.com/rancher/agent/register"
 )
@@ -54,9 +54,7 @@ func main() {
 	logrus.Info(url, accessKey, secretKey)
 	workerCount := 250
 
-	provider := aws.NewProvider()
-	go provider.GetCloudProviderInfo()
-
+	go cloudprovider.GetCloudProviderInfo()
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {
 		logrus.Fatalf("Exiting. Error: %v", err)
