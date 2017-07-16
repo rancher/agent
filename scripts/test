@@ -6,16 +6,19 @@ cleanup()
     local exit=$?
     kill $PID || true
     wait $PID || true
+    umount /run/docker/netns/default || true
+    umount /run || true
     exit $exit
 }
 
 cd $(dirname $0)/..
 
 if grep -q overlay /proc/filesystems; then
-    STORAGE=overlay
+    export STORAGE=overlay
 else
-    STORAGE=aufs
+    export STORAGE=aufs
 fi
+mount -t tmpfs none /run
 docker daemon -s $STORAGE -D >/var/log/docker.log 2>&1 &
 PID=$!
 trap cleanup EXIT

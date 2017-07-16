@@ -1,6 +1,7 @@
 /.dapper
 /bin
 /dist
+/package/agent
 *.swp
 /.trash-cache
 .idea/*
