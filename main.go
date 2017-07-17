@@ -51,7 +51,6 @@ func main() {
 	url := os.Getenv("CATTLE_URL")
 	accessKey := os.Getenv("CATTLE_ACCESS_KEY")
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
-	logrus.Info(url, accessKey, secretKey)
 	workerCount := 250
 
 	provider := aws.NewProvider()
