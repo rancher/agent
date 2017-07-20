@@ -228,6 +228,7 @@ type InstanceFields struct {
 	DomainName         string
 	Labels             map[string]string
 	StopSignal         string
+	StopTimeout        int
 	User               string
 	Sysctls            map[string]string
 	RunInit            *bool
