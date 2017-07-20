@@ -25,7 +25,25 @@
                         "imageUuid": "docker:ibuildthecloud/helloworld:latest",
                         "tty": true,
                         "stdinOpen": true,
-                        "startOnCreate": true
+                        "startOnCreate": true,
+                        "nics": [
+                            {
+                                "macAddress": "02:03:04:05:06:07",
+                                "deviceNumber": 0,
+                                "ipAddresses": [
+                                    {
+                                        "address": "10.10.10.10",
+                                        "role": "primary",
+                                        "subnet" : {
+                                            "cidrSize": 24
+                                        }
+                                    }
+                                ],
+                                "network": {
+                                    "kind": "dockerBridge"
+                                }
+                            }
+                        ]
                     }
                 },
                 "id": 211,
@@ -65,24 +83,6 @@
                         "state": "active",
                         "type": "volume",
                         "uuid": "9bd4d257-e288-4cbd-b496-21310d64772f"
-                    }
-                ],
-                "nics": [
-                    {
-                        "macAddress": "02:03:04:05:06:07",
-                        "deviceNumber": 0,
-                        "ipAddresses": [
-                            {
-                                "address": "10.10.10.10",
-                                "role": "primary",
-                                "subnet" : {
-                                    "cidrSize": 24
-                                }
-                            }
-                        ],
-                        "network": {
-                            "kind": "dockerBridge"
-                        }
                     }
                 ],
                 "zoneId": 1

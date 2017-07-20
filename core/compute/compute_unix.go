@@ -135,7 +135,7 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 	*/
 	macAddress := ""
 	deviceNumber := -1
-	for _, nic := range instance.Nics {
+	for _, nic := range instance.Data.Fields.Nics {
 		if deviceNumber == -1 {
 			macAddress = nic.MacAddress
 			deviceNumber = nic.DeviceNumber
@@ -156,9 +156,9 @@ func setupMacAndIP(instance model.Instance, config *container.Config, setMac boo
 		config.Hostname = ""
 	}
 
-	if instance.Nics != nil && len(instance.Nics) > 0 && instance.Nics[0].IPAddresses != nil {
+	if instance.Data.Fields.Nics != nil && len(instance.Data.Fields.Nics) > 0 && instance.Data.Fields.Nics[0].IPAddresses != nil {
 		// Assume one nic
-		nic := instance.Nics[0]
+		nic := instance.Data.Fields.Nics[0]
 		ipAddress := ""
 		for _, ip := range nic.IPAddresses {
 			if ip.Role == "primary" {
@@ -183,8 +183,8 @@ func setupNetworkMode(instance model.Instance, client *client.Client,
 	*/
 	portsSupported := true
 	hostnameSupported := true
-	if len(instance.Nics) > 0 {
-		network := instance.Nics[0].Network
+	if len(instance.Data.Fields.Nics) > 0 {
+		network := instance.Data.Fields.Nics[0].Network
 		kind := network.Kind
 		if kind == "dockerHost" {
 			portsSupported = false

@@ -16,13 +16,12 @@ type Instance struct {
 	Created                     int64  `json:"created"`
 	Data                        InstanceFieldsData
 	Ports                       []Port
-	Description                 string `json:"description"`
-	Hostname                    string `json:"hostname"`
-	ID                          int    `json:"id"`
-	ImageID                     int    `json:"imageId"`
-	Kind                        string `json:"kind"`
-	Name                        string `json:"name"`
-	Nics                        []Nic
+	Description                 string      `json:"description"`
+	Hostname                    string      `json:"hostname"`
+	ID                          int         `json:"id"`
+	ImageID                     int         `json:"imageId"`
+	Kind                        string      `json:"kind"`
+	Name                        string      `json:"name"`
 	Offering                    interface{} `json:"offering"`
 	OfferingID                  interface{} `json:"offeringId"`
 	OnCrash                     string      `json:"onCrash"`
@@ -241,6 +240,7 @@ type InstanceFields struct {
 	DiskQuota          int64
 	UsernsMode         container.UsernsMode
 	Build              BuildOptions
+	Nics               []Nic
 }
 
 type LogConfig struct {
