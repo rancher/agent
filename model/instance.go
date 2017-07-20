@@ -230,7 +230,7 @@ type InstanceFields struct {
 	StopSignal         string
 	User               string
 	Sysctls            map[string]string
-	Init               *bool
+	RunInit            *bool
 	HealthCmd          []string
 	HealthTimeout      int
 	HealthInterval     int

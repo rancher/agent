@@ -377,7 +377,7 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.Sysctls = fields.Sysctls
 
-	hostConfig.Init = fields.Init
+	hostConfig.Init = fields.RunInit
 
 	hostConfig.StorageOpt = fields.StorageOpt
 
