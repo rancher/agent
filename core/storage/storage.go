@@ -45,6 +45,7 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 		}
 	}
 
+	progress.Update(fmt.Sprintf("Creating volume %s", volume.Name), "yes", nil)
 	options := types.VolumeCreateRequest{
 		Name:       volume.Name,
 		Driver:     driver,
