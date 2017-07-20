@@ -238,7 +238,7 @@ func (s *ComputeTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 		fields["sysctls"] = map[string]string{
 			"net.ipv4.ip_forward": "1",
 		}
-		fields["init"] = true
+		fields["runInit"] = true
 		fields["tmpfs"] = map[string]string{
 			"/run": "rw,noexec,nosuid,size=65536k",
 		}
