@@ -12,7 +12,6 @@ import requests
 import tests
 import time
 from docker.utils import compare_version
-import re
 import random
 
 
@@ -237,28 +236,9 @@ def default_value(name, default):
 
 
 def instance_activate_common_validation(resp):
-    docker_container = resp['data']['instanceHostMap']['instance']
-    docker_container = docker_container['+data']['dockerContainer']
-    container_field_test_boiler_plate(resp)
-    fields = resp['data']['instanceHostMap']['instance']['+data']['+fields']
-    try:
-        del docker_container['Ports'][0]['PublicPort']
-        del docker_container['Ports'][1]['PublicPort']
-    except KeyError:
-        pass
-    except IndexError:
-        pass
-    fields['dockerPorts'].sort()
-    for idx, p in enumerate(fields['dockerPorts']):
-        if '8080' in p or '12201' in p:
-            fields['dockerPorts'][idx] = re.sub(r':.*:', ':1234:', p)
-    instance_activate_assert_host_config(resp)
-    instance_activate_assert_image_id(resp)
-    del docker_container["State"]
-    del docker_container["Mounts"]
-    fields["dockerHostIp"] = '1.2.3.4'
-    del resp['links']
-    del resp['actions']
+    instance_data = resp['data']['instance']['+data']
+    assert resp['data']['instance']['externalId'] == \
+        instance_data['dockerInspect']['Id']
 
 
 def newer_than(version):
@@ -267,49 +247,13 @@ def newer_than(version):
     return compare_version(version, ver) >= 0
 
 
-def instance_activate_assert_image_id(resp):
-    docker_container = resp['data']['instanceHostMap']['instance']
-    docker_container = docker_container['+data']['dockerContainer']
-    if newer_than('1.20'):
-        if 'ImageID' in docker_container:
-            del docker_container['ImageID']
-
-
-def instance_activate_assert_host_config(resp):
-    docker_container = resp['data']['instanceHostMap']['instance']
-    docker_container = docker_container['+data']['dockerContainer']
-    if newer_than('1.20'):
-        if 'HostConfig' in docker_container:
-            assert docker_container['HostConfig'] == {
-                'NetworkMode': 'default'
-            } or docker_container['HostConfig'] == {}
-            del docker_container['HostConfig']
-
-
 def container_field_test_boiler_plate(resp):
-    instance_data = resp['data']['instanceHostMap']['instance']['+data']
-    docker_container = instance_data['dockerContainer']
-    assert resp['data']['instanceHostMap']['instance']['externalId'] == \
-        instance_data['dockerInspect']['Id']
-    del resp['data']['instanceHostMap']['instance']['externalId']
+    instance_data = resp['data']['instance']['+data']
+
+    del resp['data']['instance']['externalId']
     del instance_data['dockerInspect']
-    try:
-        del instance_data['dockerMounts']
-    except KeyError:
-        pass
     fields = instance_data['+fields']
-    del docker_container['Created']
-    del docker_container['Id']
-    del docker_container['Status']
-    docker_container.pop('NetworkSettings', None)
     del fields['dockerIp']
-    _sort_ports(docker_container)
-
-    if 'Labels' in docker_container and docker_container['Labels'] is None:
-        docker_container['Labels'] = {}
-
-    instance_activate_assert_host_config(resp)
-    instance_activate_assert_image_id(resp)
 
 
 def _sort_ports(docker_container):
@@ -327,30 +271,19 @@ def get_container(name):
     return None
 
 
-def trim(docker_container, fields, resp, valid_resp):
-    try:
-        del docker_container["State"]
-        del docker_container["Mounts"]
-        fields["dockerHostIp"] = '1.2.3.4'
-        del resp['links']
-        del resp['actions']
-    except KeyError:
-        pass
-
-
 def instance_only_activate(agent):
     delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
 
     def pre(req):
-        instance = req['data']['instanceHostMap']['instance']
+        instance = req['data']['instance']
         for nic in instance['nics']:
             nic['macAddress'] = ''
 
     def post(req, resp):
-        docker_inspect = resp['data']['instanceHostMap']['instance']['+data'][
+        docker_inspect = resp['data']['instance']['+data'][
             'dockerInspect']
         labels = docker_inspect['Config']['Labels']
-        ip = req['data']['instanceHostMap']['instance']['nics'][
+        ip = req['data']['instance']['nics'][
             0]['ipAddresses'][0]
         expected_ip = "{0}/{1}".format(ip.address, ip.subnet.cidrSize)
         assert labels['io.rancher.container.ip'] == expected_ip

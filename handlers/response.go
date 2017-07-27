@@ -1,37 +1,62 @@
 package handlers
 
 import (
-	dclient "github.com/docker/docker/client"
-	"github.com/patrickmn/go-cache"
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
-	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/agent/progress"
+	"github.com/rancher/agent/utils"
+	v2 "github.com/rancher/go-rancher/v2"
+	"golang.org/x/net/context"
 )
 
-func instanceHostMapReply(event *revents.Event, client *client.RancherClient, dockerClient *dclient.Client, cache *cache.Cache) error {
-	data, err := utils.InstanceHostMapReply(event, dockerClient, cache)
-	if err != nil {
-		return errors.Wrap(err, constants.InstanceHostMapReplyError+"failed to get reply data")
+const (
+	linkName        = "eth0"
+	cniStateBaseDir = "/var/lib/rancher/state/cni"
+	UUIDLabel       = "io.rancher.container.uuid"
+	managedNetwork  = "managed"
+)
+
+func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Client, pro *progress.Progress) (interface{}, error) {
+	response := v2.DeploymentSyncResponse{}
+
+	containerId, err := utils.FindContainer(client, containerSpec, false)
+	if err != nil && !utils.IsContainerNotFoundError(err) {
+		return map[string]interface{}{}, errors.Wrap(err, "failed to get container")
 	}
-	return reply(data, event, client)
-}
 
-func instancePullReply(event *revents.Event, client *client.RancherClient, dockerClient *dclient.Client) error {
-	data, err := utils.InstancePullReply(event, dockerClient)
+	inspect, err := client.ContainerInspect(context.Background(), containerId)
 	if err != nil {
-		return errors.Wrap(err, constants.InstancePullReplyError+"failed to get reply data")
+		return map[string]interface{}{}, errors.Wrap(err, "failed to inspect container")
 	}
-	return reply(data, event, client)
+	dockerIP, err := getIP(inspect, containerSpec.NetworkMode, pro)
+	if err != nil && !utils.IsNoOp(containerSpec) {
+		if running, err2 := isRunning(inspect.ID, client); err2 != nil {
+			return nil, errors.Wrap(err2, "failed to inspect running container")
+		} else if running {
+			return nil, errors.Wrap(err, "failed to get ip of the container")
+		}
+	}
+	logrus.Infof("############# %v", dockerIP)
+	status := v2.InstanceStatus{}
+	status.ExternalId = inspect.ID
+	dockerInspect, err := utils.StructToMap(inspect)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unMarshall docker inspect")
+	}
+	status.DockerInspect = dockerInspect
+	status.InstanceUuid = containerSpec.Uuid
+	status.PrimaryIpAddress = dockerIP
+	status.State = inspect.State.Status
+	response.InstanceStatus = []v2.InstanceStatus{status}
+
+	return response, nil
 }
 
-func volumeStoragePoolMapReply(event *revents.Event, client *client.RancherClient) error {
-	data, _ := utils.VolumeStoragePoolMapReply()
-	return reply(data, event, client)
-}
-
-func imageStoragePoolMapReply(event *revents.Event, client *client.RancherClient) error {
-	data, _ := utils.ImageStoragePoolMapReply()
-	return reply(data, event, client)
+func isRunning(id string, client *client.Client) (bool, error) {
+	inspect, err := client.ContainerInspect(context.Background(), id)
+	if err != nil {
+		return false, err
+	}
+	return inspect.State.Pid != 0, nil
 }

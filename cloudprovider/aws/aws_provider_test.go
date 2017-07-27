@@ -1,14 +1,15 @@
 package aws
 
 import (
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/config"
-	"gopkg.in/check.v1"
 	"os"
 	"path"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/utils"
+	"gopkg.in/check.v1"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -37,7 +38,7 @@ func (e errorReplyImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceId
 }
 
 func (s *ComputeTestSuite) TestGetCloudProviderInfo(c *check.C) {
-	os.Mkdir(config.StateDir(), 0755)
+	os.Mkdir(utils.StateDir(), 0755)
 	p := Provider{
 		interval:    time.Second,
 		expireTime:  time.Second * 5,
@@ -46,7 +47,7 @@ func (s *ComputeTestSuite) TestGetCloudProviderInfo(c *check.C) {
 	p.client = fakeReplyImpl{}
 	success := p.GetCloudProviderInfo()
 	c.Assert(success, check.Equals, true)
-	infoPath := path.Join(config.StateDir(), infoFile)
+	infoPath := path.Join(utils.StateDir(), infoFile)
 	os.Remove(infoPath)
 
 	p.client = errorReplyImpl{}
