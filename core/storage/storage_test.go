@@ -4,7 +4,7 @@ package storage
 
 import (
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utils/docker"
 	"gopkg.in/check.v1"
 	"testing"
 )

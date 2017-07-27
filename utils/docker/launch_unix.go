@@ -12,7 +12,7 @@ import (
 	dclient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 )
 
 var (

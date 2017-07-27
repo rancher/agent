@@ -2,7 +2,7 @@ package hostInfo
 
 import (
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 	"github.com/shirou/gopsutil/mem"
 )
 

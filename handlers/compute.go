@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/agent/core/compute"
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 )
@@ -25,7 +25,7 @@ type ComputeHandler struct {
 }
 
 func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.RancherClient) error {
-	instance, host, err := utils.GetInstanceAndHost(event)
+	instance, err := utils.GetInstance(event)
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to marshall instance and host data")
 	}
@@ -36,20 +36,20 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *client.Ranc
 		instance.ProcessData.ContainerNoOpEvent = utils.InterfaceToBool(noOp)
 	}
 
-	if ok, err := compute.IsInstanceActive(instance, host, h.dockerClientWithTimeout); ok {
+	if ok, err := compute.IsInstanceActive(instance, h.dockerClientWithTimeout); ok {
 		return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, h.memCache)
 	} else if err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to check whether instance is activated")
 	}
 
-	if err := compute.DoInstanceActivate(instance, host, progress, h.dockerClient, h.infoData); err != nil {
+	if err := compute.DoInstanceActivate(instance, progress, h.dockerClient, h.infoData); err != nil {
 		return errors.Wrap(err, constants.InstanceActivateError+"failed to activate instance")
 	}
 	return instanceHostMapReply(event, cli, h.dockerClientWithTimeout, h.memCache)
 }
 
 func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.RancherClient) error {
-	instance, _, err := utils.GetInstanceAndHost(event)
+	instance, err := utils.GetInstance(event)
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceDeactivateError+"failed to marshall instance and host data")
 	}
@@ -138,7 +138,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *client.RancherC
 }
 
 func (h *ComputeHandler) InstanceRemove(event *revents.Event, cli *client.RancherClient) error {
-	instance, _, err := utils.GetInstanceAndHost(event)
+	instance, err := utils.GetInstance(event)
 	if err != nil {
 		return errors.Wrap(err, constants.InstanceRemoveError+"failed to marshall instance and host data")
 	}

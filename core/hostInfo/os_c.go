@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 )
 
 type OSCollector struct {

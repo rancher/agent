@@ -14,7 +14,7 @@ import (
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 )
 
 func URL() string {
@@ -227,14 +227,6 @@ func DockerUUID() (string, error) {
 func dockerUUIDFile() string {
 	defValue := fmt.Sprintf("%v/.docker_uuid", StateDir())
 	return DefaultValue("DOCKER_UUID_FILE", defValue)
-}
-
-func CadvisorIP() string {
-	return DefaultValue("CADVISOR_IP", "127.0.0.1")
-}
-
-func CadvisorPort() string {
-	return DefaultValue("CADVISOR_PORT", "9344")
 }
 
 func DefaultValue(name string, df string) string {

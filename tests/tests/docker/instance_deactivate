@@ -3,27 +3,7 @@
         "processData" : {
             "timeout" : 0
         },
-        "instanceHostMap": {
-            "host": {
-                "agentId": 91,
-                "created": 1389396142000,
-                "data": {
-                    "fields": {
-                        "accountId": 1
-                    }
-                },
-                "description": null,
-                "id": 5,
-                "kind": "docker",
-                "name": null,
-                "removed": null,
-                "state": "active",
-                "type": "host",
-                "uuid": "dockerhost1"
-            },
-            "hostId": 5,
-            "id": 50,
-            "instance": {
+        "instance": {
                 "accountId": 1,
                 "allocationState": "active",
                 "created": 1389396144000,
@@ -68,7 +48,6 @@
                 "imageId": 14,
                 "kind": "container",
                 "name": "test",
-                "nics": [],
                 "offering": null,
                 "offeringId": null,
                 "onCrash": "stop",
@@ -107,12 +86,7 @@
                     }
                 ],
                 "zoneId": 1
-            },
-            "instanceId": 211,
-            "removed": null,
-            "state": "activating",
-            "type": "instanceHostMap"
-        }
+            }
     },
     "id": "fe8fe34c-1b13-4287-a094-a2c5f902722b",
     "name": "compute.instance.deactivate",
@@ -121,6 +95,6 @@
     "publisher": null,
     "replyTo": "reply.6533363327570546786",
     "resourceId": "211",
-    "resourceType": "instanceHostMap",
+    "resourceType": "instance",
     "time": 1389656010338
 }

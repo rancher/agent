@@ -20,9 +20,9 @@ import (
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
-	configuration "github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	configuration "github.com/rancher/agent/utils/config"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 )
 
@@ -191,10 +191,9 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 
 	if vMounts := instance.VolumesFromDataVolumeMounts; len(vMounts) > 0 {
 		for _, vMount := range vMounts {
-			storagePool := model.StoragePool{}
 			// volume active == exists, possibly not attached to this host
-			if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
-				if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
+			if ok, err := storage.IsVolumeActive(vMount, client); !ok && err == nil {
+				if err := storage.DoVolumeActivate(vMount, client); err != nil {
 					return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
 				}
 			} else if err != nil {

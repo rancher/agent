@@ -3,8 +3,8 @@ package handlers
 import (
 	"fmt"
 	"github.com/rancher/agent/core/progress"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/config"
+	"github.com/rancher/agent/utils/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"os"

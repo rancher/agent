@@ -14,9 +14,9 @@ import (
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/config"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 	"io"
 )

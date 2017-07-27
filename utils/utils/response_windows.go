@@ -7,7 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/patrickmn/go-cache"
-	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utils/docker"
 	"golang.org/x/net/context"
 	"regexp"
 	"strings"

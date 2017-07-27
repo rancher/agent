@@ -5,8 +5,8 @@ package hostInfo
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 	"io/ioutil"
 	"os"
 	"strconv"

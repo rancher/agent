@@ -3,7 +3,7 @@ package aws
 import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utils/config"
 	"gopkg.in/check.v1"
 	"os"
 	"path"

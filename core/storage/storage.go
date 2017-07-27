@@ -13,12 +13,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/agent/utils/constants"
+	"github.com/rancher/agent/utils/utils"
 	"golang.org/x/net/context"
 )
 
-func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
+func DoVolumeActivate(volume model.Volume, client *engineCli.Client) error {
 	if !isManagedVolume(volume) {
 		return nil
 	}
@@ -98,12 +98,12 @@ func PullImage(progress *progress.Progress, client *engineCli.Client, imageUUID 
 	return pullImageWrap(client, imageName, pullOption, progress, withCredential)
 }
 
-func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, dockerClient *engineCli.Client, ca *cache.Cache, resourceID string) error {
+func DoVolumeRemove(volume model.Volume, dockerClient *engineCli.Client, ca *cache.Cache, resourceID string) error {
 	if _, ok := ca.Get(resourceID); ok {
 		ca.Delete(resourceID)
 		return nil
 	}
-	if ok, err := IsVolumeRemoved(volume, storagePool, dockerClient); ok {
+	if ok, err := IsVolumeRemoved(volume, dockerClient); ok {
 		return nil
 	} else if err != nil {
 		return errors.Wrap(err, constants.DoVolumeRemoveError+"failed to check whether volume is removed")

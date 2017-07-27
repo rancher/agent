@@ -1,21 +1,8 @@
 {
     "data": {
-        "instanceHostMap": {
-            "instance": {
-                "+data": {
-                    "+fields": {
-                        "dockerHostIp": "1.2.3.4",
-                        "dockerPorts": []
-                    },
-                    "dockerContainer": {
-                        "Command": "/sleep.sh",
-                        "Labels": {},
-                        "Image": "ibuildthecloud/helloworld:latest",
-                        "Names": [
-                            "/native_container"
-                        ],
-                        "Ports": []
-                    }
+        "instance": {
+            "+data": {
+                "+fields": {
                 }
             }
         }
@@ -24,5 +11,5 @@
     "previousNames": ["compute.instance.deactivate"],
     "name": "reply.6533363327570546786",
     "resourceId": "211",
-    "resourceType": "instanceHostMap"
+    "resourceType": "instance"
 }

@@ -21,7 +21,6 @@ type Volume struct {
 	RemoveTime      int64       `json:"removeTime"`
 	Removed         int64       `json:"removed"`
 	State           string      `json:"state"`
-	StoragePools    []StoragePool
 	Type            string      `json:"type"`
 	URI             string      `json:"uri"`
 	UUID            string      `json:"uuid"`

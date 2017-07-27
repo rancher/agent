@@ -11,7 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utils/config"
 )
 
 type KeyCollector struct {

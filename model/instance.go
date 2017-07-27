@@ -38,7 +38,6 @@ type Instance struct {
 	ZoneID                      int    `json:"zoneId"`
 	ExternalID                  string `json:"externalId"`
 	AgentID                     int
-	InstanceLinks               []Link
 	NetworkContainer            *Instance
 	NativeContainer             bool
 	DataVolumesFromContainers   []*Instance

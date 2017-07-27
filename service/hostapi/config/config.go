@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"github.com/golang/glog"
-	configuration "github.com/rancher/agent/utilities/config"
+	configuration "github.com/rancher/agent/utils/config"
 	"io/ioutil"
 	"os"
 	"strconv"

@@ -6,7 +6,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 	"golang.org/x/net/context"
 	"path/filepath"
 )
@@ -15,7 +15,7 @@ const (
 	rancherSockDir = "/var/run/rancher/storage"
 )
 
-func IsVolumeActive(volume model.Volume, storagePool model.StoragePool, dockerClient *client.Client) (bool, error) {
+func IsVolumeActive(volume model.Volume, dockerClient *client.Client) (bool, error) {
 	if !isManagedVolume(volume) {
 		return true, nil
 	}
@@ -46,9 +46,9 @@ func IsRancherVolume(volume model.Volume) bool {
 	return false
 }
 
-func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *client.Client) (bool, error) {
+func IsVolumeRemoved(volume model.Volume, client *client.Client) (bool, error) {
 	if isManagedVolume(volume) {
-		ok, err := IsVolumeActive(volume, storagePool, client)
+		ok, err := IsVolumeActive(volume, client)
 		if err != nil {
 			return false, errors.Wrap(err, constants.IsVolumeRemovedError+"failed to check whether volume is activated")
 		}

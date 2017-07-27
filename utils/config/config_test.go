@@ -8,7 +8,7 @@ import (
 	"gopkg.in/check.v1"
 
 	gofqdn "github.com/ShowMax/go-fqdn"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 )
 
 // Hook up gocheck into the "go test" runner.

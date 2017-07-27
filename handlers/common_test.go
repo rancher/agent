@@ -9,7 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utils/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
@@ -77,13 +77,6 @@ func loadEvent(eventFile string, c *check.C) []byte {
 
 }
 
-func getInstance(event map[string]interface{}, c *check.C) map[string]interface{} {
-	data := event["data"].(map[string]interface{})
-	ihm := data["instanceHostMap"].(map[string]interface{})
-	instance := ihm["instance"].(map[string]interface{})
-	return instance
-}
-
 func unmarshalEvent(rawEvent []byte, c *check.C) map[string]interface{} {
 	event := map[string]interface{}{}
 	err := json.Unmarshal(rawEvent, &event)
@@ -104,7 +97,7 @@ func marshalEvent(event interface{}, c *check.C) []byte {
 func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},
 	map[string]interface{}) {
 	event := unmarshalEvent(rawEvent, c)
-	instance := event["data"].(map[string]interface{})["instanceHostMap"].(map[string]interface{})["instance"].(map[string]interface{})
+	instance := event["data"].(map[string]interface{})["instance"].(map[string]interface{})
 	fields := instance["data"].(map[string]interface{})["fields"].(map[string]interface{})
 	return event, instance, fields
 }

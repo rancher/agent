@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/utils/constants"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
@@ -26,24 +26,13 @@ import (
 	"time"
 )
 
-func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
-
+func GetInstance(event *revents.Event) (model.Instance, error) {
 	data := event.Data
-	var ihm model.InstanceHostMap
-	if err := mapstructure.Decode(data["instanceHostMap"], &ihm); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instancehostmap")
-	}
-
 	var instance model.Instance
-	if err := mapstructure.Decode(ihm.Instance, &instance); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instance data")
+	if err := mapstructure.Decode(data["instance"], &instance); err != nil {
+		return model.Instance{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall instancehostmap")
 	}
-	var host model.Host
-	if err := mapstructure.Decode(ihm.Host, &host); err != nil {
-		return model.Instance{}, model.Host{}, errors.Wrap(err, constants.GetInstanceAndHostError+"failed to marshall host data")
-	}
-
-	return instance, host, nil
+	return instance, nil
 }
 
 func IsNoOp(data model.ProcessData) bool {
@@ -61,10 +50,6 @@ func SearchInList(slice []string, target string) bool {
 		}
 	}
 	return false
-}
-
-func IsNonrancherContainer(instance model.Instance) bool {
-	return instance.NativeContainer
 }
 
 func AddToEnv(config *container.Config, result map[string]string, args ...string) {
@@ -182,81 +167,6 @@ func InterfaceToMap(v interface{}) map[string]interface{} {
 		return value
 	}
 	return map[string]interface{}{}
-}
-
-func AddLinkEnv(name string, link model.Link, result map[string]string, inIP string) {
-	result[strings.ToUpper(fmt.Sprintf("%s_NAME", toEnvName(name)))] = fmt.Sprintf("/cattle/%s", name)
-
-	ports := link.Data.Fields.Ports
-	for _, port := range ports {
-		protocol := port.Protocol
-		ip := strings.ToLower(name)
-		if inIP != "" {
-			ip = inIP
-		}
-		dst := port.PrivatePort
-		src := port.PrivatePort
-
-		fullPort := fmt.Sprintf("%v://%v:%v", protocol, ip, dst)
-		data := make(map[string]string)
-		data["NAME"] = fmt.Sprintf("/cattle/%v", name)
-		data["PORT"] = fullPort
-		data[fmt.Sprintf("PORT_%v_%v", src, protocol)] = fullPort
-		data[fmt.Sprintf("PORT_%v_%v_ADDR", src, protocol)] = ip
-		data[fmt.Sprintf("PORT_%v_%v_PORT", src, protocol)] = getStringOrFloat(dst)
-		data[fmt.Sprintf("PORT_%v_%v_PROTO", src, protocol)] = protocol
-		for key, value := range data {
-			result[strings.ToUpper(fmt.Sprintf("%v_%v", toEnvName(name), key))] = value
-		}
-	}
-
-}
-
-func CopyLinkEnv(name string, link model.Link, result map[string]string) {
-	targetInstance := link.TargetInstance
-	envs := targetInstance.Data.DockerInspect.Config.Env
-	ignores := make(map[string]bool)
-	for _, env := range envs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) == 1 {
-			continue
-		}
-		if strings.HasPrefix(parts[1], "/cattle/") {
-			envName := toEnvName(parts[1][len("/cattle/"):])
-			ignores[envName+"_NAME"] = true
-			ignores[envName+"_PORT"] = true
-			ignores[envName+"_ENV"] = true
-		}
-	}
-	for _, env := range envs {
-		shouldIgnore := false
-		for ignore := range ignores {
-			if strings.HasPrefix(env, ignore) {
-				shouldIgnore = true
-				break
-			}
-		}
-		if shouldIgnore {
-			continue
-		}
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) == 1 {
-			continue
-		}
-		key, value := parts[0], parts[1]
-		if key == "HOME" || key == "PATH" {
-			continue
-		}
-		result[fmt.Sprintf("%s_ENV_%s", toEnvName(name), key)] = value
-	}
-}
-
-func toEnvName(name string) string {
-	r, _ := regexp.Compile("[^a-zA-Z0-9_]")
-	if r.FindStringSubmatch(name) != nil {
-		name = strings.Replace(name, r.FindStringSubmatch(name)[0], "_", -1)
-	}
-	return strings.ToUpper(name)
 }
 
 func ParseRepoTag(name string) string {
@@ -414,14 +324,6 @@ func GetProgress(request *revents.Event, cli *client.RancherClient) *progress.Pr
 		Client:  cli,
 	}
 	return &progress
-}
-
-//weird method to convert an interface to string
-func getStringOrFloat(v interface{}) string {
-	if f, ok := v.(float64); ok {
-		return strconv.FormatFloat(f, 'f', -1, 64)
-	}
-	return v.(string)
 }
 
 func GetExitCode(err error) int {

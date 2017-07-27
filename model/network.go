@@ -42,23 +42,3 @@ type HostBind struct {
 type Service struct {
 	Kind string
 }
-
-type Link struct {
-	Type             string
-	TargetInstanceID int
-	LinkName         string
-	TargetInstance   Instance
-	Data             LinkData
-}
-
-type LinkData struct {
-	Fields LinkFields
-}
-
-type LinkFields struct {
-	InstanceNames []string
-	Ports         []struct {
-		Protocol    string
-		PrivatePort interface{}
-	}
-}

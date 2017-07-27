@@ -3,28 +3,11 @@
   "name": "compute.instance.remove",
   "replyTo": "reply.3988693145729591781",
   "resourceId": "1ihm3",
-  "resourceType": "instanceHostMap",
+  "resourceType": "instance",
   "previousIds": null,
   "previousNames": null,
   "data": {
-    "instanceHostMap": {
-      "id": 3,
-      "state": "removing",
-      "kind": "instanceHostMap",
-      "uuid": "a0182c4e-f0d9-4ab9-be68-e2ad50aa1859",
-      "instanceId": 3,
-      "hostId": 1,
-      "data": {
-        "fields": {},
-        "io.cattle.platform.allocator.dao.impl.AllocatorDaoImpl": {
-          "deallocated": true
-        }
-      },
-      "created": 1431190404000,
-      "removed": null,
-      "removeTime": null,
-      "type": "instanceHostMap",
-      "instance": {
+    "instance": {
         "name": "",
         "id": 3,
         "state": "purging",
@@ -54,29 +37,7 @@
         "firstRunning": 1431190405000,
         "nativeContainer": false,
         "type": "instance"
-      },
-      "host": {
-        "name": "docker-160",
-        "id": 1,
-        "state": "active",
-        "description": null,
-        "kind": "docker",
-        "uuid": "95d26c85-6232-4fe6-a1bc-112f182d9fe9",
-        "zoneId": 1,
-        "physicalHostId": 1,
-        "computeTotal": 1000000,
-        "isPublic": false,
-        "data": {},
-        "uri": null,
-        "created": 1431189631000,
-        "accountId": 5,
-        "computeFree": 999999,
-        "agentId": 1,
-        "removed": null,
-        "removeTime": null,
-        "type": "host"
       }
-    }
   },
   "time": 1431190426093,
   "timeoutMillis": 15000,
