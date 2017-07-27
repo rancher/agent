@@ -271,8 +271,8 @@ run_bootstrap()
     export CATTLE_STORAGE_URL="${CATTLE_STORAGE_URL:-${CATTLE_URL}}"
 
     # Sanity check that these credentials are valid
-    if curl -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/configcontent >test.json 2>&1; then
-        if cat test.json | jq -r .id >/dev/null 2>&1 && [ "$(cat test.json | jq -r .id)" != "configContent" ]; then
+    if curl -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/host >test.json 2>&1; then
+        if cat test.json | jq -r .id >/dev/null 2>&1 && [ "$(cat test.json | jq -r .id)" != "host" ]; then
             error Credentials are no longer valid, please re-register this agent
             return 1
         fi

@@ -36,7 +36,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *v2.Ranche
 
 	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, nil)
 	if err != nil {
-		return errors.New("failed to construct deploymentSyncRequest")
+		return errors.Wrap(err,"failed to construct deploymentSyncResponse")
 	}
 	data := map[string]interface{}{
 		"deploymentSyncResponse": response,

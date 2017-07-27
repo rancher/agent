@@ -28,7 +28,7 @@ func GetDeploymentSyncRequest(event *revents.Event) (v2.DeploymentSyncRequest, e
 
 	err := Unmarshalling(event.Data["deploymentSyncRequest"], &deploymentSyncRequest)
 	if err != nil {
-		return v2.DeploymentSyncRequest{}, errors.Wrap(err, "failed to unmarshall deploymentSyncRequest")
+		return v2.DeploymentSyncRequest{}, errors.Wrapf(err, "failed to unmarshall deploymentSyncRequest. Body: %v", event.Data["deploymentSyncRequest"])
 	}
 	return deploymentSyncRequest, nil
 }
