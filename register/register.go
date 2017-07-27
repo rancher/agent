@@ -1,29 +1,27 @@
-//+build windows
-
 package register
 
 import (
 	"bufio"
 	"crypto/rand"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/pkg/errors"
-	"github.com/rancher/go-rancher/v2"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
+	"github.com/rancher/go-rancher/v2"
 )
 
 const (
 	cattleAgentIP   = "CATTLE_AGENT_IP"
 	cattleURLEnv    = "CATTLE_URL"
-	tokenFile       = "C:/ProgramData/rancher/registrationToken"
 	cattleAccessKey = "CATTLE_ACCESS_KEY"
 	cattleSecretKey = "CATTLE_SECRET_KEY"
-	apiCrtFile      = "C:/ProgramData/rancher/etc/cattle/api.crt"
 )
 
 func RunRegistration(url string) error {
@@ -127,6 +125,7 @@ func register(accessKey, secretKey, cattleURL string) error {
 		os.Setenv(cattleAccessKey, list.Data[0].AccessKey)
 		os.Setenv(cattleSecretKey, list.Data[0].SecretKey)
 	}
+
 	return nil
 }
 
@@ -139,6 +138,9 @@ func getToken() (string, error) {
 			return "", err
 		}
 		return string(data), nil
+	}
+	if err := os.MkdirAll(path.Dir(tokenFile), 0755); err != nil {
+		return "", err
 	}
 	file, err := os.Create(tokenFile)
 	if err != nil {
@@ -159,7 +161,7 @@ func downloadAPICrt() error {
 	if _, err := os.Stat(apiCrtFile); err == nil {
 		os.Remove(apiCrtFile)
 	}
-	if err := os.MkdirAll("C:/ProgramData/rancher/etc/cattle", 0755); err != nil {
+	if err := os.MkdirAll(path.Dir(apiCrtFile), 0755); err != nil {
 		return err
 	}
 	file, err := os.Create(apiCrtFile)
