@@ -9,7 +9,7 @@ type KubernetesStack struct {
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
-	Binding *Binding `json:"binding,omitempty" yaml:"binding,omitempty"`
+	Answers map[string]interface{} `json:"answers,omitempty" yaml:"answers,omitempty"`
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
@@ -50,8 +50,6 @@ type KubernetesStack struct {
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
-
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }

@@ -15,6 +15,8 @@ type ProjectTemplate struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
+
 	IsPublic bool `json:"isPublic,omitempty" yaml:"is_public,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
@@ -32,8 +34,6 @@ type ProjectTemplate struct {
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
-
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }

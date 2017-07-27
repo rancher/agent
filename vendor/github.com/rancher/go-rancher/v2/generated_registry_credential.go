@@ -15,8 +15,6 @@ type RegistryCredential struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
-	Email string `json:"email,omitempty" yaml:"email,omitempty"`
-
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -36,8 +34,6 @@ type RegistryCredential struct {
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
-
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
@@ -64,8 +60,6 @@ type RegistryCredentialOperations interface {
 	ActionCreate(*RegistryCredential) (*Credential, error)
 
 	ActionDeactivate(*RegistryCredential) (*Credential, error)
-
-	ActionPurge(*RegistryCredential) (*Credential, error)
 
 	ActionRemove(*RegistryCredential) (*Credential, error)
 
@@ -145,15 +139,6 @@ func (c *RegistryCredentialClient) ActionDeactivate(resource *RegistryCredential
 	resp := &Credential{}
 
 	err := c.rancherClient.doAction(REGISTRY_CREDENTIAL_TYPE, "deactivate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *RegistryCredentialClient) ActionPurge(resource *RegistryCredential) (*Credential, error) {
-
-	resp := &Credential{}
-
-	err := c.rancherClient.doAction(REGISTRY_CREDENTIAL_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

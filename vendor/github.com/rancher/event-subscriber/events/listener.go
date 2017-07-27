@@ -79,10 +79,6 @@ func NewEventRouter(name string, priority int, apiURL string, accessKey string, 
 // that are created outside of this router.
 
 func (router *EventRouter) Start(ready chan<- bool) error {
-	err := router.createExternalHandler()
-	if err != nil {
-		return err
-	}
 	eventSuffix := ";handler=" + router.name
 	wp := SkippingWorkerPool(router.workerCount, resourceIDLocker)
 	return router.run(wp, ready, eventSuffix)

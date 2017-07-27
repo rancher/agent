@@ -7,13 +7,21 @@ const (
 type PublicEndpoint struct {
 	Resource
 
-	HostId string `json:"hostId,omitempty" yaml:"host_id,omitempty"`
+	AgentIpAddress string `json:"agentIpAddress,omitempty" yaml:"agent_ip_address,omitempty"`
+
+	BindIpAddress string `json:"bindIpAddress,omitempty" yaml:"bind_ip_address,omitempty"`
+
+	Fqdn string `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
 
 	InstanceId string `json:"instanceId,omitempty" yaml:"instance_id,omitempty"`
 
 	IpAddress string `json:"ipAddress,omitempty" yaml:"ip_address,omitempty"`
 
-	Port int64 `json:"port,omitempty" yaml:"port,omitempty"`
+	PrivatePort int64 `json:"privatePort,omitempty" yaml:"private_port,omitempty"`
+
+	Protocol string `json:"protocol,omitempty" yaml:"protocol,omitempty"`
+
+	PublicPort int64 `json:"publicPort,omitempty" yaml:"public_port,omitempty"`
 
 	ServiceId string `json:"serviceId,omitempty" yaml:"service_id,omitempty"`
 }

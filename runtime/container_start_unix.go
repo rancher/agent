@@ -169,9 +169,10 @@ func setupFieldsHostConfig(fields v2.Container, hostConfig *container.HostConfig
 
 	hostConfig.PidMode = container.PidMode(fields.PidMode)
 
-	hostConfig.LogConfig.Type = fields.LogConfig.Driver
-
-	hostConfig.LogConfig.Config = utils.ToMapString(fields.LogConfig.Config)
+	if fields.LogConfig != nil {
+		hostConfig.LogConfig.Type = fields.LogConfig.Driver
+		hostConfig.LogConfig.Config = utils.ToMapString(fields.LogConfig.Config)
+	}
 
 	hostConfig.SecurityOpt = fields.SecurityOpt
 

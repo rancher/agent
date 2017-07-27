@@ -39,13 +39,13 @@ type StoragePool struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 
 	VolumeAccessMode string `json:"volumeAccessMode,omitempty" yaml:"volume_access_mode,omitempty"`
 
 	VolumeCapabilities []string `json:"volumeCapabilities,omitempty" yaml:"volume_capabilities,omitempty"`
+
+	VolumeIds []string `json:"volumeIds,omitempty" yaml:"volume_ids,omitempty"`
 }
 
 type StoragePoolCollection struct {
@@ -71,11 +71,7 @@ type StoragePoolOperations interface {
 
 	ActionDeactivate(*StoragePool) (*StoragePool, error)
 
-	ActionPurge(*StoragePool) (*StoragePool, error)
-
 	ActionRemove(*StoragePool) (*StoragePool, error)
-
-	ActionRestore(*StoragePool) (*StoragePool, error)
 
 	ActionUpdate(*StoragePool) (*StoragePool, error)
 }
@@ -157,29 +153,11 @@ func (c *StoragePoolClient) ActionDeactivate(resource *StoragePool) (*StoragePoo
 	return resp, err
 }
 
-func (c *StoragePoolClient) ActionPurge(resource *StoragePool) (*StoragePool, error) {
-
-	resp := &StoragePool{}
-
-	err := c.rancherClient.doAction(STORAGE_POOL_TYPE, "purge", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *StoragePoolClient) ActionRemove(resource *StoragePool) (*StoragePool, error) {
 
 	resp := &StoragePool{}
 
 	err := c.rancherClient.doAction(STORAGE_POOL_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *StoragePoolClient) ActionRestore(resource *StoragePool) (*StoragePool, error) {
-
-	resp := &StoragePool{}
-
-	err := c.rancherClient.doAction(STORAGE_POOL_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }
