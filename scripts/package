@@ -5,24 +5,22 @@ source $(dirname $0)/version
 
 cd $(dirname $0)/..
 
-CONTENT=$(uuidgen)
-
-rm -rf dist/artifacts
-
-mkdir -p build/${CONTENT}/bin
-mkdir -p dist/artifacts
-
 if [ ! -e bin/agent ]; then
     ./scripts/build
 fi
 
-cp -rf apply.sh build/${CONTENT}
-cp -rf bin/agent build/${CONTENT}/bin
+cd package
 
-cd build
+TAG=${TAG:-${VERSION}${SUFFIX}}
+REPO=${REPO:-rancher}
 
-sha1sum -b $(find ${CONTENT} -type f) > ${CONTENT}/SHA1SUMS
-sha1sum ${CONTENT}/SHA1SUMS > ${CONTENT}/SHA1SUMSSUM
+if echo $TAG | grep -q dirty; then
+    TAG=dev
+fi
 
-tar czf ../dist/artifacts/go-agent.tar.gz ${CONTENT}
-echo Created ../dist/artifacts/go-agent.tar.gz
+cp ../bin/agent .
+
+IMAGE=${REPO}/agent:${TAG}
+docker build --build-arg IMAGE=${IMAGE} -t ${IMAGE} .
+echo ${IMAGE} > ../dist/images
+echo Built ${IMAGE}
