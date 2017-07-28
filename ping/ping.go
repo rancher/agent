@@ -276,6 +276,7 @@ func physicalHost() (Resource, error) {
 
 func addContainer(state string, container types.Container, containers []Resource) []Resource {
 	containerData := Resource{
+		Type: 	  "instance",
 		UUID:     utils.GetUUID(container),
 		State:    state,
 		ExternalId: container.ID,
