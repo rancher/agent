@@ -9,7 +9,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/rancher/agent/hostInfo"
+	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/utils"
 )
 

@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/hostInfo"
+	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/shirou/gopsutil/disk"

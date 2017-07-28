@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/runtime"
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	v2 "github.com/rancher/go-rancher/v2"
-	"fmt"
 )
 
 func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherClient) error {

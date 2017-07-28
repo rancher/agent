@@ -16,7 +16,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/hostInfo"
+	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/progress"
 	"github.com/rancher/agent/utils"
 	v2 "github.com/rancher/go-rancher/v2"

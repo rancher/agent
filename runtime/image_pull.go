@@ -45,7 +45,7 @@ type RegistryCredential struct {
 }
 
 func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient *client.Client, opts *v2.DockerBuild, credential v2.Credential) (types.ImageInspect, error) {
-	imageName := utils.ParseRepoTag(params.ImageUUID)
+	imageName := params.ImageUUID
 	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), imageName)
 	if err != nil && !client.IsErrImageNotFound(err) {
 		return types.ImageInspect{}, errors.Wrap(err, "failed to inspect image")

@@ -2,14 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -92,19 +86,6 @@ func HasLabel(containerSpec v2.Container) bool {
 	return ok
 }
 
-func ReadBuffer(reader io.ReadCloser) string {
-	buffer := make([]byte, 1024)
-	s := ""
-	for {
-		n, err := reader.Read(buffer)
-		s = s + string(buffer[:n])
-		if err != nil {
-			break
-		}
-	}
-	return s
-}
-
 func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, bool) {
 	var tempMap map[string]interface{}
 	tempMap = m
@@ -125,22 +106,6 @@ func GetFieldsIfExist(m map[string]interface{}, fields ...string) (interface{}, 
 		}
 	}
 	return tempMap, true
-}
-
-func TempFileInWorkDir(destination string) string {
-	dstPath := path.Join(destination, TempName)
-	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		os.MkdirAll(dstPath, 0777)
-	}
-	return TempFile(dstPath)
-}
-
-func TempFile(destination string) string {
-	tempDst, err := ioutil.TempFile(destination, TempPrefix)
-	if err == nil {
-		return tempDst.Name()
-	}
-	return ""
 }
 
 func InterfaceToString(v interface{}) string {
@@ -316,14 +281,6 @@ func GetProgress(request *revents.Event, cli *rv2.RancherClient) *progress.Progr
 		Client:  cli,
 	}
 	return &progress
-}
-
-func GetExitCode(err error) int {
-	if exitError, ok := err.(*exec.ExitError); ok {
-		status := exitError.Sys().(syscall.WaitStatus)
-		return status.ExitStatus()
-	}
-	return -1
 }
 
 func ToMapString(m map[string]interface{}) map[string]string {

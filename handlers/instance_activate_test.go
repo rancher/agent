@@ -339,5 +339,11 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].Memory = 12000000
 	request.Containers[0].MemorySwap = 16000000
 	request.Containers[0].ExtraHosts = []string{"host:1.1.1.1", "b:2.2.2.2"}
-	request.Containers[0].
+	request.Containers[0].PidMode = "host"
+	request.Containers[0].LogConfig = &v2.LogConfig{
+		Driver: "json-file",
+		Config: map[string]interface{}{
+			"max-size": "10",
+		},
+	}
 }

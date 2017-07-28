@@ -41,10 +41,6 @@ func APIProxyListenPort() int {
 	return ret
 }
 
-func Builds() string {
-	return DefaultValue("BUILD_DIR", path.Join(Home(), "builds"))
-}
-
 func StateDir() string {
 	return DefaultValue("STATE_DIR", Home())
 }

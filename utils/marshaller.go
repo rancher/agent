@@ -19,11 +19,11 @@ func FromString(rawstring string) map[string]interface{} {
 func StructToMap(v interface{}) (map[string]interface{}, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, "failed to marshal data")
+		return map[string]interface{}{}, errors.Wrapf(err, "failed to marshal data. Body: %v", v)
 	}
 	event := map[string]interface{}{}
 	if err := json.Unmarshal(b, &event); err != nil {
-		return map[string]interface{}{}, errors.Wrap(err, "failed to unmarshal data")
+		return map[string]interface{}{}, errors.Wrapf(err, "failed to unmarshal data. Body: %v", b)
 	}
 	return event, nil
 }
@@ -31,10 +31,10 @@ func StructToMap(v interface{}) (map[string]interface{}, error) {
 func Unmarshalling(data interface{}, v interface{}) error {
 	raw, err := json.Marshal(data)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshall object")
+		return errors.Wrapf(err, "failed to marshall object. Body: %v", data)
 	}
 	if err := json.Unmarshal(raw, &v); err != nil {
-		return errors.Wrap(err, "failed to unmarshall object")
+		return errors.Wrapf(err, "failed to unmarshall object. Body: %v", raw)
 	}
 	return nil
 }

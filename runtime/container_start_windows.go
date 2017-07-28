@@ -26,7 +26,7 @@ func setupNetworking(instance types.Instance, host types.Host, config *container
 	return nil
 }
 
-func setupFieldsHostConfig(fields types.InstanceFields, hostConfig *container.HostConfig) {
+func setupFieldsHostConfig(containerSpec v2.ContainerSpec, hostConfig *container.HostConfig) {
 
 	hostConfig.LogConfig.Type = fields.LogConfig.Driver
 
@@ -43,6 +43,8 @@ func setupFieldsHostConfig(fields types.InstanceFields, hostConfig *container.Ho
 	hostConfig.IOMaximumIOps = fields.IOMaximumIOps
 
 	hostConfig.IOMaximumBandwidth = fields.IOMaximumBandwidth
+
+	hostConfig.SecurityOpt = containerSpec.SecurityOpt
 }
 
 func setupDeviceOptions(hostConfig *container.HostConfig, instance types.Instance, infoData types.InfoData) {

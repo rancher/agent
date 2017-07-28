@@ -51,12 +51,6 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, credentials
 		name = fmt.Sprintf("r-%s-%s", containerSpec.Name, parts[0])
 	}
 
-	// setup imageUuid
-	imageTag, err := getImageTag(containerSpec)
-	if err != nil {
-		return errors.Wrap(err, "failed to get image tag")
-	}
-
 	// creating managed volumes
 	rancherBindMounts, err := setupRancherFlexVolume(volumes, containerSpec.DataVolumes, progress)
 	if err != nil {
@@ -88,7 +82,7 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, credentials
 		if credentials != nil && len(credentials) > 0 {
 			credential = credentials[0]
 		}
-		newID, err := createContainer(runtimeClient, &spec.config, &spec.hostConfig, imageTag, containerSpec, credential, name, progress)
+		newID, err := createContainer(runtimeClient, &spec.config, &spec.hostConfig, containerSpec, credential, name, progress)
 		if err != nil {
 			return errors.Wrap(err, "failed to create container")
 		}
@@ -196,27 +190,26 @@ type PullParams struct {
 	ImageUUID string
 }
 
-func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, imageTag string, containerSpec v2.Container, credential v2.Credential, name string, progress *progress.Progress) (string, error) {
+func createContainer(dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, containerSpec v2.Container, credential v2.Credential, name string, progress *progress.Progress) (string, error) {
 	labels := config.Labels
 	if labels[PullImageLabels] == "always" {
 		params := PullParams{
 			Tag:       "",
 			Mode:      "all",
 			Complete:  false,
-			ImageUUID: containerSpec.ImageUuid,
+			ImageUUID: containerSpec.Image,
 		}
 		_, err := DoInstancePull(params, progress, dockerClient, containerSpec.Build, credential)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to pull instance")
 		}
 	}
-	imageName := utils.ParseRepoTag(imageTag)
-	config.Image = imageName
+	config.Image = containerSpec.Image
 
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
-		if err := ImagePull(progress, dockerClient, imageTag, containerSpec.Build, credential); err != nil {
+		if err := ImagePull(progress, dockerClient, containerSpec.Image, containerSpec.Build, credential); err != nil {
 			return "", errors.Wrap(err, "failed to pull image")
 		}
 		containerResponse, err1 := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)

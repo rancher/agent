@@ -9,32 +9,12 @@ import (
 	"github.com/docker/docker/api/types"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/hostInfo"
+	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-	engineCli "github.com/docker/docker/client"
 )
-
-type Handler struct {
-	compute      *ComputeHandler
-	storage      *StorageHandler
-	ping         *PingHandler
-}
-
-type ComputeHandler struct {
-	dockerClient            *engineCli.Client
-}
-
-type PingHandler struct {
-	dockerClient *engineCli.Client
-	collectors   []hostInfo.Collector
-}
-
-type StorageHandler struct {
-	dockerClient *engineCli.Client
-}
 
 func GetHandlers() (map[string]revents.EventHandler, error) {
 	handler := initializeHandlers()
@@ -154,7 +134,7 @@ func initializeHandlers() *Handler {
 		hostInfo.CloudProviderCollector{},
 	}
 	computerHandler := ComputeHandler{
-		dockerClient:            runtimeClient,
+		dockerClient: runtimeClient,
 	}
 	storageHandler := StorageHandler{
 		dockerClient: runtimeClient,
@@ -164,9 +144,9 @@ func initializeHandlers() *Handler {
 		collectors:   Collectors,
 	}
 	handler := Handler{
-		compute:      &computerHandler,
-		storage:      &storageHandler,
-		ping:         &pingHandler,
+		compute: &computerHandler,
+		storage: &storageHandler,
+		ping:    &pingHandler,
 	}
 	return &handler
 }

@@ -66,10 +66,7 @@
 						"startOnCreate": true,
 						"ioMaximumBandwidth": null,
 						"memorySwappiness": null,
-						"logConfig": {
-							"driver": "",
-							"config": {}
-						},
+						"logConfig": null,
 						"dataVolumesFrom": [],
 						"ioMaximumIOps": null,
 						"publishAllPorts": false,
@@ -80,9 +77,7 @@
 						"volumeDriver": null,
 						"healthRetries": null,
 						"oomScoreAdj": null,
-						"restartPolicy": {
-							"name": "always"
-						},
+						"restartPolicy": null,
 						"ip6": null,
 						"environment": {},
 						"cpuPeriod": null,
