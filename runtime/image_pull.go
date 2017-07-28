@@ -44,7 +44,7 @@ type RegistryCredential struct {
 	}
 }
 
-func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient *client.Client, opts *v2.DockerBuild, credential v2.Credential) (types.ImageInspect, error) {
+func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient *client.Client, credential v2.Credential) (types.ImageInspect, error) {
 	imageName := params.ImageUUID
 	existing, _, err := dockerClient.ImageInspectWithRaw(context.Background(), imageName)
 	if err != nil && !client.IsErrImageNotFound(err) {
@@ -60,7 +60,7 @@ func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient
 		}
 		return types.ImageInspect{}, nil
 	}
-	if err := ImagePull(progress, dockerClient, params.ImageUUID, opts, credential); err != nil {
+	if err := ImagePull(progress, dockerClient, params.ImageUUID, credential); err != nil {
 		return types.ImageInspect{}, errors.Wrap(err, "failed to pull image")
 	}
 
@@ -77,7 +77,7 @@ func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient
 	return inspect, nil
 }
 
-func ImagePull(progress *progress.Progress, client *client.Client, imageUUID string, buildOptions *v2.DockerBuild, credential v2.Credential) error {
+func ImagePull(progress *progress.Progress, client *client.Client, imageUUID string, credential v2.Credential) error {
 	imageName := utils.ParseRepoTag(imageUUID)
 	named, err := reference.ParseNormalizedNamed(imageName)
 	if err != nil {

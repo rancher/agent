@@ -306,7 +306,7 @@ func (s *EventTestSuite) TestInstanceActivateNoName(c *check.C) {
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
 	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.ContainerJSONBase.Name, check.Equals, request.Containers[0].Uuid)
+	c.Assert(inspect.ContainerJSONBase.Name, check.Equals, "/r-" + request.Containers[0].Uuid)
 }
 
 func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
@@ -346,4 +346,28 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 			"max-size": "10",
 		},
 	}
+	request.Containers[0].SecurityOpt = []string{"label:foo", "label:bar"}
+	request.Containers[0].WorkingDir = "/home"
+	request.Containers[0].EntryPoint = []string{"./sleep.sh"}
+	request.Containers[0].Tty = true
+	request.Containers[0].StdinOpen = true
+	request.Containers[0].DomainName = "rancher.io"
+	request.Containers[0].Devices = []string{"/dev/null:/dev/xnull", "/dev/random:/dev/xrandom:rw"}
+	request.Containers[0].Dns = []string{"1.2.3.4", "8.8.8.8"}
+	request.Containers[0].DnsSearch = []string{"5.6.7.8", "7.7.7.7"}
+	request.Containers[0].CapAdd = []string{"MKNOD", "SYS_ADMIN"}
+	request.Containers[0].CapDrop = []string{"MKNOD", "SYS_ADMIN"}
+	request.Containers[0].Privileged = true
+	request.Containers[0].RestartPolicy = &v2.RestartPolicy{
+		Name: "always",
+		MaximumRetryCount: 2,
+	}
+
+	event.Data["deploymentSyncRequest"] = request
+	rawEvent := marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	c.Assert(reply.Transitioning != "error", check.Equals, true)
+
+	c.Assert(inspect.ContainerJSONBase.Name, check.Equals, "/r-" + request.Containers[0].Uuid)
 }

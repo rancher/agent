@@ -64,8 +64,6 @@ type AgentOperations interface {
 	ActionReconnect(*Agent) (*Agent, error)
 
 	ActionRemove(*Agent) (*Agent, error)
-
-	ActionUpdate(*Agent) (*Agent, error)
 }
 
 func newAgentClient(rancherClient *RancherClient) *AgentClient {
@@ -168,15 +166,6 @@ func (c *AgentClient) ActionRemove(resource *Agent) (*Agent, error) {
 	resp := &Agent{}
 
 	err := c.rancherClient.doAction(AGENT_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *AgentClient) ActionUpdate(resource *Agent) (*Agent, error) {
-
-	resp := &Agent{}
-
-	err := c.rancherClient.doAction(AGENT_TYPE, "update", &resource.Resource, nil, resp)
 
 	return resp, err
 }

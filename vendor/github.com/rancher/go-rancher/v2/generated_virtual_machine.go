@@ -97,8 +97,6 @@ type VirtualMachine struct {
 
 	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
 
-	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
-
 	InstanceTriggeredStop string `json:"instanceTriggeredStop,omitempty" yaml:"instance_triggered_stop,omitempty"`
 
 	IoMaximumBandwidth int64 `json:"ioMaximumBandwidth,omitempty" yaml:"io_maximum_bandwidth,omitempty"`
@@ -108,6 +106,8 @@ type VirtualMachine struct {
 	Ip string `json:"ip,omitempty" yaml:"ip,omitempty"`
 
 	Ip6 string `json:"ip6,omitempty" yaml:"ip6,omitempty"`
+
+	IpcContainerId string `json:"ipcContainerId,omitempty" yaml:"ipc_container_id,omitempty"`
 
 	IpcMode string `json:"ipcMode,omitempty" yaml:"ipc_mode,omitempty"`
 
@@ -150,6 +150,8 @@ type VirtualMachine struct {
 	OomKillDisable bool `json:"oomKillDisable,omitempty" yaml:"oom_kill_disable,omitempty"`
 
 	OomScoreAdj int64 `json:"oomScoreAdj,omitempty" yaml:"oom_score_adj,omitempty"`
+
+	PidContainerId string `json:"pidContainerId,omitempty" yaml:"pid_container_id,omitempty"`
 
 	PidsLimit int64 `json:"pidsLimit,omitempty" yaml:"pids_limit,omitempty"`
 

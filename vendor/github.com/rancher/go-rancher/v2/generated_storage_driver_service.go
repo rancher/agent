@@ -47,6 +47,8 @@ type StorageDriverService struct {
 
 	LbConfig *LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
+	LbTargetConfig *LbTargetConfig `json:"lbTargetConfig,omitempty" yaml:"lb_target_config,omitempty"`
+
 	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -70,8 +72,6 @@ type StorageDriverService struct {
 	ScaleMax int64 `json:"scaleMax,omitempty" yaml:"scale_max,omitempty"`
 
 	ScaleMin int64 `json:"scaleMin,omitempty" yaml:"scale_min,omitempty"`
-
-	SecondaryLaunchConfigs []SecondaryLaunchConfig `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
 
 	Selector string `json:"selector,omitempty" yaml:"selector,omitempty"`
 

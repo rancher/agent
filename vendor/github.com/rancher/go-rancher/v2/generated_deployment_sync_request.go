@@ -11,6 +11,8 @@ type DeploymentSyncRequest struct {
 
 	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
 
+	Networks []Network `json:"networks,omitempty" yaml:"networks,omitempty"`
+
 	RegistryCredentials []Credential `json:"registryCredentials,omitempty" yaml:"registry_credentials,omitempty"`
 
 	Revision string `json:"revision,omitempty" yaml:"revision,omitempty"`

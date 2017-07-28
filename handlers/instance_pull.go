@@ -32,7 +32,7 @@ func (h *ComputeHandler) InstancePull(event *revents.Event, cli *v2.RancherClien
 	}
 
 	cred := instancePull.Image.RegistryCredential
-	_, pullErr := runtime.DoInstancePull(imageParams, progress, h.dockerClient, &v2.DockerBuild{}, v2.Credential{
+	_, pullErr := runtime.DoInstancePull(imageParams, progress, h.dockerClient, v2.Credential{
 		PublicValue: cred.PublicValue,
 		SecretValue: cred.SecretValue,
 	})

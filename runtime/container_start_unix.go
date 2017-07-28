@@ -88,8 +88,8 @@ func setupDNSSearch(hostConfig *container.HostConfig, containerSpec v2.Container
 	return nil
 }
 
-func setupNetworking(containerSpec v2.Container, config *container.Config, hostConfig *container.HostConfig, idsMap map[string]string) error {
-	portsSupported, hostnameSupported, err := setupNetworkMode(containerSpec, config, hostConfig, idsMap)
+func setupNetworking(containerSpec v2.Container, config *container.Config, hostConfig *container.HostConfig, idsMap map[string]string, networks []v2.Network) error {
+	portsSupported, hostnameSupported, err := setupNetworkMode(containerSpec, networks, config, hostConfig, idsMap)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup network mode")
 	}
@@ -101,7 +101,7 @@ func setupNetworking(containerSpec v2.Container, config *container.Config, hostC
 	return nil
 }
 
-func setupNetworkMode(containerSpec v2.Container, config *container.Config, hostConfig *container.HostConfig, idsMap map[string]string) (bool, bool, error) {
+func setupNetworkMode(containerSpec v2.Container, networks []v2.Network, config *container.Config, hostConfig *container.HostConfig, idsMap map[string]string) (bool, bool, error) {
 	/*
 			Based on the network configuration we choose the network mode to set in
 		    Docker.  We only really look for none, host, or container.  For all
@@ -109,8 +109,13 @@ func setupNetworkMode(containerSpec v2.Container, config *container.Config, host
 	*/
 	portsSupported := true
 	hostnameSupported := true
-	networkMode := containerSpec.NetworkMode
-	if networkMode == "host" {
+	kind := ""
+	for _, network := range networks {
+		if containerSpec.PrimaryNetworkId == network.Id {
+			kind = network.Kind
+		}
+	}
+	if kind == "dockerHost" {
 		portsSupported = false
 		hostnameSupported = false
 		config.NetworkDisabled = false
@@ -121,12 +126,12 @@ func setupNetworkMode(containerSpec v2.Container, config *container.Config, host
 			hostConfig.DNS = nil
 			hostConfig.DNSSearch = nil
 		}
-	} else if networkMode == "none" {
+	} else if kind == "dockerNone" {
 		portsSupported = false
 		config.NetworkDisabled = true
 		hostConfig.NetworkMode = "none"
 		hostConfig.Links = nil
-	} else if networkMode == "container" {
+	} else if kind == "dockerContainer" {
 		// TODO: find network container id
 		portsSupported = false
 		hostnameSupported = false
@@ -134,7 +139,7 @@ func setupNetworkMode(containerSpec v2.Container, config *container.Config, host
 			hostConfig.NetworkMode = container.NetworkMode(fmt.Sprintf("container:%v", idsMap[containerSpec.NetworkContainerId]))
 			hostConfig.Links = nil
 		}
-	} else if networkMode == "managed" {
+	} else if kind == "cni" {
 		portsSupported = false
 		// If this is set true resolv.conf is not setup.
 		config.NetworkDisabled = false

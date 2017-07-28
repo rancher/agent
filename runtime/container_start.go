@@ -35,7 +35,7 @@ var (
 	HTTPProxyList = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
 )
 
-func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
+func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networks []v2.Network, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
 	if utils.IsNoOp(containerSpec) {
 		return nil
 	}
@@ -65,7 +65,7 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, credentials
 	}()
 
 	// setup container spec(config and hostConfig)
-	spec, err := setupContainerSpec(containerSpec, volumes, rancherBindMounts, runtimeClient, progress, idsMap)
+	spec, err := setupContainerSpec(containerSpec, volumes, networks, rancherBindMounts, runtimeClient, progress, idsMap)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate container spec")
 	}
@@ -127,7 +127,7 @@ type dockerContainerSpec struct {
 	hostConfig container.HostConfig
 }
 
-func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, rancherBindMounts []string, runtimeClient *client.Client, progress *progress.Progress, idsMap map[string]string) (dockerContainerSpec, error) {
+func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, networks []v2.Network, rancherBindMounts []string, runtimeClient *client.Client, progress *progress.Progress, idsMap map[string]string) (dockerContainerSpec, error) {
 	config := container.Config{
 		OpenStdin: true,
 	}
@@ -164,7 +164,7 @@ func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, rancher
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up volumes")
 	}
 
-	if err := setupNetworking(containerSpec, &config, &hostConfig, idsMap); err != nil {
+	if err := setupNetworking(containerSpec, &config, &hostConfig, idsMap, networks); err != nil {
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up networking")
 	}
 
@@ -199,7 +199,7 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 			Complete:  false,
 			ImageUUID: containerSpec.Image,
 		}
-		_, err := DoInstancePull(params, progress, dockerClient, containerSpec.Build, credential)
+		_, err := DoInstancePull(params, progress, dockerClient, credential)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to pull instance")
 		}
@@ -209,7 +209,7 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
-		if err := ImagePull(progress, dockerClient, containerSpec.Image, containerSpec.Build, credential); err != nil {
+		if err := ImagePull(progress, dockerClient, containerSpec.Image, credential); err != nil {
 			return "", errors.Wrap(err, "failed to pull image")
 		}
 		containerResponse, err1 := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)

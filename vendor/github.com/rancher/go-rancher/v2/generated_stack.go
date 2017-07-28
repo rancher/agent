@@ -17,8 +17,6 @@ type Stack struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
-	DockerCompose string `json:"dockerCompose,omitempty" yaml:"docker_compose,omitempty"`
-
 	Environment map[string]interface{} `json:"environment,omitempty" yaml:"environment,omitempty"`
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
@@ -36,8 +34,6 @@ type Stack struct {
 	PreviousEnvironment map[string]interface{} `json:"previousEnvironment,omitempty" yaml:"previous_environment,omitempty"`
 
 	PreviousExternalId string `json:"previousExternalId,omitempty" yaml:"previous_external_id,omitempty"`
-
-	RancherCompose string `json:"rancherCompose,omitempty" yaml:"rancher_compose,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
@@ -81,8 +77,6 @@ type StackOperations interface {
 
 	ActionAddoutputs(*Stack, *AddOutputsInput) (*Stack, error)
 
-	ActionCancelupgrade(*Stack) (*Stack, error)
-
 	ActionCreate(*Stack) (*Stack, error)
 
 	ActionDeactivateservices(*Stack) (*Stack, error)
@@ -90,8 +84,6 @@ type StackOperations interface {
 	ActionError(*Stack) (*Stack, error)
 
 	ActionExportconfig(*Stack, *ComposeConfigInput) (*ComposeConfig, error)
-
-	ActionFinishupgrade(*Stack) (*Stack, error)
 
 	ActionRemove(*Stack) (*Stack, error)
 
@@ -170,15 +162,6 @@ func (c *StackClient) ActionAddoutputs(resource *Stack, input *AddOutputsInput) 
 	return resp, err
 }
 
-func (c *StackClient) ActionCancelupgrade(resource *Stack) (*Stack, error) {
-
-	resp := &Stack{}
-
-	err := c.rancherClient.doAction(STACK_TYPE, "cancelupgrade", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *StackClient) ActionCreate(resource *Stack) (*Stack, error) {
 
 	resp := &Stack{}
@@ -211,15 +194,6 @@ func (c *StackClient) ActionExportconfig(resource *Stack, input *ComposeConfigIn
 	resp := &ComposeConfig{}
 
 	err := c.rancherClient.doAction(STACK_TYPE, "exportconfig", &resource.Resource, input, resp)
-
-	return resp, err
-}
-
-func (c *StackClient) ActionFinishupgrade(resource *Stack) (*Stack, error) {
-
-	resp := &Stack{}
-
-	err := c.rancherClient.doAction(STACK_TYPE, "finishupgrade", &resource.Resource, nil, resp)
 
 	return resp, err
 }

@@ -15,10 +15,6 @@ type InServiceUpgradeStrategy struct {
 
 	PreviousLaunchConfig *LaunchConfig `json:"previousLaunchConfig,omitempty" yaml:"previous_launch_config,omitempty"`
 
-	PreviousSecondaryLaunchConfigs []SecondaryLaunchConfig `json:"previousSecondaryLaunchConfigs,omitempty" yaml:"previous_secondary_launch_configs,omitempty"`
-
-	SecondaryLaunchConfigs []SecondaryLaunchConfig `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
-
 	StartFirst bool `json:"startFirst,omitempty" yaml:"start_first,omitempty"`
 }
 

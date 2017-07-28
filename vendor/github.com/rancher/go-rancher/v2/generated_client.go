@@ -20,7 +20,6 @@ type RancherClient struct {
 	ComposeConfigInput                 ComposeConfigInputOperations
 	Container                          ContainerOperations
 	ContainerConfig                    ContainerConfigOperations
-	ContainerEvent                     ContainerEventOperations
 	ContainerExec                      ContainerExecOperations
 	ContainerLogs                      ContainerLogsOperations
 	ContainerProxy                     ContainerProxyOperations
@@ -34,7 +33,6 @@ type RancherClient struct {
 	DeploymentSyncResponse             DeploymentSyncResponseOperations
 	DeploymentUnit                     DeploymentUnitOperations
 	DnsService                         DnsServiceOperations
-	DockerBuild                        DockerBuildOperations
 	DynamicSchema                      DynamicSchemaOperations
 	ExternalDnsEvent                   ExternalDnsEventOperations
 	ExternalEvent                      ExternalEventOperations
@@ -64,6 +62,7 @@ type RancherClient struct {
 	LbConfig                           LbConfigOperations
 	LbTargetConfig                     LbTargetConfigOperations
 	Ldapconfig                         LdapconfigOperations
+	Link                               LinkOperations
 	LoadBalancerCookieStickinessPolicy LoadBalancerCookieStickinessPolicyOperations
 	LoadBalancerService                LoadBalancerServiceOperations
 	LocalAuthConfig                    LocalAuthConfigOperations
@@ -99,7 +98,6 @@ type RancherClient struct {
 	Revision                           RevisionOperations
 	ScalingGroup                       ScalingGroupOperations
 	ScheduledUpgrade                   ScheduledUpgradeOperations
-	SecondaryLaunchConfig              SecondaryLaunchConfigOperations
 	Secret                             SecretOperations
 	SecretReference                    SecretReferenceOperations
 	SelectorService                    SelectorServiceOperations
@@ -153,7 +151,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.ComposeConfigInput = newComposeConfigInputClient(client)
 	client.Container = newContainerClient(client)
 	client.ContainerConfig = newContainerConfigClient(client)
-	client.ContainerEvent = newContainerEventClient(client)
 	client.ContainerExec = newContainerExecClient(client)
 	client.ContainerLogs = newContainerLogsClient(client)
 	client.ContainerProxy = newContainerProxyClient(client)
@@ -167,7 +164,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.DeploymentSyncResponse = newDeploymentSyncResponseClient(client)
 	client.DeploymentUnit = newDeploymentUnitClient(client)
 	client.DnsService = newDnsServiceClient(client)
-	client.DockerBuild = newDockerBuildClient(client)
 	client.DynamicSchema = newDynamicSchemaClient(client)
 	client.ExternalDnsEvent = newExternalDnsEventClient(client)
 	client.ExternalEvent = newExternalEventClient(client)
@@ -197,6 +193,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.LbConfig = newLbConfigClient(client)
 	client.LbTargetConfig = newLbTargetConfigClient(client)
 	client.Ldapconfig = newLdapconfigClient(client)
+	client.Link = newLinkClient(client)
 	client.LoadBalancerCookieStickinessPolicy = newLoadBalancerCookieStickinessPolicyClient(client)
 	client.LoadBalancerService = newLoadBalancerServiceClient(client)
 	client.LocalAuthConfig = newLocalAuthConfigClient(client)
@@ -232,7 +229,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.Revision = newRevisionClient(client)
 	client.ScalingGroup = newScalingGroupClient(client)
 	client.ScheduledUpgrade = newScheduledUpgradeClient(client)
-	client.SecondaryLaunchConfig = newSecondaryLaunchConfigClient(client)
 	client.Secret = newSecretClient(client)
 	client.SecretReference = newSecretReferenceClient(client)
 	client.SelectorService = newSelectorServiceClient(client)

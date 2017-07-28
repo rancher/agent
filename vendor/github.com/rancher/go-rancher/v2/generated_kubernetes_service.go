@@ -23,6 +23,8 @@ type KubernetesService struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
+	LbTargetConfig *LbTargetConfig `json:"lbTargetConfig,omitempty" yaml:"lb_target_config,omitempty"`
+
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`

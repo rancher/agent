@@ -18,6 +18,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
+	"fmt"
 )
 
 type Handler struct {
@@ -32,6 +33,7 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		return
 	}
 	tokenString := requestURL.Query().Get("token")
+	fmt.Printf("######### %v", tokenString)
 	token, valid := auth.GetAndCheckToken(tokenString)
 	if !valid {
 		return

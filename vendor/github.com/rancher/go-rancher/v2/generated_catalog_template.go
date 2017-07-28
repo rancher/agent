@@ -11,11 +11,7 @@ type CatalogTemplate struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
-	DockerCompose string `json:"dockerCompose,omitempty" yaml:"docker_compose,omitempty"`
-
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	RancherCompose string `json:"rancherCompose,omitempty" yaml:"rancher_compose,omitempty"`
 
 	TemplateId string `json:"templateId,omitempty" yaml:"template_id,omitempty"`
 

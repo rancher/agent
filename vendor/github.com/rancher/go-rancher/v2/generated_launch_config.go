@@ -15,8 +15,6 @@ type LaunchConfig struct {
 
 	BlkioWeight int64 `json:"blkioWeight,omitempty" yaml:"blkio_weight,omitempty"`
 
-	Build *DockerBuild `json:"build,omitempty" yaml:"build,omitempty"`
-
 	CapAdd []string `json:"capAdd,omitempty" yaml:"cap_add,omitempty"`
 
 	CapDrop []string `json:"capDrop,omitempty" yaml:"cap_drop,omitempty"`
@@ -55,8 +53,6 @@ type LaunchConfig struct {
 
 	DataVolumesFrom []string `json:"dataVolumesFrom,omitempty" yaml:"data_volumes_from,omitempty"`
 
-	DataVolumesFromLaunchConfigs []string `json:"dataVolumesFromLaunchConfigs,omitempty" yaml:"data_volumes_from_launch_configs,omitempty"`
-
 	DependsOn []DependsOn `json:"dependsOn,omitempty" yaml:"depends_on,omitempty"`
 
 	DeploymentUnitId string `json:"deploymentUnitId,omitempty" yaml:"deployment_unit_id,omitempty"`
@@ -70,8 +66,6 @@ type LaunchConfig struct {
 	Devices []string `json:"devices,omitempty" yaml:"devices,omitempty"`
 
 	DiskQuota int64 `json:"diskQuota,omitempty" yaml:"disk_quota,omitempty"`
-
-	Disks []VirtualMachineDisk `json:"disks,omitempty" yaml:"disks,omitempty"`
 
 	Dns []string `json:"dns,omitempty" yaml:"dns,omitempty"`
 
@@ -94,6 +88,8 @@ type LaunchConfig struct {
 	ExtraHosts []string `json:"extraHosts,omitempty" yaml:"extra_hosts,omitempty"`
 
 	FirstRunning string `json:"firstRunning,omitempty" yaml:"first_running,omitempty"`
+
+	ForceUpgrade bool `json:"forceUpgrade,omitempty" yaml:"force_upgrade,omitempty"`
 
 	GroupAdd []string `json:"groupAdd,omitempty" yaml:"group_add,omitempty"`
 
@@ -119,8 +115,6 @@ type LaunchConfig struct {
 
 	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
 
-	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
-
 	InstanceTriggeredStop string `json:"instanceTriggeredStop,omitempty" yaml:"instance_triggered_stop,omitempty"`
 
 	IoMaximumBandwidth int64 `json:"ioMaximumBandwidth,omitempty" yaml:"io_maximum_bandwidth,omitempty"`
@@ -130,6 +124,8 @@ type LaunchConfig struct {
 	Ip string `json:"ip,omitempty" yaml:"ip,omitempty"`
 
 	Ip6 string `json:"ip6,omitempty" yaml:"ip6,omitempty"`
+
+	IpcContainerId string `json:"ipcContainerId,omitempty" yaml:"ipc_container_id,omitempty"`
 
 	IpcMode string `json:"ipcMode,omitempty" yaml:"ipc_mode,omitempty"`
 
@@ -161,6 +157,8 @@ type LaunchConfig struct {
 
 	Mounts []MountEntry `json:"mounts,omitempty" yaml:"mounts,omitempty"`
 
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
 	NativeContainer bool `json:"nativeContainer,omitempty" yaml:"native_container,omitempty"`
 
 	NetAlias []string `json:"netAlias,omitempty" yaml:"net_alias,omitempty"`
@@ -169,13 +167,13 @@ type LaunchConfig struct {
 
 	NetworkIds []string `json:"networkIds,omitempty" yaml:"network_ids,omitempty"`
 
-	NetworkLaunchConfig string `json:"networkLaunchConfig,omitempty" yaml:"network_launch_config,omitempty"`
-
 	NetworkMode string `json:"networkMode,omitempty" yaml:"network_mode,omitempty"`
 
 	OomKillDisable bool `json:"oomKillDisable,omitempty" yaml:"oom_kill_disable,omitempty"`
 
 	OomScoreAdj int64 `json:"oomScoreAdj,omitempty" yaml:"oom_score_adj,omitempty"`
+
+	PidContainerId string `json:"pidContainerId,omitempty" yaml:"pid_container_id,omitempty"`
 
 	PidMode string `json:"pidMode,omitempty" yaml:"pid_mode,omitempty"`
 
@@ -259,15 +257,11 @@ type LaunchConfig struct {
 
 	UserPorts []string `json:"userPorts,omitempty" yaml:"user_ports,omitempty"`
 
-	Userdata string `json:"userdata,omitempty" yaml:"userdata,omitempty"`
-
 	UsernsMode string `json:"usernsMode,omitempty" yaml:"userns_mode,omitempty"`
 
 	Uts string `json:"uts,omitempty" yaml:"uts,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
-
-	Vcpu int64 `json:"vcpu,omitempty" yaml:"vcpu,omitempty"`
 
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 

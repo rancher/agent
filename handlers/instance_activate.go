@@ -28,7 +28,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 	}
 
 	if started, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
-		if err := runtime.ContainerStart(request.Containers[0], request.Volumes, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
+		if err := runtime.ContainerStart(request.Containers[0], request.Volumes, request.Networks, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
 			return errors.Wrap(err, "failed to activate instance")
 		}
 	} else if err != nil {
