@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/rancher/agent/ping"
 	"github.com/rancher/agent/utils"
 )
 
@@ -53,10 +52,6 @@ func ParsedPublicKey() error {
 }
 
 func Parse() error {
-	uuid, err := ping.DockerUUID()
-	if err != nil {
-		return err
-	}
 	port, err := strconv.Atoi(utils.HostAPIPort())
 	if err != nil {
 		return err
@@ -66,7 +61,7 @@ func Parse() error {
 	Config.IP = utils.HostAPIIP()
 	Config.DockerURL = "unix:///var/run/docker.sock"
 	Config.Auth = true
-	Config.HostUUID = uuid
+	Config.HostUUID = "DEFAULT"
 	Config.HostUUIDCheck = true
 	Config.Key = utils.JwtPublicKeyFile()
 	Config.EventsPoolSize = 10
