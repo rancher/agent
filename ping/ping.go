@@ -51,12 +51,12 @@ type Resource struct {
 	APIProxy         string                 `json:"apiProxy,omitempty" yaml:"apiProxy,omitempty"`
 	State            string                 `json:"state,omitempty" yaml:"state,omitempty"`
 	SystemContainer  string                 `json:"systemContainer" yaml:"systemContainer"`
-	DockerID         string                 `json:"dockerId,omitempty" yaml:"dockerId,omitempty"`
 	Image            string                 `json:"image,omitempty" yaml:"image,omitempty"`
 	Created          int64                  `json:"created,omitempty" yaml:"created,omitempty"`
 	Memory           uint64                 `json:"memory,omitempty" yaml:"memory,omitempty"`
 	MilliCPU         uint64                 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
 	LocalStorageMb   uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty"`
+	ExternalId       string					`json:"externalId,omitempty" yaml:"externalId,omitempty"`
 }
 
 func DoPingAction(event *revents.Event, resp *Response, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -276,13 +276,9 @@ func physicalHost() (Resource, error) {
 
 func addContainer(state string, container types.Container, containers []Resource) []Resource {
 	containerData := Resource{
-		Type:     "instance",
 		UUID:     utils.GetUUID(container),
 		State:    state,
-		DockerID: container.ID,
-		Image:    container.Image,
-		Labels:   container.Labels,
-		Created:  container.Created,
+		ExternalId: container.ID,
 	}
 	return append(containers, containerData)
 }

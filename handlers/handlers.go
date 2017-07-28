@@ -47,7 +47,7 @@ func cleanLog(f revents.EventHandler) revents.EventHandler {
 	return func(event *revents.Event, cli *client.RancherClient) error {
 		err := f(event, cli)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"err": err}).Debug("Verbose error message")
+			logrus.WithFields(logrus.Fields{"err": err}).Info("Verbose error message")
 		}
 		return errors.Cause(err)
 	}

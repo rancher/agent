@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/runtime"
 	"github.com/rancher/agent/utils"
@@ -42,6 +40,5 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 	data := map[string]interface{}{
 		"deploymentSyncResponse": response,
 	}
-	fmt.Println(data)
 	return reply(data, event, cli)
 }
