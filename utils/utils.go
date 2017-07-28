@@ -185,22 +185,6 @@ func FindContainer(client *engineCli.Client, containerSpec v2.Container, byAgent
 	return "", ContainerNotFoundError{}
 }
 
-func GetUUID(container types.Container) string {
-	if uuid, ok := container.Labels[UUIDLabel]; ok {
-		return uuid
-	}
-
-	names := container.Names
-	if len(names) == 0 {
-		return fmt.Sprintf("no-uuid-%s", container.ID)
-	}
-
-	if strings.HasPrefix(names[0], "/") {
-		return names[0][1:]
-	}
-	return names[0]
-}
-
 func FindFirst(containers []types.Container, f func(types.Container) bool) (types.Container, bool) {
 	for _, c := range containers {
 		if f(c) {
