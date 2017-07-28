@@ -25,6 +25,13 @@ func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Cli
 		return map[string]interface{}{}, errors.Wrap(err, "failed to get container")
 	}
 
+	if containerId == "" {
+		status := v2.InstanceStatus{}
+		status.InstanceUuid = containerSpec.Uuid
+		response.InstanceStatus = []v2.InstanceStatus{status}
+		return response, nil
+	}
+
 	inspect, err := client.ContainerInspect(context.Background(), containerId)
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, "failed to inspect container")
