@@ -6,7 +6,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
-	"github.com/rancher/agent/ping"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
@@ -18,9 +17,6 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	utils.SetAccessKey(accessKey)
 	utils.SetSecretKey(secretKey)
 	utils.SetAPIURL(eventURL)
-
-	ping.PhysicalHostUUID(true)
-	ping.SetDockerUUID()
 
 	logrus.Info("launching hostapi")
 	go hostapi.StartUp()

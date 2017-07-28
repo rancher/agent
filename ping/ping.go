@@ -1,8 +1,6 @@
 package ping
 
 import (
-	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -12,7 +10,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/utils"
@@ -108,13 +105,13 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 	}
 	labels[RancherAgentImage] = rancherImage
 	compute := Resource{
-		Type:             "host",
-		Kind:             "docker",
-		HostName:         hostname,
-		CreateLabels:     createLabels,
-		Labels:           labels,
-		Info:             stats,
-		APIProxy:         utils.HostProxy(),
+		Type:         "host",
+		Kind:         "docker",
+		HostName:     hostname,
+		CreateLabels: createLabels,
+		Labels:       labels,
+		Info:         stats,
+		APIProxy:     utils.HostProxy(),
 	}
 
 	if memOverride := getResourceOverride("CATTLE_MEMORY_OVERRIDE"); memOverride != 0 {
@@ -145,9 +142,9 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 	}
 
 	pool := Resource{
-		Type:     "storagePool",
-		Kind:     "docker",
-		Name:     compute.HostName + " Storage Pool",
+		Type: "storagePool",
+		Kind: "docker",
+		Name: compute.HostName + " Storage Pool",
 	}
 
 	resolvedIP, err := net.LookupIP(utils.DockerHostIP())
@@ -183,14 +180,6 @@ func addInstance(ping *revents.Event, pong *Response, dockerClient *client.Clien
 	if !includeInstance(ping) {
 		return nil
 	}
-	uuidValue, err := DockerUUID()
-	if err != nil {
-		return errors.Wrap(err, "failed to get docker UUID")
-	}
-	pong.Resources = append(pong.Resources, Resource{
-		Type: "hostUuid",
-		UUID: uuidValue,
-	})
 	containers := []Resource{}
 
 	// if we can not get all container in 2s, we will skip it
@@ -285,63 +274,6 @@ func physicalHost() (Resource, error) {
 	}, nil
 }
 
-func physicalHostUUIDFile() string {
-	defValue := fmt.Sprintf("%s/.physical_host_uuid", utils.StateDir())
-	return utils.DefaultValue("PHYSICAL_HOST_UUID_FILE", defValue)
-}
-
-func PhysicalHostUUID(forceWrite bool) (string, error) {
-	return GetUUIDFromFile("PHYSICAL_HOST_UUID", physicalHostUUIDFile(), forceWrite)
-}
-
-func getUUIDFromFile(uuidFilePath string) (string, error) {
-	uuidValue := ""
-
-	fileBuffer, err := ioutil.ReadFile(uuidFilePath)
-	if err != nil && !os.IsNotExist(err) {
-		return "", errors.Wrap(err, "failed to read uuid file")
-	}
-	uuidValue = string(fileBuffer)
-	if uuidValue == "" {
-		newUUID, err := uuid.NewV4()
-		if err != nil {
-			return "", errors.Wrap(err, "failed to generate uuid")
-		}
-		uuidValue = newUUID.String()
-		file, err := os.Create(uuidFilePath)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to create uuid file")
-		}
-		if _, err := file.WriteString(uuidValue); err != nil {
-			return "", errors.Wrap(err, "failed to write uuid to file")
-		}
-	}
-	return uuidValue, nil
-}
-
-func GetUUIDFromFile(envName string, uuidFilePath string, forceWrite bool) (string, error) {
-	uuidValue := utils.DefaultValue(envName, "")
-	if uuidValue != "" {
-		if forceWrite {
-			_, err := os.Open(uuidFilePath)
-			if err == nil {
-				os.Remove(uuidFilePath)
-			} else if !os.IsNotExist(err) {
-				return "", errors.Wrap(err, "failed to open uuid file")
-			}
-			file, err := os.Create(uuidFilePath)
-			if err != nil {
-				return "", errors.Wrap(err, "failed to create uuid file")
-			}
-			if _, err := file.WriteString(uuidValue); err != nil {
-				return "", errors.Wrap(err, "failed to write uuid to file")
-			}
-		}
-		return uuidValue, nil
-	}
-	return getUUIDFromFile(uuidFilePath)
-}
-
 func addContainer(state string, container types.Container, containers []Resource) []Resource {
 	containerData := Resource{
 		Type:     "instance",
@@ -353,17 +285,4 @@ func addContainer(state string, container types.Container, containers []Resource
 		Created:  container.Created,
 	}
 	return append(containers, containerData)
-}
-
-func SetDockerUUID() (string, error) {
-	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), true)
-}
-
-func DockerUUID() (string, error) {
-	return GetUUIDFromFile("DOCKER_UUID", dockerUUIDFile(), false)
-}
-
-func dockerUUIDFile() string {
-	defValue := fmt.Sprintf("%v/.docker_uuid", utils.StateDir())
-	return utils.DefaultValue("DOCKER_UUID_FILE", defValue)
 }
