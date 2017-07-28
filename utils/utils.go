@@ -158,7 +158,7 @@ func FindContainer(client *engineCli.Client, containerSpec v2.Container, byAgent
 		}
 	}
 	if cont, ok := FindFirst(containers, func(c types.Container) bool {
-		if GetUUID(c) == containerSpec.Uuid {
+		if c.Labels[UUIDLabel] == containerSpec.Uuid {
 			return true
 		}
 		return false
