@@ -81,15 +81,16 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		stats = data
 	}
 
-	physicalHost, err := physicalHost()
-	if err != nil {
-		return errors.Wrap(err, "failed to get physical host")
-	}
-
 	hostname, err := utils.Hostname()
 	if err != nil {
 		return errors.Wrap(err, "failed to get hostname")
 	}
+
+	physicalHost, err := physicalHost(hostname)
+	if err != nil {
+		return errors.Wrap(err, "failed to get physical host")
+	}
+
 	labels, err := getHostLabels(collectors)
 	if err != nil {
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
@@ -261,11 +262,7 @@ func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[st
 	return runningContainers, nonRunningContainers, nil
 }
 
-func physicalHost() (Resource, error) {
-	hostname, err := utils.Hostname()
-	if err != nil {
-		return Resource{}, errors.Wrap(err, "failed to get hostname")
-	}
+func physicalHost(hostname string) (Resource, error) {
 	return Resource{
 		Type: "physicalHost",
 		Kind: "physicalHost",

@@ -11,7 +11,7 @@ import (
 	"gopkg.in/check.v1"
 )
 
-func (s *EventTestSuite) TestConflictVolumeRemove(c *check.C) {
+func (s *EventTestSuite) unTestConflictVolumeRemove(c *check.C) {
 	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
 
 	var request v2.DeploymentSyncRequest

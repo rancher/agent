@@ -19,7 +19,7 @@ func ContainerRemove(containerSpec v2.Container, dockerClient *client.Client) er
 	if err := utils.RemoveContainer(dockerClient, containerId); err != nil {
 		return errors.Wrap(err, "failed to remove container")
 	}
-	logrus.Infof("rancher id [%v]: Container [%v]with docker id [%v] has been removed", containerSpec.Id, containerSpec.Name, containerId)
+	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been removed", containerSpec.Id, containerSpec.Name, containerId)
 	return nil
 }
 

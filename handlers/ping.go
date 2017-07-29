@@ -20,9 +20,8 @@ func (h *PingHandler) Ping(event *revents.Event, cli *v2.RancherClient) error {
 			return errors.Wrap(err, "failed to do ping action")
 		}
 	}
-	data, err := utils.StructToMap(resp)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshall response data")
+	data := map[string]interface{}{
+		"resources": resp.Resources,
 	}
 	return reply(data, event, cli)
 }

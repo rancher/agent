@@ -77,8 +77,7 @@ func DoInstancePull(params PullParams, progress *progress.Progress, dockerClient
 	return inspect, nil
 }
 
-func ImagePull(progress *progress.Progress, client *client.Client, imageUUID string, credential v2.Credential) error {
-	imageName := utils.ParseRepoTag(imageUUID)
+func ImagePull(progress *progress.Progress, client *client.Client, imageName string, credential v2.Credential) error {
 	named, err := reference.ParseNormalizedNamed(imageName)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse normalized image name")

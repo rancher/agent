@@ -124,13 +124,6 @@ func InterfaceToBool(v interface{}) bool {
 	return false
 }
 
-func ParseRepoTag(name string) string {
-	if strings.HasPrefix(name, "docker:") {
-		name = name[7:]
-	}
-	return name
-}
-
 type ContainerNotFoundError struct {
 }
 

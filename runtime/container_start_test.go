@@ -9,10 +9,6 @@ import (
 	"github.com/rancher/agent/utils"
 	v2 "github.com/rancher/go-rancher/v2"
 	"gopkg.in/check.v1"
-	"github.com/patrickmn/go-cache"
-	"golang.org/x/net/context"
-	"github.com/docker/docker/api/types"
-	"time"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -63,5 +59,3 @@ func (s *ContainerStartTestSuite) TestSetupProxy(c *check.C) {
 	c.Assert(utils.SearchInList(config6.Env, "http_proxy="), check.Equals, true)
 	c.Assert(utils.SearchInList(config6.Env, "https_proxy=foo"), check.Equals, true)
 }
-
-

@@ -8,11 +8,14 @@ import (
 	"gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&ComputeTestSuite{})
+type ImagePullTestSuite struct {
+}
 
-func (s *ComputeTestSuite) TestDoImageActivate(c *check.C) {
+var _ = check.Suite(&ContainerStartTestSuite{})
+
+func (s *ImagePullTestSuite) TestDoImageActivate(c *check.C) {
 	imageUUID := "docker:badimage"
 	client := utils.GetRuntimeClient("docker", utils.DefaultVersion)
-	err := ImagePull(nil, client, imageUUID, &v2.DockerBuild{}, RegistryCredential{})
+	err := ImagePull(nil, client, imageUUID, v2.Credential{})
 	c.Check(err, check.NotNil)
 }

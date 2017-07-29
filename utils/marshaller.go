@@ -23,7 +23,7 @@ func StructToMap(v interface{}) (map[string]interface{}, error) {
 	}
 	event := map[string]interface{}{}
 	if err := json.Unmarshal(b, &event); err != nil {
-		return map[string]interface{}{}, errors.Wrapf(err, "failed to unmarshal data. Body: %v", b)
+		return map[string]interface{}{}, errors.Wrapf(err, "failed to unmarshal data. Body: %v", string(b))
 	}
 	return event, nil
 }
@@ -34,7 +34,7 @@ func Unmarshalling(data interface{}, v interface{}) error {
 		return errors.Wrapf(err, "failed to marshall object. Body: %v", data)
 	}
 	if err := json.Unmarshal(raw, &v); err != nil {
-		return errors.Wrapf(err, "failed to unmarshall object. Body: %v", raw)
+		return errors.Wrapf(err, "failed to unmarshall object. Body: %v", string(raw))
 	}
 	return nil
 }

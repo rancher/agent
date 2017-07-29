@@ -43,7 +43,7 @@ func ContainerStop(containerSpec v2.Container, volumes []v2.Volume, client *clie
 	} else if !ok {
 		return fmt.Errorf("Failed to stop container %v", containerSpec.Uuid)
 	}
-	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been deactivated", containerSpec.Id, containerSpec.Name, containerId)
+	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been stopped", containerSpec.Id, containerSpec.Name, containerId)
 	return nil
 }
 

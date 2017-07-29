@@ -249,30 +249,28 @@ func setupPorts(config *container.Config, containerSpec v2.Container, hostConfig
 	//ports := []types.Port{}
 	exposedPorts := map[nat.Port]struct{}{}
 	bindings := nat.PortMap{}
-	if containerSpec.Ports != nil && len(containerSpec.Ports) > 0 {
-		for _, endpoint := range containerSpec.PublicEndpoints {
-			//ports = append(ports, types.Port{PrivatePort: uint16(endpoint.PrivatePort), Protocol: endpoint.Protocol})
-			if endpoint.PrivatePort != 0 {
-				bind := nat.Port(fmt.Sprintf("%v/%v", endpoint.PrivatePort, endpoint.Protocol))
-				bindAddr := endpoint.BindIpAddress
-				if _, ok := bindings[bind]; !ok {
-					bindings[bind] = []nat.PortBinding{
-						{
-							HostIP:   bindAddr,
-							HostPort: strconv.Itoa(int(endpoint.PublicPort)),
-						},
-					}
-				} else {
-					bindings[bind] = append(bindings[bind], nat.PortBinding{
-						HostIP: bindAddr,
+	for _, endpoint := range containerSpec.PublicEndpoints {
+		if endpoint.PrivatePort != 0 {
+			bind := nat.Port(fmt.Sprintf("%v/%v", endpoint.PrivatePort, endpoint.Protocol))
+			bindAddr := endpoint.BindIpAddress
+			if _, ok := bindings[bind]; !ok {
+				bindings[bind] = []nat.PortBinding{
+					{
+						HostIP:   bindAddr,
 						HostPort: strconv.Itoa(int(endpoint.PublicPort)),
-					})
+					},
 				}
-				exposedPorts[bind] = struct{}{}
+			} else {
+				bindings[bind] = append(bindings[bind], nat.PortBinding{
+					HostIP: bindAddr,
+					HostPort: strconv.Itoa(int(endpoint.PublicPort)),
+				})
 			}
-
+			exposedPorts[bind] = struct{}{}
 		}
+
 	}
+	fmt.Printf("#### %+v", bindings)
 
 	config.ExposedPorts = exposedPorts
 
