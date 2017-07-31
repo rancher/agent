@@ -318,6 +318,13 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
+	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
+	info, err := dockerClient.Info(context.Background())
+	if err != nil {
+		c.Fatal(err)
+	}
+	swap := info.SwapLimit
+
 	request.Containers[0].PublicEndpoints = []v2.PublicEndpoint{
 		{
 			PublicPort:  10000,
@@ -390,7 +397,12 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	c.Assert(inspect.HostConfig.Memory, check.DeepEquals, int64(12000000))
 	c.Assert(inspect.Config.Labels[UUIDLabel], check.DeepEquals, request.Containers[0].Uuid)
 	c.Assert(inspect.Config.Labels["foo"], check.DeepEquals, "bar")
-	c.Assert(inspect.HostConfig.MemorySwap, check.DeepEquals, int64(16000000))
+	if swap {
+		c.Assert(inspect.HostConfig.MemorySwap, check.DeepEquals, int64(16000000))
+	} else {
+		c.Assert(inspect.HostConfig.MemorySwap, check.DeepEquals, int64(-1))
+	}
+
 	c.Assert(inspect.HostConfig.ExtraHosts, check.DeepEquals, []string{"host:1.1.1.1", "b:2.2.2.2"})
 	c.Assert(inspect.HostConfig.PidMode, check.Equals, container.PidMode("host"))
 	c.Assert(inspect.HostConfig.LogConfig.Type, check.Equals, "json-file")
