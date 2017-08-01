@@ -241,6 +241,7 @@ type InstanceFields struct {
 	DiskQuota          int64
 	UsernsMode         container.UsernsMode
 	Build              BuildOptions
+	StopTimeout        *int
 }
 
 type LogConfig struct {
