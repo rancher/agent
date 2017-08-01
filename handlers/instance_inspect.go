@@ -22,10 +22,6 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v2.RancherCl
 		return errors.Wrap(err, "failed to inspect instance")
 	}
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
-	inspectJSON, err := utils.StructToMap(inspectResp)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshall response data")
-	}
-	result := map[string]interface{}{event.ResourceType: inspectJSON}
+	result := map[string]interface{}{event.ResourceType: inspectResp}
 	return reply(result, event, cli)
 }

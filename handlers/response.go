@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/progress"
@@ -44,7 +43,6 @@ func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Cli
 			return nil, errors.Wrap(err, "failed to get ip of the container")
 		}
 	}
-	logrus.Infof("############# %v", dockerIP)
 	status := v2.InstanceStatus{}
 	status.ExternalId = inspect.ID
 	dockerInspect, err := utils.StructToMap(inspect)

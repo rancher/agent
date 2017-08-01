@@ -86,8 +86,8 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 
 	expectedLabels := map[string]string{
 		"foo": "bar",
-		"io.rancher.container.uuid":        request.Containers[0].Uuid,
-		"io.rancher.container.name":        request.Containers[0].Name,
+		"io.rancher.container.uuid": request.Containers[0].Uuid,
+		"io.rancher.container.name": request.Containers[0].Name,
 	}
 	c.Assert(inspect.Config.Labels, check.DeepEquals, expectedLabels)
 }
@@ -343,6 +343,9 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 			BindIpAddress: "127.0.0.1",
 		},
 	}
+	request.Containers[0].Environment = map[string]interface{}{
+		"foo": "bar",
+	}
 	request.Containers[0].CpuSet = "0"
 	request.Containers[0].ReadOnly = true
 	request.Containers[0].Memory = 12000000
@@ -440,6 +443,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	})
 	c.Assert(inspect.Config.Cmd, check.DeepEquals, strslice.StrSlice{"cd", "/home"})
 	c.Assert(inspect.HostConfig.CPUShares, check.DeepEquals, int64(400))
+	c.Assert(utils.SearchInList(inspect.Config.Env, "foo=bar"), check.Equals, true)
 }
 
 func (s *EventTestSuite) TestInstanceActivateFailed(c *check.C) {

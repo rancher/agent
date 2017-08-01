@@ -17,20 +17,28 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *v2.Ranche
 		return errors.New("the number of instances for deploymentSyncRequest is zero")
 	}
 
-	if stopped, err := runtime.IsContainerStopped(request.Containers[0], h.dockerClient); err != nil {
-		return errors.Wrap(err, "failed to check whether instance is activated")
-	} else if !stopped {
-		timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
-		if !ok {
-			timeout = 10
-		}
-		switch timeout.(type) {
-		case float64:
-			timeout = int(timeout.(float64))
-		}
-		err = runtime.ContainerStop(request.Containers[0], request.Volumes, h.dockerClient, timeout.(int))
-		if err != nil {
-			return errors.Wrap(err, "failed to deactivate instance")
+	noop := false
+	value, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent")
+	if ok {
+		noop = utils.InterfaceToBool(value)
+	}
+
+	if !noop {
+		if stopped, err := runtime.IsContainerStopped(request.Containers[0], h.dockerClient); err != nil {
+			return errors.Wrap(err, "failed to check whether instance is activated")
+		} else if !stopped {
+			timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
+			if !ok {
+				timeout = 10
+			}
+			switch timeout.(type) {
+			case float64:
+				timeout = int(timeout.(float64))
+			}
+			err = runtime.ContainerStop(request.Containers[0], request.Volumes, h.dockerClient, timeout.(int))
+			if err != nil {
+				return errors.Wrap(err, "failed to deactivate instance")
+			}
 		}
 	}
 

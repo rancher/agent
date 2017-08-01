@@ -67,12 +67,16 @@ func getInstancePullData(event *revents.Event, dockerClient *client.Client) (typ
 	if !ok {
 		return types.ImageInspect{}, errors.New("Failed to get instance pull data: Can't get image name from event")
 	}
+	serverName, ok := utils.GetFieldsIfExist(event.Data, "instancePull", "image", "data", "dockerImage", "server")
+	if !ok {
+		return types.ImageInspect{}, errors.New("Failed to get instance pull data: Can't get server name from event")
+	}
 	tag, ok := utils.GetFieldsIfExist(event.Data, "instancePull", "tag")
 	if !ok {
 		return types.ImageInspect{}, errors.New("Failed to get instance pull data: Can't get image tag from event")
 	}
 	inspect, _, err := dockerClient.ImageInspectWithRaw(context.Background(),
-		fmt.Sprintf("%v%v", imageName, tag))
+		fmt.Sprintf("%v/%v%v", serverName, imageName, tag))
 	if err != nil && !client.IsErrImageNotFound(err) {
 		return types.ImageInspect{}, errors.Wrap(err, "failed to inspect images")
 	}

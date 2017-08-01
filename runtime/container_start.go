@@ -36,9 +36,6 @@ var (
 )
 
 func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networks []v2.Network, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
-	if utils.IsNoOp(containerSpec) {
-		return nil
-	}
 	started := false
 
 	// setup name
@@ -108,10 +105,6 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networks []
 }
 
 func IsContainerStarted(containerSpec v2.Container, client *client.Client) (bool, error) {
-	if utils.IsNoOp(containerSpec) {
-		return true, nil
-	}
-
 	cont, err := utils.FindContainer(client, containerSpec, false)
 	if err != nil {
 		if utils.IsContainerNotFoundError(err) {

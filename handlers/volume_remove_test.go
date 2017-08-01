@@ -13,6 +13,7 @@ import (
 
 func (s *EventTestSuite) unTestConflictVolumeRemove(c *check.C) {
 	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
+	deleteContainer("/volume_test")
 
 	var request v2.DeploymentSyncRequest
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
@@ -45,7 +46,7 @@ func (s *EventTestSuite) unTestConflictVolumeRemove(c *check.C) {
 	config.Volumes = map[string]struct{}{
 		volume: {},
 	}
-	_, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, "test")
+	_, err := dockerClient.ContainerCreate(context.Background(), config, hostConfig, nil, "volume_test")
 	if err != nil {
 		c.Fatal(err)
 	}

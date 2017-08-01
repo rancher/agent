@@ -24,13 +24,20 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 			idsMap[container.Id] = container.ExternalId
 		}
 	}
+	noop := false
+	value, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent")
+	if ok {
+		noop = utils.InterfaceToBool(value)
+	}
 
-	if started, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
-		if err := runtime.ContainerStart(request.Containers[0], request.Volumes, request.Networks, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
-			return errors.Wrap(err, "failed to activate instance")
+	if !noop {
+		if started, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
+			if err := runtime.ContainerStart(request.Containers[0], request.Volumes, request.Networks, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
+				return errors.Wrap(err, "failed to activate instance")
+			}
+		} else if err != nil {
+			return errors.Wrap(err, "failed to check whether instance is activated")
 		}
-	} else if err != nil {
-		return errors.Wrap(err, "failed to check whether instance is activated")
 	}
 
 	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, progress)

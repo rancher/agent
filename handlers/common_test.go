@@ -63,6 +63,29 @@ func loadEvent(eventFile string, c *check.C) []byte {
 	return file
 }
 
+func findContainer(uuid string) types.Container {
+	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
+	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	for _, c := range containerList {
+		found := false
+		labels := c.Labels
+		if labels["io.rancher.container.uuid"] == uuid {
+			found = true
+		}
+
+		for _, cname := range c.Names {
+			if uuid == cname {
+				found = true
+				break
+			}
+		}
+		if found {
+			return c
+		}
+	}
+	return types.Container{}
+}
+
 func deleteContainer(uuid string) {
 	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
 	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
