@@ -16,8 +16,8 @@ import (
 	"github.com/rancher/agent/progress"
 )
 
-func getIP(inspect types.ContainerJSON, networkMode string, pro *progress.Progress) (string, error) {
-	if networkMode == managedNetwork {
+func getIP(inspect types.ContainerJSON, networkKind string, pro *progress.Progress) (string, error) {
+	if networkKind == "cni" {
 		ip, err := lookUpIP(inspect, pro)
 		if err != nil {
 			return "", err

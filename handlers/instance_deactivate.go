@@ -17,6 +17,14 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *v2.Ranche
 		return errors.New("the number of instances for deploymentSyncRequest is zero")
 	}
 
+	networkKind := ""
+	for _, network := range request.Networks {
+		if request.Containers[0].PrimaryNetworkId == network.Id {
+			networkKind = network.Kind
+			break
+		}
+	}
+
 	noop := false
 	value, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent")
 	if ok {
@@ -42,7 +50,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *v2.Ranche
 		}
 	}
 
-	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, nil)
+	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, networkKind,nil)
 	if err != nil {
 		return errors.Wrap(err,"failed to construct deploymentSyncResponse")
 	}

@@ -24,6 +24,15 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 			idsMap[container.Id] = container.ExternalId
 		}
 	}
+
+	networkKind := ""
+	for _, network := range request.Networks {
+		if request.Containers[0].PrimaryNetworkId == network.Id {
+			networkKind = network.Kind
+			break
+		}
+	}
+
 	noop := false
 	value, ok := utils.GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent")
 	if ok {
@@ -32,7 +41,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 
 	if !noop {
 		if started, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
-			if err := runtime.ContainerStart(request.Containers[0], request.Volumes, request.Networks, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
+			if err := runtime.ContainerStart(request.Containers[0], request.Volumes, networkKind, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
 				return errors.Wrap(err, "failed to activate instance")
 			}
 		} else if err != nil {
@@ -40,7 +49,8 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v2.RancherC
 		}
 	}
 
-	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, progress)
+
+	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, networkKind, progress)
 	if err != nil {
 		return errors.Wrap(err, "failed to construct deploymentSyncResponse")
 	}

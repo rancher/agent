@@ -16,7 +16,7 @@ const (
 	managedNetwork  = "managed"
 )
 
-func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Client, pro *progress.Progress) (interface{}, error) {
+func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Client, networkKind string, pro *progress.Progress) (interface{}, error) {
 	response := v2.DeploymentSyncResponse{}
 
 	containerId, err := utils.FindContainer(client, containerSpec, false)
@@ -35,7 +35,7 @@ func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Cli
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, "failed to inspect container")
 	}
-	dockerIP, err := getIP(inspect, containerSpec.NetworkMode, pro)
+	dockerIP, err := getIP(inspect, networkKind, pro)
 	if err != nil && !utils.IsNoOp(containerSpec) {
 		if running, err2 := isRunning(inspect.ID, client); err2 != nil {
 			return nil, errors.Wrap(err2, "failed to inspect running container")

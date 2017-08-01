@@ -35,7 +35,7 @@ var (
 	HTTPProxyList = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
 )
 
-func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networks []v2.Network, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
+func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networkKind string, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
 	started := false
 
 	// setup name
@@ -62,7 +62,7 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networks []
 	}()
 
 	// setup container spec(config and hostConfig)
-	spec, err := setupContainerSpec(containerSpec, volumes, networks, rancherBindMounts, runtimeClient, progress, idsMap)
+	spec, err := setupContainerSpec(containerSpec, volumes, networkKind, rancherBindMounts, runtimeClient, progress, idsMap)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate container spec")
 	}
@@ -120,7 +120,7 @@ type dockerContainerSpec struct {
 	hostConfig container.HostConfig
 }
 
-func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, networks []v2.Network, rancherBindMounts []string, runtimeClient *client.Client, progress *progress.Progress, idsMap map[string]string) (dockerContainerSpec, error) {
+func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, networkKind string, rancherBindMounts []string, runtimeClient *client.Client, progress *progress.Progress, idsMap map[string]string) (dockerContainerSpec, error) {
 	config := container.Config{
 		OpenStdin: true,
 	}
@@ -157,7 +157,7 @@ func setupContainerSpec(containerSpec v2.Container, volumes []v2.Volume, network
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up volumes")
 	}
 
-	if err := setupNetworking(containerSpec, &config, &hostConfig, idsMap, networks); err != nil {
+	if err := setupNetworking(containerSpec, &config, &hostConfig, idsMap, networkKind); err != nil {
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up networking")
 	}
 
