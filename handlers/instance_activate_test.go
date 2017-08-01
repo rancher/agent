@@ -4,7 +4,6 @@ package handlers
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -216,7 +215,7 @@ func (s *EventTestSuite) TestDockerFieldsExtra(c *check.C) {
 			"net.ipv4.ip_forward": "1",
 		}
 		request.Containers[0].Tmpfs = map[string]interface{}{
-			"net.ipv4.ip_forward": "1",
+			"/run": "rw,noexec,nosuid,size=65536k",
 		}
 		request.Containers[0].HealthCmd = []string{"ls"}
 		request.Containers[0].UsernsMode = "host"
@@ -262,34 +261,6 @@ func (s *EventTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 
 		// TODO: add init tests
 	}
-}
-
-func (s *EventTestSuite) TestInstanceActivateAgent(c *check.C) {
-	utils.ConfigOverride["CONFIG_URL"] = "https://localhost:1234/a/path"
-
-	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
-
-	var request v2.DeploymentSyncRequest
-	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
-	c.Assert(request.Containers, check.HasLen, 1)
-
-	request.Containers[0].AgentId = "1a1"
-
-	event.Data["deploymentSyncRequest"] = request
-	rawEvent := marshalEvent(event, c)
-	reply := testEvent(rawEvent, c)
-
-	c.Assert(reply.Transitioning != "error", check.Equals, true)
-
-	inspect := getDockerInspect(reply, c)
-
-	port := utils.APIProxyListenPort()
-	ok1 := checkStringInArray(inspect.Config.Env, "CATTLE_CONFIG_URL_SCHEME=https")
-	ok2 := checkStringInArray(inspect.Config.Env, "CATTLE_CONFIG_URL_PATH=/a/path")
-	ok3 := checkStringInArray(inspect.Config.Env, fmt.Sprintf("CATTLE_CONFIG_URL_PORT=%v", port))
-	c.Assert(ok1, check.Equals, true)
-	c.Assert(ok2, check.Equals, true)
-	c.Assert(ok3, check.Equals, true)
 }
 
 func (s *EventTestSuite) TestInstanceActivateNoName(c *check.C) {
