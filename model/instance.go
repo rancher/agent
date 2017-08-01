@@ -240,6 +240,7 @@ type InstanceFields struct {
 	Cgroup             container.CgroupSpec
 	DiskQuota          int64
 	UsernsMode         container.UsernsMode
+	StopTimeout        *int
 }
 
 type LogConfig struct {
