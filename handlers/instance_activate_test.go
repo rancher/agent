@@ -12,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
 	"github.com/rancher/agent/utils"
 	v2 "github.com/rancher/go-rancher/v2"
@@ -317,7 +316,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].Environment = map[string]interface{}{
 		"foo": "bar",
 	}
-	request.Containers[0].CpuSet = "0"
+	request.Containers[0].CpuSet = "0,1"
 	request.Containers[0].ReadOnly = true
 	request.Containers[0].Memory = 12000000
 	request.Containers[0].MemorySwap = 16000000
@@ -348,7 +347,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 		MaximumRetryCount: 2,
 	}
 	request.Containers[0].BlkioDeviceOptions = map[string]interface{}{
-		"/dev/null": v2.BlkioDeviceOption{
+		"/dev/random": v2.BlkioDeviceOption{
 			WriteIops: 2000,
 			ReadBps:   1000,
 		},
@@ -364,10 +363,21 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	inspect := getDockerInspect(reply, c)
 
 	c.Assert(inspect.Name, check.Equals, "/r-"+request.Containers[0].Name+"-"+strings.Split(request.Containers[0].Uuid, "-")[0])
-	c.Assert(inspect.HostConfig.PortBindings["10000/tcp"][0], check.Equals, nat.PortBinding{HostPort: "10000"})
-	c.Assert(inspect.HostConfig.PortBindings["10000/udp"][0], check.Equals, nat.PortBinding{HostPort: "10001"})
-	c.Assert(inspect.HostConfig.PortBindings["10000/udp"][1], check.Equals, nat.PortBinding{HostIP: "127.0.0.1", HostPort: "10002"})
-	c.Assert(inspect.HostConfig.CpusetCpus, check.Equals, "0")
+	cont := findContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
+	for _, port := range cont.Ports {
+		if port.PublicPort == uint16(10000) {
+			c.Assert(port.Type, check.Equals, "tcp")
+			c.Assert(port.PrivatePort, check.Equals, uint16(10000))
+		} else if port.PublicPort == uint16(10001) {
+			c.Assert(port.Type, check.Equals, "udp")
+			c.Assert(port.PrivatePort, check.Equals, uint16(10000))
+		} else if port.PublicPort == uint16(10002) {
+			c.Assert(port.Type, check.Equals, "udp")
+			c.Assert(port.PrivatePort, check.Equals, uint16(10000))
+			c.Assert(port.IP, check.Equals, "127.0.0.1")
+		}
+	}
+	c.Assert(inspect.HostConfig.CpusetCpus, check.Equals, "0,1")
 	c.Assert(inspect.HostConfig.Memory, check.DeepEquals, int64(12000000))
 	c.Assert(inspect.Config.Labels[UUIDLabel], check.DeepEquals, request.Containers[0].Uuid)
 	c.Assert(inspect.Config.Labels["foo"], check.DeepEquals, "bar")
@@ -405,11 +415,11 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	c.Assert(inspect.HostConfig.RestartPolicy.Name, check.DeepEquals, "always")
 	c.Assert(inspect.HostConfig.RestartPolicy.MaximumRetryCount, check.DeepEquals, 2)
 	c.Assert(*inspect.HostConfig.BlkioDeviceReadBps[0], check.DeepEquals, blkiodev.ThrottleDevice{
-		Path: "/dev/null",
+		Path: "/dev/random",
 		Rate: 1000,
 	})
 	c.Assert(*inspect.HostConfig.BlkioDeviceWriteIOps[0], check.DeepEquals, blkiodev.ThrottleDevice{
-		Path: "/dev/null",
+		Path: "/dev/random",
 		Rate: 2000,
 	})
 	c.Assert(inspect.Config.Cmd, check.DeepEquals, strslice.StrSlice{"cd", "/home"})
