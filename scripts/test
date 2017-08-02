@@ -44,4 +44,4 @@ docker run -i -d busybox:1
 
 PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
 
-go test -race -cover -timeout=5m -tags=test ${PACKAGES}
+go test -race -cover -tags=test ${PACKAGES}

@@ -129,6 +129,7 @@ func (s *EventTestSuite) TestNativeInstanceDeactivateOnly(c *check.C) {
 
 	event.Name = "compute.instance.deactivate"
 	request.Containers[0].ExternalId = cont.ID
+	event.Data["deploymentSyncRequest"] = request
 
 	rawEvent := marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)

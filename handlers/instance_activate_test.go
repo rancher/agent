@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/docker/api/types/container"
@@ -18,8 +20,6 @@ import (
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 )
-
-type mt map[string]interface{}
 
 func (s *EventTestSuite) TestMillCpuReservation(c *check.C) {
 	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
@@ -76,7 +76,9 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 
 	event.Data["deploymentSyncRequest"] = request
 	rawEvent := marshalEvent(event, c)
+	t := time.Now()
 	reply := testEvent(rawEvent, c)
+	fmt.Println(time.Now().Sub(t).Seconds())
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
@@ -111,7 +113,7 @@ func (s *EventTestSuite) TestDockerFields(c *check.C) {
 	request.Containers[0].GroupAdd = []string{"root"}
 	request.Containers[0].Uts = "host"
 	request.Containers[0].IpcMode = "host"
-	request.Containers[0].StopSignal = "SIGTERM"
+	request.Containers[0].StopSignal = "SIGKILL"
 	request.Containers[0].Ulimits = []v2.Ulimit{
 		{
 			Name: "cpu",
@@ -141,7 +143,7 @@ func (s *EventTestSuite) TestDockerFields(c *check.C) {
 	c.Assert(inspect.HostConfig.GroupAdd, check.DeepEquals, []string{"root"})
 	c.Assert(string(inspect.HostConfig.UTSMode), check.Equals, "host")
 	c.Assert(string(inspect.HostConfig.IpcMode), check.Equals, "host")
-	c.Assert(inspect.Config.StopSignal, check.Equals, "SIGTERM")
+	c.Assert(inspect.Config.StopSignal, check.Equals, "SIGKILL")
 	ulimits := []units.Ulimit{
 		{
 			Name: "cpu",
@@ -281,7 +283,7 @@ func (s *EventTestSuite) TestInstanceActivateNoName(c *check.C) {
 	c.Assert(inspect.ContainerJSONBase.Name, check.Equals, "/r-"+request.Containers[0].Uuid)
 }
 
-func (s *EventTestSuite) unTestInstanceActivateBasic(c *check.C) {
+func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
 
 	var request v2.DeploymentSyncRequest
@@ -343,7 +345,7 @@ func (s *EventTestSuite) unTestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].CapDrop = []string{"MKNOD", "SYS_ADMIN"}
 	request.Containers[0].Privileged = true
 	request.Containers[0].RestartPolicy = &v2.RestartPolicy{
-		Name:              "always",
+		Name:              "on-failure",
 		MaximumRetryCount: 2,
 	}
 	request.Containers[0].BlkioDeviceOptions = map[string]interface{}{
@@ -391,7 +393,8 @@ func (s *EventTestSuite) unTestInstanceActivateBasic(c *check.C) {
 	c.Assert(inspect.HostConfig.PidMode, check.Equals, container.PidMode("host"))
 	c.Assert(inspect.HostConfig.LogConfig.Type, check.Equals, "json-file")
 	c.Assert(inspect.HostConfig.LogConfig.Config["max-size"], check.Equals, "10")
-	c.Assert(inspect.HostConfig.SecurityOpt, check.DeepEquals, []string{"label:foo", "label:bar"})
+	c.Assert(checkStringInArray(inspect.HostConfig.SecurityOpt, "label:foo"), check.Equals, true)
+	c.Assert(checkStringInArray(inspect.HostConfig.SecurityOpt, "label:bar"), check.Equals, true)
 	c.Assert(inspect.Config.WorkingDir, check.Equals, "/home")
 	c.Assert(inspect.Config.Entrypoint, check.DeepEquals, strslice.StrSlice{"../sleep.sh"})
 	c.Assert(inspect.Config.Tty, check.DeepEquals, true)
@@ -412,7 +415,7 @@ func (s *EventTestSuite) unTestInstanceActivateBasic(c *check.C) {
 	c.Assert(inspect.HostConfig.CapAdd, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
 	c.Assert(inspect.HostConfig.CapDrop, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
 	c.Assert(inspect.HostConfig.Privileged, check.DeepEquals, true)
-	c.Assert(inspect.HostConfig.RestartPolicy.Name, check.DeepEquals, "always")
+	c.Assert(inspect.HostConfig.RestartPolicy.Name, check.DeepEquals, "on-failure")
 	c.Assert(inspect.HostConfig.RestartPolicy.MaximumRetryCount, check.DeepEquals, 2)
 	c.Assert(*inspect.HostConfig.BlkioDeviceReadBps[0], check.DeepEquals, blkiodev.ThrottleDevice{
 		Path: "/dev/random",
@@ -447,7 +450,7 @@ func (s *EventTestSuite) TestInstanceActivateWithPullImage(c *check.C) {
 	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
 
 	cli := utils.GetRuntimeClient("docker", utils.DefaultVersion)
-	cli.ImageRemove(context.Background(), "ibuildthecloud:helloworld", types.ImageRemoveOptions{
+	cli.ImageRemove(context.Background(), "ibuildthecloud/helloworld", types.ImageRemoveOptions{
 		PruneChildren: true,
 	})
 

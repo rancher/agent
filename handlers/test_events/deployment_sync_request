@@ -248,7 +248,11 @@
 			"deploymentUnitUuid": null,
 			"registryCredentials": [],
 			"revision": "6f3ef77ac0e3619e98159e9b6febf557",
-			"volumes": []
+			"volumes": [],
+			"network": {
+				"kind": "dockerBridge",
+				"id": "1n4"
+			}
 		}
 	},
 	"time": 1501102772432,

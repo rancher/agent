@@ -18,9 +18,6 @@ func ContainerStop(containerSpec v2.Container, volumes []v2.Volume, client *clie
 		logrus.Error(err)
 	}
 
-	if utils.IsNoOp(containerSpec) {
-		return nil
-	}
 	t := time.Duration(timeout) * time.Second
 	containerID, err := utils.FindContainer(client, containerSpec, false)
 	if err != nil {
@@ -48,10 +45,6 @@ func ContainerStop(containerSpec v2.Container, volumes []v2.Volume, client *clie
 }
 
 func IsContainerStopped(containerSpec v2.Container, client *client.Client) (bool, error) {
-	if utils.IsNoOp(containerSpec) {
-		return true, nil
-	}
-
 	containerID, err := utils.FindContainer(client, containerSpec, false)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
