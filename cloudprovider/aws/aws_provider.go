@@ -9,8 +9,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/rancher/agent/core/hostInfo"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/host_info"
+	"github.com/rancher/agent/utils"
 )
 
 const (
@@ -61,8 +61,8 @@ func (p Provider) GetCloudProviderInfo() bool {
 		return false
 	}
 	success := false
-	infoPath := path.Join(config.StateDir(), infoFile)
-	tempPath := path.Join(config.StateDir(), tempFile)
+	infoPath := path.Join(utils.StateDir(), infoFile)
+	tempPath := path.Join(utils.StateDir(), tempFile)
 	endtime := time.Now().Add(p.expireTime)
 	for {
 		if time.Now().After(endtime) {

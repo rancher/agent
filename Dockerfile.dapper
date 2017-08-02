@@ -1,4 +1,4 @@
-FROM golang:1.7.5
+FROM golang:1.8.3
 RUN apt-get update && \
     apt-get install -y uuid-runtime iptables
 RUN go get github.com/rancher/trash
@@ -14,7 +14,7 @@ RUN if [ "${DOCKER_VERSION}" != "1.10.3" ]; then \
 ENV PATH /go/bin:$PATH
 ENV DAPPER_SOURCE /go/src/github.com/rancher/agent
 ENV DAPPER_OUTPUT bin dist
-ENV DAPPER_ENV TAG REPO
+ENV DAPPER_ENV TAG REPO CROSS
 ENV DAPPER_RUN_ARGS --privileged
 ENV DAPPER_DOCKER_SOCKET true
 ENV GO15VENDOREXPERIMENT 1

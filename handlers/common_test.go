@@ -9,7 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
-	"github.com/rancher/agent/utilities/docker"
+	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
@@ -22,26 +22,82 @@ func Test(t *testing.T) {
 	check.TestingT(t)
 }
 
-type ComputeTestSuite struct {
+type EventTestSuite struct {
 }
 
-var _ = check.Suite(&ComputeTestSuite{})
+var _ = check.Suite(&EventTestSuite{})
 
-func (s *ComputeTestSuite) SetUpSuite(c *check.C) {
+func (s *EventTestSuite) SetUpSuite(c *check.C) {
 }
 
-func deleteContainer(name string) {
-	dockerClient := docker.GetClient(docker.DefaultVersion)
+func getDeploymentSyncRequest(path string, request interface{}, c *check.C) revents.Event {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		c.Fatalf("Error reading event %v", err)
+	}
+	var event revents.Event
+	if err := json.Unmarshal(file, &event); err != nil {
+		c.Fatal(err)
+	}
+	if err := utils.Unmarshalling(event.Data["deploymentSyncRequest"], request); err != nil {
+		c.Fatal(err)
+	}
+	return event
+}
+
+func getDockerInspect(reply *client.Publish, c *check.C) types.ContainerJSON {
+	response := reply.Data["deploymentSyncResponse"].(client.DeploymentSyncResponse)
+	c.Assert(response.InstanceStatus, check.HasLen, 1)
+	var inspect types.ContainerJSON
+	if err := utils.Unmarshalling(response.InstanceStatus[0].DockerInspect, &inspect); err != nil {
+		c.Fatal(err)
+	}
+	return  inspect
+}
+
+func loadEvent(eventFile string, c *check.C) []byte {
+	file, err := ioutil.ReadFile(eventFile)
+	if err != nil {
+		c.Fatalf("Error reading event %v", err)
+	}
+	return file
+}
+
+func findContainer(uuid string) types.Container {
+	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
 	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	for _, c := range containerList {
 		found := false
 		labels := c.Labels
-		if labels["io.rancher.container.uuid"] == name[1:] {
+		if labels["io.rancher.container.uuid"] == uuid {
 			found = true
 		}
 
 		for _, cname := range c.Names {
-			if name == cname {
+			if uuid == cname {
+				found = true
+				break
+			}
+		}
+		if found {
+			return c
+		}
+	}
+	return types.Container{}
+}
+
+func deleteContainer(uuid string) {
+	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
+	containerList, _ := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	for _, c := range containerList {
+		found := false
+		labels := c.Labels
+		if labels["io.rancher.container.uuid"] == uuid {
+			found = true
+		}
+
+		for _, cname := range c.Names {
+			if uuid == cname {
 				found = true
 				break
 			}
@@ -68,22 +124,6 @@ func checkStringInArray(array []string, item string) bool {
 	return false
 }
 
-func loadEvent(eventFile string, c *check.C) []byte {
-	file, err := ioutil.ReadFile(eventFile)
-	if err != nil {
-		c.Fatalf("Error reading event %v", err)
-	}
-	return file
-
-}
-
-func getInstance(event map[string]interface{}, c *check.C) map[string]interface{} {
-	data := event["data"].(map[string]interface{})
-	ihm := data["instanceHostMap"].(map[string]interface{})
-	instance := ihm["instance"].(map[string]interface{})
-	return instance
-}
-
 func unmarshalEvent(rawEvent []byte, c *check.C) map[string]interface{} {
 	event := map[string]interface{}{}
 	err := json.Unmarshal(rawEvent, &event)
@@ -104,7 +144,7 @@ func marshalEvent(event interface{}, c *check.C) []byte {
 func unmarshalEventAndInstanceFields(rawEvent []byte, c *check.C) (map[string]interface{}, map[string]interface{},
 	map[string]interface{}) {
 	event := unmarshalEvent(rawEvent, c)
-	instance := event["data"].(map[string]interface{})["instanceHostMap"].(map[string]interface{})["instance"].(map[string]interface{})
+	instance := event["data"].(map[string]interface{})["instance"].(map[string]interface{})
 	fields := instance["data"].(map[string]interface{})["fields"].(map[string]interface{})
 	return event, instance, fields
 }

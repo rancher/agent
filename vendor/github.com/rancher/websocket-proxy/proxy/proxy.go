@@ -15,7 +15,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/tlsconfig"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/websocket-proxy/k8s"
@@ -25,6 +24,27 @@ import (
 )
 
 var slashRegex = regexp.MustCompile("[/]{2,}")
+
+// Extra (server-side) accepted CBC cipher suites - will phase out in the future
+var acceptedCBCCiphers = []uint16{
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+	tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+}
+
+// Client TLS cipher suites (dropping CBC ciphers for client preferred suite set)
+var clientCipherSuites = []uint16{
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+}
+
+// DefaultServerAcceptedCiphers should be uses by code which already has a crypto/tls
+// options struct but wants to use a commonly accepted set of TLS cipher suites, with
+// known weak algorithms removed.
+var DefaultServerAcceptedCiphers = append(clientCipherSuites, acceptedCBCCiphers...)
 
 type Starter struct {
 	BackendPaths       []string
@@ -189,7 +209,11 @@ func (s *Starter) setupTLS() (*tls.Config, error) {
 		return nil, err
 	}
 
-	tlsConfig := tlsconfig.ServerDefault()
+	tlsConfig := &tls.Config{
+		MinVersion:               tls.VersionTLS10,
+		PreferServerCipherSuites: true,
+		CipherSuites:             DefaultServerAcceptedCiphers,
+	}
 	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
 	tlsConfig.ClientCAs = clientCas
 	tlsConfig.Certificates = []tls.Certificate{tlsCert}

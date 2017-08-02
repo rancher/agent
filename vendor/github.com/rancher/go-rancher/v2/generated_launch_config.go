@@ -11,23 +11,19 @@ type LaunchConfig struct {
 
 	AgentId string `json:"agentId,omitempty" yaml:"agent_id,omitempty"`
 
-	AllocationState string `json:"allocationState,omitempty" yaml:"allocation_state,omitempty"`
-
 	BlkioDeviceOptions map[string]interface{} `json:"blkioDeviceOptions,omitempty" yaml:"blkio_device_options,omitempty"`
 
 	BlkioWeight int64 `json:"blkioWeight,omitempty" yaml:"blkio_weight,omitempty"`
-
-	Build *DockerBuild `json:"build,omitempty" yaml:"build,omitempty"`
 
 	CapAdd []string `json:"capAdd,omitempty" yaml:"cap_add,omitempty"`
 
 	CapDrop []string `json:"capDrop,omitempty" yaml:"cap_drop,omitempty"`
 
-	Cgroup string `json:"cgroup,omitempty" yaml:"cgroup,omitempty"`
-
 	CgroupParent string `json:"cgroupParent,omitempty" yaml:"cgroup_parent,omitempty"`
 
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
+
+	CompleteUpdate bool `json:"completeUpdate,omitempty" yaml:"complete_update,omitempty"`
 
 	Count int64 `json:"count,omitempty" yaml:"count,omitempty"`
 
@@ -57,17 +53,19 @@ type LaunchConfig struct {
 
 	DataVolumesFrom []string `json:"dataVolumesFrom,omitempty" yaml:"data_volumes_from,omitempty"`
 
-	DataVolumesFromLaunchConfigs []string `json:"dataVolumesFromLaunchConfigs,omitempty" yaml:"data_volumes_from_launch_configs,omitempty"`
+	DependsOn []DependsOn `json:"dependsOn,omitempty" yaml:"depends_on,omitempty"`
+
+	DeploymentUnitId string `json:"deploymentUnitId,omitempty" yaml:"deployment_unit_id,omitempty"`
 
 	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
+
 	Devices []string `json:"devices,omitempty" yaml:"devices,omitempty"`
 
 	DiskQuota int64 `json:"diskQuota,omitempty" yaml:"disk_quota,omitempty"`
-
-	Disks []VirtualMachineDisk `json:"disks,omitempty" yaml:"disks,omitempty"`
 
 	Dns []string `json:"dns,omitempty" yaml:"dns,omitempty"`
 
@@ -81,6 +79,8 @@ type LaunchConfig struct {
 
 	Environment map[string]interface{} `json:"environment,omitempty" yaml:"environment,omitempty"`
 
+	ExitCode int64 `json:"exitCode,omitempty" yaml:"exit_code,omitempty"`
+
 	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
@@ -88,6 +88,8 @@ type LaunchConfig struct {
 	ExtraHosts []string `json:"extraHosts,omitempty" yaml:"extra_hosts,omitempty"`
 
 	FirstRunning string `json:"firstRunning,omitempty" yaml:"first_running,omitempty"`
+
+	ForceUpgrade bool `json:"forceUpgrade,omitempty" yaml:"force_upgrade,omitempty"`
 
 	GroupAdd []string `json:"groupAdd,omitempty" yaml:"group_add,omitempty"`
 
@@ -103,13 +105,15 @@ type LaunchConfig struct {
 
 	HealthTimeout int64 `json:"healthTimeout,omitempty" yaml:"health_timeout,omitempty"`
 
+	HealthcheckStates []HealthcheckState `json:"healthcheckStates,omitempty" yaml:"healthcheck_states,omitempty"`
+
 	HostId string `json:"hostId,omitempty" yaml:"host_id,omitempty"`
 
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 
-	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
+	Image string `json:"image,omitempty" yaml:"image,omitempty"`
 
-	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
+	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
 
 	InstanceTriggeredStop string `json:"instanceTriggeredStop,omitempty" yaml:"instance_triggered_stop,omitempty"`
 
@@ -120,6 +124,8 @@ type LaunchConfig struct {
 	Ip string `json:"ip,omitempty" yaml:"ip,omitempty"`
 
 	Ip6 string `json:"ip6,omitempty" yaml:"ip6,omitempty"`
+
+	IpcContainerId string `json:"ipcContainerId,omitempty" yaml:"ipc_container_id,omitempty"`
 
 	IpcMode string `json:"ipcMode,omitempty" yaml:"ipc_mode,omitempty"`
 
@@ -145,7 +151,13 @@ type LaunchConfig struct {
 
 	MemorySwappiness int64 `json:"memorySwappiness,omitempty" yaml:"memory_swappiness,omitempty"`
 
+	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
 	MilliCpuReservation int64 `json:"milliCpuReservation,omitempty" yaml:"milli_cpu_reservation,omitempty"`
+
+	Mounts []MountEntry `json:"mounts,omitempty" yaml:"mounts,omitempty"`
+
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	NativeContainer bool `json:"nativeContainer,omitempty" yaml:"native_container,omitempty"`
 
@@ -155,13 +167,13 @@ type LaunchConfig struct {
 
 	NetworkIds []string `json:"networkIds,omitempty" yaml:"network_ids,omitempty"`
 
-	NetworkLaunchConfig string `json:"networkLaunchConfig,omitempty" yaml:"network_launch_config,omitempty"`
-
 	NetworkMode string `json:"networkMode,omitempty" yaml:"network_mode,omitempty"`
 
 	OomKillDisable bool `json:"oomKillDisable,omitempty" yaml:"oom_kill_disable,omitempty"`
 
 	OomScoreAdj int64 `json:"oomScoreAdj,omitempty" yaml:"oom_score_adj,omitempty"`
+
+	PidContainerId string `json:"pidContainerId,omitempty" yaml:"pid_container_id,omitempty"`
 
 	PidMode string `json:"pidMode,omitempty" yaml:"pid_mode,omitempty"`
 
@@ -169,9 +181,15 @@ type LaunchConfig struct {
 
 	Ports []string `json:"ports,omitempty" yaml:"ports,omitempty"`
 
+	PrePullOnUpgrade string `json:"prePullOnUpgrade,omitempty" yaml:"pre_pull_on_upgrade,omitempty"`
+
 	PrimaryIpAddress string `json:"primaryIpAddress,omitempty" yaml:"primary_ip_address,omitempty"`
 
+	PrimaryNetworkId string `json:"primaryNetworkId,omitempty" yaml:"primary_network_id,omitempty"`
+
 	Privileged bool `json:"privileged,omitempty" yaml:"privileged,omitempty"`
+
+	PublicEndpoints []PublicEndpoint `json:"publicEndpoints,omitempty" yaml:"public_endpoints,omitempty"`
 
 	PublishAllPorts bool `json:"publishAllPorts,omitempty" yaml:"publish_all_ports,omitempty"`
 
@@ -187,11 +205,25 @@ type LaunchConfig struct {
 
 	RequestedIpAddress string `json:"requestedIpAddress,omitempty" yaml:"requested_ip_address,omitempty"`
 
+	RestartPolicy *RestartPolicy `json:"restartPolicy,omitempty" yaml:"restart_policy,omitempty"`
+
+	RetainIp bool `json:"retainIp,omitempty" yaml:"retain_ip,omitempty"`
+
+	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
+
+	Secrets []SecretReference `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+
 	SecurityOpt []string `json:"securityOpt,omitempty" yaml:"security_opt,omitempty"`
+
+	ServiceId string `json:"serviceId,omitempty" yaml:"service_id,omitempty"`
 
 	ServiceIds []string `json:"serviceIds,omitempty" yaml:"service_ids,omitempty"`
 
 	ShmSize int64 `json:"shmSize,omitempty" yaml:"shm_size,omitempty"`
+
+	SidekickTo string `json:"sidekickTo,omitempty" yaml:"sidekick_to,omitempty"`
+
+	StackId string `json:"stackId,omitempty" yaml:"stack_id,omitempty"`
 
 	StartCount int64 `json:"startCount,omitempty" yaml:"start_count,omitempty"`
 
@@ -217,23 +249,19 @@ type LaunchConfig struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Tty bool `json:"tty,omitempty" yaml:"tty,omitempty"`
 
 	Ulimits []Ulimit `json:"ulimits,omitempty" yaml:"ulimits,omitempty"`
 
 	User string `json:"user,omitempty" yaml:"user,omitempty"`
 
-	Userdata string `json:"userdata,omitempty" yaml:"userdata,omitempty"`
+	UserPorts []string `json:"userPorts,omitempty" yaml:"user_ports,omitempty"`
 
 	UsernsMode string `json:"usernsMode,omitempty" yaml:"userns_mode,omitempty"`
 
 	Uts string `json:"uts,omitempty" yaml:"uts,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
-
-	Vcpu int64 `json:"vcpu,omitempty" yaml:"vcpu,omitempty"`
 
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
@@ -259,29 +287,21 @@ type LaunchConfigOperations interface {
 	ById(id string) (*LaunchConfig, error)
 	Delete(container *LaunchConfig) error
 
-	ActionAllocate(*LaunchConfig) (*Instance, error)
-
 	ActionConsole(*LaunchConfig, *InstanceConsoleInput) (*InstanceConsole, error)
 
-	ActionCreate(*LaunchConfig) (*Instance, error)
+	ActionConverttoservice(*LaunchConfig) (*Service, error)
 
-	ActionDeallocate(*LaunchConfig) (*Instance, error)
+	ActionCreate(*LaunchConfig) (*Instance, error)
 
 	ActionError(*LaunchConfig) (*Instance, error)
 
 	ActionExecute(*LaunchConfig, *ContainerExec) (*HostAccess, error)
 
-	ActionMigrate(*LaunchConfig) (*Instance, error)
-
 	ActionProxy(*LaunchConfig, *ContainerProxy) (*HostAccess, error)
 
-	ActionPurge(*LaunchConfig) (*Instance, error)
-
-	ActionRemove(*LaunchConfig) (*Instance, error)
+	ActionRemove(*LaunchConfig, *InstanceRemove) (*Instance, error)
 
 	ActionRestart(*LaunchConfig) (*Instance, error)
-
-	ActionRestore(*LaunchConfig) (*Instance, error)
 
 	ActionStart(*LaunchConfig) (*Instance, error)
 
@@ -289,11 +309,7 @@ type LaunchConfigOperations interface {
 
 	ActionUpdate(*LaunchConfig) (*Instance, error)
 
-	ActionUpdatehealthy(*LaunchConfig) (*Instance, error)
-
-	ActionUpdatereinitializing(*LaunchConfig) (*Instance, error)
-
-	ActionUpdateunhealthy(*LaunchConfig) (*Instance, error)
+	ActionUpgrade(*LaunchConfig, *ContainerUpgrade) (*Revision, error)
 }
 
 func newLaunchConfigClient(rancherClient *RancherClient) *LaunchConfigClient {
@@ -346,15 +362,6 @@ func (c *LaunchConfigClient) Delete(container *LaunchConfig) error {
 	return c.rancherClient.doResourceDelete(LAUNCH_CONFIG_TYPE, &container.Resource)
 }
 
-func (c *LaunchConfigClient) ActionAllocate(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "allocate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *LaunchConfigClient) ActionConsole(resource *LaunchConfig, input *InstanceConsoleInput) (*InstanceConsole, error) {
 
 	resp := &InstanceConsole{}
@@ -364,20 +371,20 @@ func (c *LaunchConfigClient) ActionConsole(resource *LaunchConfig, input *Instan
 	return resp, err
 }
 
+func (c *LaunchConfigClient) ActionConverttoservice(resource *LaunchConfig) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "converttoservice", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *LaunchConfigClient) ActionCreate(resource *LaunchConfig) (*Instance, error) {
 
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "create", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionDeallocate(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "deallocate", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -400,15 +407,6 @@ func (c *LaunchConfigClient) ActionExecute(resource *LaunchConfig, input *Contai
 	return resp, err
 }
 
-func (c *LaunchConfigClient) ActionMigrate(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "migrate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *LaunchConfigClient) ActionProxy(resource *LaunchConfig, input *ContainerProxy) (*HostAccess, error) {
 
 	resp := &HostAccess{}
@@ -418,20 +416,11 @@ func (c *LaunchConfigClient) ActionProxy(resource *LaunchConfig, input *Containe
 	return resp, err
 }
 
-func (c *LaunchConfigClient) ActionPurge(resource *LaunchConfig) (*Instance, error) {
+func (c *LaunchConfigClient) ActionRemove(resource *LaunchConfig, input *InstanceRemove) (*Instance, error) {
 
 	resp := &Instance{}
 
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "purge", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionRemove(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "remove", &resource.Resource, nil, resp)
+	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "remove", &resource.Resource, input, resp)
 
 	return resp, err
 }
@@ -441,15 +430,6 @@ func (c *LaunchConfigClient) ActionRestart(resource *LaunchConfig) (*Instance, e
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "restart", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionRestore(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -481,29 +461,11 @@ func (c *LaunchConfigClient) ActionUpdate(resource *LaunchConfig) (*Instance, er
 	return resp, err
 }
 
-func (c *LaunchConfigClient) ActionUpdatehealthy(resource *LaunchConfig) (*Instance, error) {
+func (c *LaunchConfigClient) ActionUpgrade(resource *LaunchConfig, input *ContainerUpgrade) (*Revision, error) {
 
-	resp := &Instance{}
+	resp := &Revision{}
 
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "updatehealthy", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionUpdatereinitializing(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionUpdateunhealthy(resource *LaunchConfig) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "updateunhealthy", &resource.Resource, nil, resp)
+	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "upgrade", &resource.Resource, input, resp)
 
 	return resp, err
 }

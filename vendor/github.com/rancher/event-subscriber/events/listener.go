@@ -79,10 +79,6 @@ func NewEventRouter(name string, priority int, apiURL string, accessKey string, 
 // that are created outside of this router.
 
 func (router *EventRouter) Start(ready chan<- bool) error {
-	err := router.createExternalHandler()
-	if err != nil {
-		return err
-	}
 	eventSuffix := ";handler=" + router.name
 	wp := SkippingWorkerPool(router.workerCount, resourceIDLocker)
 	return router.run(wp, ready, eventSuffix)
@@ -165,9 +161,7 @@ func (router *EventRouter) Stop() {
 }
 
 func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey string, secretKey string, data url.Values) (*websocket.Conn, error) {
-	dialer := &websocket.Dialer{
-		HandshakeTimeout: time.Second * 30,
-	}
+	dialer := &websocket.Dialer{}
 	headers := http.Header{}
 	headers.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(accessKey+":"+secretKey)))
 	subscribeURL = subscribeURL + "?" + data.Encode()
@@ -188,9 +182,6 @@ func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey stri
 				body, _ := ioutil.ReadAll(resp.Body)
 				log.Errorf("Error response: %s", body)
 			}
-		}
-		if ws != nil {
-			ws.Close()
 		}
 		return nil, err
 	}

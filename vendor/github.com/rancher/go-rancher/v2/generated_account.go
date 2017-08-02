@@ -21,6 +21,8 @@ type Account struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
+	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
@@ -33,9 +35,9 @@ type Account struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 }
 
 type AccountCollection struct {
@@ -64,8 +66,6 @@ type AccountOperations interface {
 	ActionPurge(*Account) (*Account, error)
 
 	ActionRemove(*Account) (*Account, error)
-
-	ActionRestore(*Account) (*Account, error)
 
 	ActionUpdate(*Account) (*Account, error)
 
@@ -163,15 +163,6 @@ func (c *AccountClient) ActionRemove(resource *Account) (*Account, error) {
 	resp := &Account{}
 
 	err := c.rancherClient.doAction(ACCOUNT_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *AccountClient) ActionRestore(resource *Account) (*Account, error) {
-
-	resp := &Account{}
-
-	err := c.rancherClient.doAction(ACCOUNT_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }

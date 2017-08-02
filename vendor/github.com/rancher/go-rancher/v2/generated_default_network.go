@@ -13,6 +13,8 @@ type DefaultNetwork struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
+	DefaultPolicyAction string `json:"defaultPolicyAction,omitempty" yaml:"default_policy_action,omitempty"`
+
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	Dns []string `json:"dns,omitempty" yaml:"dns,omitempty"`
@@ -27,6 +29,8 @@ type DefaultNetwork struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	Policy []NetworkPolicyRule `json:"policy,omitempty" yaml:"policy,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
@@ -38,8 +42,6 @@ type DefaultNetwork struct {
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
-
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
@@ -67,11 +69,7 @@ type DefaultNetworkOperations interface {
 
 	ActionDeactivate(*DefaultNetwork) (*Network, error)
 
-	ActionPurge(*DefaultNetwork) (*Network, error)
-
 	ActionRemove(*DefaultNetwork) (*Network, error)
-
-	ActionRestore(*DefaultNetwork) (*Network, error)
 
 	ActionUpdate(*DefaultNetwork) (*Network, error)
 }
@@ -153,29 +151,11 @@ func (c *DefaultNetworkClient) ActionDeactivate(resource *DefaultNetwork) (*Netw
 	return resp, err
 }
 
-func (c *DefaultNetworkClient) ActionPurge(resource *DefaultNetwork) (*Network, error) {
-
-	resp := &Network{}
-
-	err := c.rancherClient.doAction(DEFAULT_NETWORK_TYPE, "purge", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *DefaultNetworkClient) ActionRemove(resource *DefaultNetwork) (*Network, error) {
 
 	resp := &Network{}
 
 	err := c.rancherClient.doAction(DEFAULT_NETWORK_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *DefaultNetworkClient) ActionRestore(resource *DefaultNetwork) (*Network, error) {
-
-	resp := &Network{}
-
-	err := c.rancherClient.doAction(DEFAULT_NETWORK_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }

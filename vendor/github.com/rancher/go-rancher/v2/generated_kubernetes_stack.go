@@ -9,7 +9,7 @@ type KubernetesStack struct {
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
-	Binding *Binding `json:"binding,omitempty" yaml:"binding,omitempty"`
+	Answers map[string]interface{} `json:"answers,omitempty" yaml:"answers,omitempty"`
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
@@ -51,8 +51,6 @@ type KubernetesStack struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
@@ -73,13 +71,9 @@ type KubernetesStackOperations interface {
 	ById(id string) (*KubernetesStack, error)
 	Delete(container *KubernetesStack) error
 
-	ActionCancelupgrade(*KubernetesStack) (*Stack, error)
-
 	ActionCreate(*KubernetesStack) (*Stack, error)
 
 	ActionError(*KubernetesStack) (*Stack, error)
-
-	ActionFinishupgrade(*KubernetesStack) (*Stack, error)
 
 	ActionRemove(*KubernetesStack) (*Stack, error)
 
@@ -138,15 +132,6 @@ func (c *KubernetesStackClient) Delete(container *KubernetesStack) error {
 	return c.rancherClient.doResourceDelete(KUBERNETES_STACK_TYPE, &container.Resource)
 }
 
-func (c *KubernetesStackClient) ActionCancelupgrade(resource *KubernetesStack) (*Stack, error) {
-
-	resp := &Stack{}
-
-	err := c.rancherClient.doAction(KUBERNETES_STACK_TYPE, "cancelupgrade", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *KubernetesStackClient) ActionCreate(resource *KubernetesStack) (*Stack, error) {
 
 	resp := &Stack{}
@@ -161,15 +146,6 @@ func (c *KubernetesStackClient) ActionError(resource *KubernetesStack) (*Stack, 
 	resp := &Stack{}
 
 	err := c.rancherClient.doAction(KUBERNETES_STACK_TYPE, "error", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *KubernetesStackClient) ActionFinishupgrade(resource *KubernetesStack) (*Stack, error) {
-
-	resp := &Stack{}
-
-	err := c.rancherClient.doAction(KUBERNETES_STACK_TYPE, "finishupgrade", &resource.Resource, nil, resp)
 
 	return resp, err
 }

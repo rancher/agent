@@ -39,8 +39,6 @@ type MachineDriver struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	UiUrl string `json:"uiUrl,omitempty" yaml:"ui_url,omitempty"`
 
 	Url string `json:"url,omitempty" yaml:"url,omitempty"`

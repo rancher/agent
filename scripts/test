@@ -45,10 +45,3 @@ docker run -i -d busybox:1
 PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
 
 go test -race -cover -timeout=3m -tags=test ${PACKAGES}
-
-cd tests
-find -depth -name __pycache__ -o -name "*.pyc" -exec rm -rf {} \;
-if [ -z "$NO_TEST" ]; then
-    mkdir -p ${CATTLE_HOME:-/var/lib/cattle} || true
-    tox "$@"
-fi

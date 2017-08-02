@@ -13,9 +13,15 @@ type Instance struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
+	DependsOn []DependsOn `json:"dependsOn,omitempty" yaml:"depends_on,omitempty"`
+
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
+
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
+
+	HealthcheckStates []HealthcheckState `json:"healthcheckStates,omitempty" yaml:"healthcheck_states,omitempty"`
 
 	HostId string `json:"hostId,omitempty" yaml:"host_id,omitempty"`
 
@@ -27,13 +33,13 @@ type Instance struct {
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
+	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
+
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
-
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
@@ -55,37 +61,21 @@ type InstanceOperations interface {
 	ById(id string) (*Instance, error)
 	Delete(container *Instance) error
 
-	ActionAllocate(*Instance) (*Instance, error)
-
 	ActionConsole(*Instance, *InstanceConsoleInput) (*InstanceConsole, error)
 
 	ActionCreate(*Instance) (*Instance, error)
 
-	ActionDeallocate(*Instance) (*Instance, error)
-
 	ActionError(*Instance) (*Instance, error)
 
-	ActionMigrate(*Instance) (*Instance, error)
-
-	ActionPurge(*Instance) (*Instance, error)
-
-	ActionRemove(*Instance) (*Instance, error)
+	ActionRemove(*Instance, *InstanceRemove) (*Instance, error)
 
 	ActionRestart(*Instance) (*Instance, error)
-
-	ActionRestore(*Instance) (*Instance, error)
 
 	ActionStart(*Instance) (*Instance, error)
 
 	ActionStop(*Instance, *InstanceStop) (*Instance, error)
 
 	ActionUpdate(*Instance) (*Instance, error)
-
-	ActionUpdatehealthy(*Instance) (*Instance, error)
-
-	ActionUpdatereinitializing(*Instance) (*Instance, error)
-
-	ActionUpdateunhealthy(*Instance) (*Instance, error)
 }
 
 func newInstanceClient(rancherClient *RancherClient) *InstanceClient {
@@ -138,15 +128,6 @@ func (c *InstanceClient) Delete(container *Instance) error {
 	return c.rancherClient.doResourceDelete(INSTANCE_TYPE, &container.Resource)
 }
 
-func (c *InstanceClient) ActionAllocate(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "allocate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *InstanceClient) ActionConsole(resource *Instance, input *InstanceConsoleInput) (*InstanceConsole, error) {
 
 	resp := &InstanceConsole{}
@@ -165,15 +146,6 @@ func (c *InstanceClient) ActionCreate(resource *Instance) (*Instance, error) {
 	return resp, err
 }
 
-func (c *InstanceClient) ActionDeallocate(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "deallocate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *InstanceClient) ActionError(resource *Instance) (*Instance, error) {
 
 	resp := &Instance{}
@@ -183,29 +155,11 @@ func (c *InstanceClient) ActionError(resource *Instance) (*Instance, error) {
 	return resp, err
 }
 
-func (c *InstanceClient) ActionMigrate(resource *Instance) (*Instance, error) {
+func (c *InstanceClient) ActionRemove(resource *Instance, input *InstanceRemove) (*Instance, error) {
 
 	resp := &Instance{}
 
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "migrate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionPurge(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "purge", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionRemove(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "remove", &resource.Resource, nil, resp)
+	err := c.rancherClient.doAction(INSTANCE_TYPE, "remove", &resource.Resource, input, resp)
 
 	return resp, err
 }
@@ -215,15 +169,6 @@ func (c *InstanceClient) ActionRestart(resource *Instance) (*Instance, error) {
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(INSTANCE_TYPE, "restart", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionRestore(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -251,33 +196,6 @@ func (c *InstanceClient) ActionUpdate(resource *Instance) (*Instance, error) {
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(INSTANCE_TYPE, "update", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionUpdatehealthy(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "updatehealthy", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionUpdatereinitializing(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *InstanceClient) ActionUpdateunhealthy(resource *Instance) (*Instance, error) {
-
-	resp := &Instance{}
-
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "updateunhealthy", &resource.Resource, nil, resp)
 
 	return resp, err
 }

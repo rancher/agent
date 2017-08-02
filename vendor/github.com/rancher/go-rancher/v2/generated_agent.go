@@ -31,8 +31,6 @@ type Agent struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Uri string `json:"uri,omitempty" yaml:"uri,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
@@ -63,17 +61,9 @@ type AgentOperations interface {
 
 	ActionDisconnect(*Agent) (*Agent, error)
 
-	ActionFinishreconnect(*Agent) (*Agent, error)
-
-	ActionPurge(*Agent) (*Agent, error)
-
 	ActionReconnect(*Agent) (*Agent, error)
 
 	ActionRemove(*Agent) (*Agent, error)
-
-	ActionRestore(*Agent) (*Agent, error)
-
-	ActionUpdate(*Agent) (*Agent, error)
 }
 
 func newAgentClient(rancherClient *RancherClient) *AgentClient {
@@ -162,24 +152,6 @@ func (c *AgentClient) ActionDisconnect(resource *Agent) (*Agent, error) {
 	return resp, err
 }
 
-func (c *AgentClient) ActionFinishreconnect(resource *Agent) (*Agent, error) {
-
-	resp := &Agent{}
-
-	err := c.rancherClient.doAction(AGENT_TYPE, "finishreconnect", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *AgentClient) ActionPurge(resource *Agent) (*Agent, error) {
-
-	resp := &Agent{}
-
-	err := c.rancherClient.doAction(AGENT_TYPE, "purge", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *AgentClient) ActionReconnect(resource *Agent) (*Agent, error) {
 
 	resp := &Agent{}
@@ -194,24 +166,6 @@ func (c *AgentClient) ActionRemove(resource *Agent) (*Agent, error) {
 	resp := &Agent{}
 
 	err := c.rancherClient.doAction(AGENT_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *AgentClient) ActionRestore(resource *Agent) (*Agent, error) {
-
-	resp := &Agent{}
-
-	err := c.rancherClient.doAction(AGENT_TYPE, "restore", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *AgentClient) ActionUpdate(resource *Agent) (*Agent, error) {
-
-	resp := &Agent{}
-
-	err := c.rancherClient.doAction(AGENT_TYPE, "update", &resource.Resource, nil, resp)
 
 	return resp, err
 }
