@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"gopkg.in/check.v1"
-	"github.com/rancher/agent/utils"
-	"github.com/docker/docker/api/types/container"
-	"golang.org/x/net/context"
-	"github.com/docker/docker/api/types"
-	"github.com/rancher/event-subscriber/events"
 	"encoding/json"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/rancher/agent/utils"
+	"github.com/rancher/event-subscriber/events"
+	"golang.org/x/net/context"
+	"gopkg.in/check.v1"
 )
 
 func (s *EventTestSuite) TestInstanceInspectByName(c *check.C) {
@@ -65,7 +65,7 @@ func (s *EventTestSuite) TestInstanceInspectById(c *check.C) {
 		c.Fatal(err)
 	}
 	event.Data["instanceInspect"] = map[string]interface{}{
-		"id": resp.ID,
+		"id":   resp.ID,
 		"kind": "docker",
 	}
 	reply := testEvent(rawEvent, c)

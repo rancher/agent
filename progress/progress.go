@@ -14,13 +14,13 @@ type Progress struct {
 
 func (p *Progress) Update(msg string, types string, data map[string]interface{}) {
 	resp := &client.Publish{
-		ResourceId:            p.Request.ResourceID,
-		PreviousIds:           []string{p.Request.ID},
-		ResourceType:          p.Request.ResourceType,
-		Name:                  p.Request.ReplyTo,
-		Data:                  data,
-		Transitioning:         types,
-		TransitioningMessage:  msg,
+		ResourceId:           p.Request.ResourceID,
+		PreviousIds:          []string{p.Request.ID},
+		ResourceType:         p.Request.ResourceType,
+		Name:                 p.Request.ReplyTo,
+		Data:                 data,
+		Transitioning:        types,
+		TransitioningMessage: msg,
 	}
 	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
 	logrus.Debugf("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.Name, resp.ResourceId, resp.ResourceType, transition)

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"gopkg.in/check.v1"
 	v2 "github.com/rancher/go-rancher/v2"
+	"gopkg.in/check.v1"
 )
 
 func (s *EventTestSuite) TestInstanceDeactivate(c *check.C) {

@@ -11,8 +11,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-connections/sockets"
-	v2 "github.com/rancher/go-rancher/v2"
 	"github.com/pkg/errors"
+	v2 "github.com/rancher/go-rancher/v2"
 )
 
 const (

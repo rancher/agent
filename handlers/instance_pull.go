@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -8,8 +10,6 @@ import (
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	v2 "github.com/rancher/go-rancher/v2"
-	"fmt"
-	"github.com/docker/docker/api/types"
 	"golang.org/x/net/context"
 )
 

@@ -6,7 +6,7 @@ import (
 	"github.com/rancher/agent/utils"
 )
 
-type OSCollector struct {}
+type OSCollector struct{}
 
 func (o OSCollector) getDockerVersion(verbose bool) map[string]string {
 	data := map[string]string{}
@@ -29,7 +29,7 @@ func (o OSCollector) GetData() (map[string]interface{}, error) {
 		return data, errors.Wrap(err, "failed to get OS data")
 	}
 
-	for key, value := range o.getDockerVersion( true) {
+	for key, value := range o.getDockerVersion(true) {
 		data[key] = value
 	}
 	for key, value := range osData {
@@ -44,7 +44,7 @@ func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 		return map[string]string{}, errors.Wrap(err, "failed to get OS data")
 	}
 	labels := map[string]string{
-		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.getDockerVersion( false)["dockerVersion"],
+		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.getDockerVersion(false)["dockerVersion"],
 		fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(osData["kernelVersion"], 2),
 	}
 	return labels, nil

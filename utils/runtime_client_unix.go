@@ -46,7 +46,7 @@ func launchDefaultClient(version string) (*dclient.Client, error) {
 			Transport: &http.Transport{
 				TLSClientConfig: tlsc,
 			},
-			Timeout: time.Second * 10,
+			Timeout: time.Second * 30,
 		}
 	}
 

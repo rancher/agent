@@ -20,7 +20,7 @@ func (s *EventTestSuite) TestPing(c *check.C) {
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
 	inspect := getDockerInspect(reply, c)
-	containerId1 := inspect.ID
+	containerID := inspect.ID
 
 	pingEvent := loadEvent("./test_events/ping", c)
 	reply = testEvent(pingEvent, c)
@@ -52,7 +52,7 @@ func (s *EventTestSuite) TestPing(c *check.C) {
 	exist1 := false
 	for i := 4; i < len(resources); i++ {
 		c.Assert(resources[i].Type, check.Equals, "instance")
-		if resources[i].ExternalId == containerId1 && resources[i].State == "running" {
+		if resources[i].ExternalID == containerID && resources[i].State == "running" {
 			exist1 = true
 		}
 	}

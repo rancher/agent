@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"sync"
 	"github.com/Sirupsen/logrus"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
+	"sync"
 )
 
 var (

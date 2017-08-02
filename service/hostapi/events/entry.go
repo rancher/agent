@@ -57,7 +57,7 @@ func (de *DockerEventsProcessor) Process() error {
 	filter.Add("status", "paused")
 	filter.Add("status", "running")
 	listOpts := types.ContainerListOptions{
-		All:    true,
+		All:     true,
 		Filters: filter,
 	}
 	containers, err := dockerClient.ContainerList(context.Background(), listOpts)

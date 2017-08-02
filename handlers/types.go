@@ -1,18 +1,18 @@
 package handlers
 
 import (
-	"github.com/rancher/agent/host_info"
 	"github.com/docker/docker/client"
+	"github.com/rancher/agent/host_info"
 )
 
 type Handler struct {
-	compute      *ComputeHandler
-	storage      *StorageHandler
-	ping         *PingHandler
+	compute *ComputeHandler
+	storage *StorageHandler
+	ping    *PingHandler
 }
 
 type ComputeHandler struct {
-	dockerClient            *client.Client
+	dockerClient *client.Client
 }
 
 type PingHandler struct {

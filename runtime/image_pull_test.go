@@ -3,8 +3,8 @@
 package runtime
 
 import (
-	v2 "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/agent/utils"
+	v2 "github.com/rancher/go-rancher/v2"
 	"gopkg.in/check.v1"
 )
 

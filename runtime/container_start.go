@@ -15,10 +15,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	v2 "github.com/rancher/go-rancher/v2"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/progress"
 	"github.com/rancher/agent/utils"
+	v2 "github.com/rancher/go-rancher/v2"
 	"sync"
 )
 
@@ -32,7 +32,7 @@ const (
 var (
 	dockerRootOnce = sync.Once{}
 	dockerRoot     = ""
-	HTTPProxyList = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
+	HTTPProxyList  = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
 )
 
 func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networkKind string, credentials []v2.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
@@ -67,14 +67,14 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networkKind
 		return errors.Wrap(err, "failed to generate container spec")
 	}
 
-	containerId, err := utils.FindContainer(runtimeClient, containerSpec, false)
+	containerID, err := utils.FindContainer(runtimeClient, containerSpec, false)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
 			return errors.Wrap(err, "failed to get container")
 		}
 	}
 	created := false
-	if containerId == "" {
+	if containerID == "" {
 		credential := v2.Credential{}
 		if credentials != nil && len(credentials) > 0 {
 			credential = credentials[0]
@@ -83,23 +83,23 @@ func ContainerStart(containerSpec v2.Container, volumes []v2.Volume, networkKind
 		if err != nil {
 			return errors.Wrap(err, "failed to create container")
 		}
-		containerId = newID
+		containerID = newID
 		created = true
 	}
 
 	startErr := utils.Serialize(func() error {
-		return runtimeClient.ContainerStart(context.Background(), containerId, types.ContainerStartOptions{})
+		return runtimeClient.ContainerStart(context.Background(), containerID, types.ContainerStartOptions{})
 	})
 	if startErr != nil {
 		if created {
-			if err := utils.RemoveContainer(runtimeClient, containerId); err != nil {
+			if err := utils.RemoveContainer(runtimeClient, containerID); err != nil {
 				return errors.Wrap(err, "failed to remove container")
 			}
 		}
 		return errors.Wrap(startErr, "failed to start container")
 	}
 
-	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been started", containerSpec.Id, containerSpec.Name, containerId)
+	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been started", containerSpec.Id, containerSpec.Name, containerID)
 	started = true
 	return nil
 }
@@ -255,7 +255,7 @@ func setupPorts(config *container.Config, containerSpec v2.Container, hostConfig
 				}
 			} else {
 				bindings[bind] = append(bindings[bind], nat.PortBinding{
-					HostIP: bindAddr,
+					HostIP:   bindAddr,
 					HostPort: strconv.Itoa(int(endpoint.PublicPort)),
 				})
 			}
@@ -295,7 +295,6 @@ func setupNonRancherVolumes(config *container.Config, volumes []v2.Volume, conta
 		}
 	}
 
-
 	for _, volume := range containerSpec.DataVolumes {
 		parts := strings.SplitN(volume, ":", 3)
 		// don't set rancher managed volume
@@ -330,7 +329,6 @@ func setupNonRancherVolumes(config *container.Config, volumes []v2.Volume, conta
 		config.Volumes = volumesMap
 		hostConfig.Binds = append(hostConfig.Binds, binds...)
 	}
-
 
 	containers := []string{}
 	if containerSpec.DataVolumesFrom != nil {
@@ -476,11 +474,11 @@ func setupFieldsConfig(spec v2.Container, config *container.Config) {
 	config.User = spec.User
 }
 
-func isRunning(dockerClient *client.Client, containerId string) (bool, error) {
-	if containerId == "" {
+func isRunning(dockerClient *client.Client, containerID string) (bool, error) {
+	if containerID == "" {
 		return false, nil
 	}
-	inspect, err := dockerClient.ContainerInspect(context.Background(), containerId)
+	inspect, err := dockerClient.ContainerInspect(context.Background(), containerID)
 	if err == nil {
 		return inspect.State.Running, nil
 	} else if client.IsErrContainerNotFound(err) {

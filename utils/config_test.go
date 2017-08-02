@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/check.v1"
 	gofqdn "github.com/ShowMax/go-fqdn"
 	"github.com/nu7hatch/gouuid"
+	"gopkg.in/check.v1"
 )
 
 type ConfigTestSuite struct {

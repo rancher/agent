@@ -6,8 +6,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/rancher/agent/utils"
-	"gopkg.in/check.v1"
 	v2 "github.com/rancher/go-rancher/v2"
+	"gopkg.in/check.v1"
 )
 
 // Recieving an activate event for a running, pre-existing container should

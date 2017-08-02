@@ -139,7 +139,7 @@
 				"removeTime": 1443633560000,
 				"allocationState": "deactivating",
 				"nativeContainer": false,
-				"networkContainerId": null,
+				"networkcontainerID": null,
 				"type": "instance",
 				"dataVolumesFromContainers": [
 

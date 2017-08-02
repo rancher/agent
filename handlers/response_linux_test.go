@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"gopkg.in/check.v1"
-	"github.com/rancher/agent/utils"
-	"github.com/docker/docker/api/types/container"
-	"golang.org/x/net/context"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/rancher/agent/utils"
+	"golang.org/x/net/context"
+	"gopkg.in/check.v1"
 )
 
 type ResponseTestSuite struct {

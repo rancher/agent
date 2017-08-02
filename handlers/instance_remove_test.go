@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"gopkg.in/check.v1"
-	v2 "github.com/rancher/go-rancher/v2"
-	"github.com/rancher/agent/utils"
-	"github.com/docker/docker/api/types/filters"
 	"context"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/rancher/agent/utils"
+	v2 "github.com/rancher/go-rancher/v2"
+	"gopkg.in/check.v1"
 )
 
 func (s *EventTestSuite) TestInstanceRemove(c *check.C) {
@@ -23,7 +23,7 @@ func (s *EventTestSuite) TestInstanceRemove(c *check.C) {
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
 	inspect := getDockerInspect(reply, c)
-	containerId := inspect.ID
+	containerID := inspect.ID
 
 	event.Name = "compute.instance.remove"
 
@@ -34,9 +34,9 @@ func (s *EventTestSuite) TestInstanceRemove(c *check.C) {
 
 	client := utils.GetRuntimeClient("docker", utils.DefaultVersion)
 	filt := filters.NewArgs()
-	filt.Add("id", containerId)
+	filt.Add("id", containerID)
 	list, err := client.ContainerList(context.Background(), types.ContainerListOptions{
-		All: true,
+		All:     true,
 		Filters: filt,
 	})
 	if err != nil {

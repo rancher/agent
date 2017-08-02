@@ -55,7 +55,7 @@ type Resource struct {
 	Memory           uint64                 `json:"memory,omitempty" yaml:"memory,omitempty"`
 	MilliCPU         uint64                 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
 	LocalStorageMb   uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty"`
-	ExternalId       string                 `json:"externalId,omitempty" yaml:"externalId,omitempty"`
+	ExternalID       string                 `json:"externalId,omitempty" yaml:"externalId,omitempty"`
 }
 
 func DoPingAction(event *revents.Event, resp *Response, dockerClient *client.Client, collectors []hostInfo.Collector) error {
@@ -275,7 +275,7 @@ func addContainer(state string, container types.Container, containers []Resource
 		Type:       "instance",
 		UUID:       container.Labels[utils.UUIDLabel],
 		State:      state,
-		ExternalId: container.ID,
+		ExternalID: container.ID,
 	}
 	return append(containers, containerData)
 }

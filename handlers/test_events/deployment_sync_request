@@ -44,7 +44,6 @@
 						"instanceLinks": {},
 						"secrets": [],
 						"labels": {
-							"io.rancher.container.pull_image": "always",
 							"io.rancher.container.mac_address": "02:0c:9e:04:d1:39"
 						},
 						"privileged": false,
@@ -119,7 +118,7 @@
 				"mounts": null,
 				"name": "strongmonkey",
 				"nativeContainer": false,
-				"networkContainerId": null,
+				"networkcontainerID": null,
 				"networkId": null,
 				"networkIds": ["1n4"],
 				"portBindings": null,

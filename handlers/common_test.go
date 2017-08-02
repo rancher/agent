@@ -52,7 +52,7 @@ func getDockerInspect(reply *client.Publish, c *check.C) types.ContainerJSON {
 	if err := utils.Unmarshalling(response.InstanceStatus[0].DockerInspect, &inspect); err != nil {
 		c.Fatal(err)
 	}
-	return  inspect
+	return inspect
 }
 
 func loadEvent(eventFile string, c *check.C) []byte {

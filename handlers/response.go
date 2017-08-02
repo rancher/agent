@@ -19,19 +19,19 @@ const (
 func constructDeploymentSyncReply(containerSpec v2.Container, client *client.Client, networkKind string, pro *progress.Progress) (interface{}, error) {
 	response := v2.DeploymentSyncResponse{}
 
-	containerId, err := utils.FindContainer(client, containerSpec, false)
+	containerID, err := utils.FindContainer(client, containerSpec, false)
 	if err != nil && !utils.IsContainerNotFoundError(err) {
 		return map[string]interface{}{}, errors.Wrap(err, "failed to get container")
 	}
 
-	if containerId == "" {
+	if containerID == "" {
 		status := v2.InstanceStatus{}
 		status.InstanceUuid = containerSpec.Uuid
 		response.InstanceStatus = []v2.InstanceStatus{status}
 		return response, nil
 	}
 
-	inspect, err := client.ContainerInspect(context.Background(), containerId)
+	inspect, err := client.ContainerInspect(context.Background(), containerID)
 	if err != nil {
 		return map[string]interface{}{}, errors.Wrap(err, "failed to inspect container")
 	}

@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	v2 "github.com/rancher/go-rancher/v2"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/progress"
 	"github.com/rancher/agent/utils"
-	"github.com/docker/distribution/reference"
-	"github.com/Sirupsen/logrus"
+	v2 "github.com/rancher/go-rancher/v2"
 )
 
 type InstancePull struct {
@@ -83,9 +83,9 @@ func ImagePull(progress *progress.Progress, client *client.Client, imageName str
 		return errors.Wrap(err, "failed to parse normalized image name")
 	}
 	auth := types.AuthConfig{
-		Username: credential.PublicValue,
+		Username:      credential.PublicValue,
 		ServerAddress: reference.Domain(named),
-		Password: credential.SecretValue,
+		Password:      credential.SecretValue,
 	}
 	if auth.ServerAddress == "https://docker.io" {
 		auth.ServerAddress = "https://index.docker.io"

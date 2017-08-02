@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	volumeTypes "github.com/docker/docker/api/types/volume"
 	engineCli "github.com/docker/docker/client"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/progress"
 	"github.com/rancher/agent/utils"
 	v2 "github.com/rancher/go-rancher/v2"
 	"golang.org/x/net/context"
-	volumeTypes "github.com/docker/docker/api/types/volume"
 )
 
 const (

@@ -17,7 +17,7 @@ const (
 	waitProg         = "/.r/r"
 	waitVolume       = "rancher-cni"
 	waitVolumeTarget = "/.r"
-	cniWaitLabel	 = "io.rancher.cni.wait"
+	cniWaitLabel     = "io.rancher.cni.wait"
 )
 
 func modifyForCNI(c *client.Client, container *container.Config, hostConfig *container.HostConfig) error {

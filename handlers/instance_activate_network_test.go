@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"gopkg.in/check.v1"
-	v2 "github.com/rancher/go-rancher/v2"
-	"github.com/rancher/agent/utils"
-	"github.com/docker/docker/api/types/container"
-	"golang.org/x/net/context"
-	"github.com/docker/docker/api/types"
 	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/rancher/agent/utils"
+	v2 "github.com/rancher/go-rancher/v2"
+	"golang.org/x/net/context"
+	"gopkg.in/check.v1"
 )
 
 func (s *EventTestSuite) TestNetworkModeNone(c *check.C) {
@@ -129,4 +129,3 @@ func (s *EventTestSuite) TestNetworkModeBridge(c *check.C) {
 	c.Assert(inspect.Config.Hostname, check.Equals, "nameisset")
 	c.Assert(inspect.HostConfig.PortBindings["10000/tcp"][0], check.Equals, nat.PortBinding{HostPort: "10003"})
 }
-

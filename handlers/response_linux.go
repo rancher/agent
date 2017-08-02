@@ -11,9 +11,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/progress"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
-	"github.com/rancher/agent/progress"
 )
 
 func getIP(inspect types.ContainerJSON, networkKind string, pro *progress.Progress) (string, error) {

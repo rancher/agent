@@ -14,11 +14,11 @@ import (
 
 	"runtime"
 
+	"fmt"
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
-	"fmt"
 )
 
 type Handler struct {
