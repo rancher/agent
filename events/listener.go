@@ -1,13 +1,15 @@
 package events
 
 import (
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
-	"os"
-	"time"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
@@ -36,7 +38,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 
 	eventHandlers, err := handlers.GetHandlers()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get event handlers")
 	}
 
 	pingConfig := revents.PingConfig{
@@ -46,9 +48,12 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	}
 	router, err := revents.NewEventRouter("", 0, eventURL, accessKey, secretKey, nil, eventHandlers, "", workerCount, pingConfig)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create new event router")
 	}
 	err = router.StartWithoutCreate(nil)
+	if err != nil {
+		return errors.Wrap(err, "Error encountered while running event router")
+	}
 	return err
 }
 
