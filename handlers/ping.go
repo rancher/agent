@@ -1,38 +1,27 @@
 package handlers
 
 import (
-	engineCli "github.com/docker/docker/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
-	"github.com/rancher/agent/core/marshaller"
-	"github.com/rancher/agent/core/ping"
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/config"
-	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/agent/ping"
+	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/v2"
+	v3 "github.com/rancher/go-rancher/v3"
 )
 
-type PingHandler struct {
-	dockerClient *engineCli.Client
-	collectors   []hostInfo.Collector
-}
-
-func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) error {
+func (h *PingHandler) Ping(event *revents.Event, cli *v3.RancherClient) error {
 	if event.ReplyTo == "" {
 		return nil
 	}
-	resp := model.PingResponse{
-		Resources: []model.PingResource{},
+	resp := ping.Response{
+		Resources: []ping.Resource{},
 	}
-	if config.DoPing() {
+	if utils.DoPing() {
 		if err := ping.DoPingAction(event, &resp, h.dockerClient, h.collectors); err != nil {
-			return errors.Wrap(err, constants.PingError+"failed to do ping action")
+			return errors.Wrap(err, "failed to do ping action")
 		}
 	}
-	data, err := marshaller.StructToMap(resp)
-	if err != nil {
-		return errors.Wrap(err, constants.PingError+"failed to marshall response data")
+	data := map[string]interface{}{
+		"resources": resp.Resources,
 	}
 	return reply(data, event, cli)
 }

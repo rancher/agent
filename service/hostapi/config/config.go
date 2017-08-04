@@ -3,11 +3,12 @@ package config
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/golang/glog"
-	configuration "github.com/rancher/agent/utilities/config"
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	"github.com/golang/glog"
+	"github.com/rancher/agent/utils"
 )
 
 type config struct {
@@ -51,26 +52,27 @@ func ParsedPublicKey() error {
 }
 
 func Parse() error {
-	uuid, err := configuration.DockerUUID()
-	if err != nil {
-		return err
-	}
-	port, err := strconv.Atoi(configuration.HostAPIPort())
+	port, err := strconv.Atoi(utils.HostAPIPort())
 	if err != nil {
 		return err
 	}
 	Config.HaProxyMonitor = false
 	Config.Port = port
-	Config.IP = configuration.HostAPIIP()
+	Config.IP = utils.HostAPIIP()
 	Config.DockerURL = "unix:///var/run/docker.sock"
 	Config.Auth = true
-	Config.HostUUID = uuid
+	if os.Getenv("CATTLE_PHYSICAL_HOST_UUID") == "" {
+		Config.HostUUID = "DEFAULT"
+	} else {
+		Config.HostUUID = os.Getenv("CATTLE_PHYSICAL_HOST_UUID")
+	}
+
 	Config.HostUUIDCheck = true
-	Config.Key = configuration.JwtPublicKeyFile()
+	Config.Key = utils.JwtPublicKeyFile()
 	Config.EventsPoolSize = 10
-	Config.CattleURL = configuration.APIURL("")
-	Config.CattleAccessKey = configuration.AccessKey()
-	Config.CattleSecretKey = configuration.SecretKey()
+	Config.CattleURL = utils.APIURL("")
+	Config.CattleAccessKey = utils.AccessKey()
+	Config.CattleSecretKey = utils.SecretKey()
 
 	if len(Config.Key) > 0 {
 		if err := ParsedPublicKey(); err != nil {
