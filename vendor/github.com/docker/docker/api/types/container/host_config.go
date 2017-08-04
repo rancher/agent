@@ -223,6 +223,17 @@ func (rp *RestartPolicy) IsSame(tp *RestartPolicy) bool {
 	return rp.Name == tp.Name && rp.MaximumRetryCount == tp.MaximumRetryCount
 }
 
+// LogMode is a type to define the available modes for logging
+// These modes affect how logs are handled when log messages start piling up.
+type LogMode string
+
+// Available logging modes
+const (
+	LogModeUnset            = ""
+	LogModeBlocking LogMode = "blocking"
+	LogModeNonBlock LogMode = "non-blocking"
+)
+
 // LogConfig represents the logging configuration of the container.
 type LogConfig struct {
 	Type   string
@@ -234,6 +245,7 @@ type Resources struct {
 	// Applicable to all platforms
 	CPUShares int64 `json:"CpuShares"` // CPU shares (relative weight vs. other containers)
 	Memory    int64 // Memory limit (in bytes)
+	NanoCPUs  int64 `json:"NanoCpus"` // CPU quota in units of 10<sup>-9</sup> CPUs.
 
 	// Applicable to UNIX platforms
 	CgroupParent         string // Parent cgroup.
@@ -250,6 +262,7 @@ type Resources struct {
 	CpusetCpus           string          // CpusetCpus 0-2, 0,1
 	CpusetMems           string          // CpusetMems 0-2, 0,1
 	Devices              []DeviceMapping // List of devices to map inside the container
+	DeviceCgroupRules    []string        // List of rule to be added to the device cgroup
 	DiskQuota            int64           // Disk limit (in bytes)
 	KernelMemory         int64           // Kernel memory limit (in bytes)
 	MemoryReservation    int64           // Memory soft limit (in bytes)
@@ -316,7 +329,7 @@ type HostConfig struct {
 
 	// Applicable to Windows
 	ConsoleSize [2]uint   // Initial console size (height,width)
-	Isolation   Isolation // Isolation technology of the container (eg default, hyperv)
+	Isolation   Isolation // Isolation technology of the container (e.g. default, hyperv)
 
 	// Contains container's resources (cgroups, ulimits)
 	Resources

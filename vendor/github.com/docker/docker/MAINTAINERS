@@ -27,6 +27,7 @@
 
 		people = [
 			"aaronlehmann",
+			"akihirosuda",
 			"aluzzardi",
 			"anusha",
 			"coolljt0725",
@@ -77,9 +78,17 @@
 	# - close an issue or pull request when it's inappropriate or off-topic
 
 		people = [
+			"aboch",
+			"alexellis",
+			"andrewhsu",
+			"anonymuse",
+			"chanwit",
 			"ehazlett",
+			"fntlnz",
+			"gianarb",
 			"mgoelzer",
 			"programmerq",
+			"rheinwein",
 			"thajeztah"
 		]
 
@@ -167,10 +176,35 @@
 	Email = "aaron.lehmann@docker.com"
 	GitHub = "aaronlehmann"
 
+	[people.aboch]
+	Name = "Alessandro Boch"
+	Email = "aboch@docker.com"
+	GitHub = "aboch"
+
+	[people.alexellis]
+	Name = "Alex Ellis"
+	Email = "alexellis2@gmail.com"
+	GitHub = "alexellis"
+
+	[people.akihirosuda]
+	Name = "Akihiro Suda"
+	Email = "suda.akihiro@lab.ntt.co.jp"
+	GitHub = "AkihiroSuda"
+
 	[people.aluzzardi]
 	Name = "Andrea Luzzardi"
 	Email = "al@docker.com"
 	GitHub = "aluzzardi"
+
+	[people.andrewhsu]
+	Name = "Andrew Hsu"
+	Email = "andrewhsu@docker.com"
+	GitHub = "andrewhsu"
+
+	[people.anonymuse]
+	Name = "Jesse White"
+	Email = "anonymuse@gmail.com"
+	GitHub = "anonymuse"
 
 	[people.anusha]
 	Name = "Anusha Ragunathan"
@@ -191,6 +225,11 @@
 	Name = "Brian Goff"
 	Email = "cpuguy83@gmail.com"
 	Github = "cpuguy83"
+
+	[people.chanwit]
+	Name = "Chanwit Kaewkasi"
+	Email = "chanwit@gmail.com"
+	GitHub = "chanwit"
 
 	[people.crosbymichael]
 	Name = "Michael Crosby"
@@ -221,6 +260,16 @@
 	Name = "Phil Estes"
 	Email = "estesp@linux.vnet.ibm.com"
 	GitHub = "estesp"
+
+	[people.fntlnz]
+	Name = "Lorenzo Fontana"
+	Email = "fontanalorenz@gmail.com"
+	GitHub = "fntlnz"
+
+	[people.gianarb]
+	Name = "Gianluca Arbezzano"
+	Email = "ga@thumpflow.com"
+	GitHub = "gianarb"
 
 	[people.icecrime]
 	Name = "Arnaud Porterie"
@@ -291,6 +340,11 @@
 	Name = "Jeff Anderson"
 	Email = "jeff@docker.com"
 	GitHub = "programmerq"
+
+	[people.rheinwein]
+	Name = "Laura Frank"
+	Email = "laura@codeship.com"
+	GitHub = "rheinwein"
 
 	[people.runcom]
 	Name = "Antonio Murdaca"
