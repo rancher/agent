@@ -1,29 +1,29 @@
-FROM golang:1.7.5
+FROM golang:1.8.3
 RUN apt-get update && \
-    apt-get install -y uuid-runtime iptables
+    apt-get install -y uuid-runtime iptables apt-transport-https gnupg2 ca-certificates software-properties-common && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
+    add-apt-repository \
+       "deb [arch=amd64] https://download.docker.com/linux/debian \
+       $(lsb_release -cs) \
+       stable" && \
+    apt-get update
 RUN go get github.com/rancher/trash
 RUN go get github.com/golang/lint/golint
 ARG DOCKER_VERSION=1.10.3
-RUN if [ "${DOCKER_VERSION}" = "1.10.3" ]; then \
-        curl -sL https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION} > /usr/bin/docker && \
-        chmod +x /usr/bin/docker; \
-    fi
-RUN if [ "${DOCKER_VERSION}" != "1.10.3" ]; then \
+RUN if [ "${DOCKER_VERSION}" != "1.10.3" ] && [ "${DOCKER_VERSION}" != "17.06.0-ce" ]; then \
         curl -sfL https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz | tar xzf - -C /usr/bin --strip-components=1; \
+    elif [ "${DOCKER_VERSION}" = "17.06.0-ce" ]; then \
+        apt-get install -y docker-ce=17.06.0~ce-0~debian; \
     fi
 ENV PATH /go/bin:$PATH
 ENV DAPPER_SOURCE /go/src/github.com/rancher/agent
 ENV DAPPER_OUTPUT bin dist
-ENV DAPPER_ENV TAG REPO
+ENV DAPPER_ENV TAG REPO CROSS
 ENV DAPPER_RUN_ARGS --privileged
 ENV DAPPER_DOCKER_SOCKET true
 ENV GO15VENDOREXPERIMENT 1
 ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
 WORKDIR ${DAPPER_SOURCE}
-
-RUN apt-get update && \
-    apt-get install -y \
-        python-tox
 
 VOLUME "/var/lib/docker"
 ENTRYPOINT ["./scripts/entry"]

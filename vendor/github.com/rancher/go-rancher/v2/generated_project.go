@@ -13,17 +13,25 @@ type Project struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
+	DefaultNetworkId string `json:"defaultNetworkId,omitempty" yaml:"default_network_id,omitempty"`
+
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	HealthState string `json:"healthState,omitempty" yaml:"health_state,omitempty"`
+
+	HostRemoveDelaySeconds int64 `json:"hostRemoveDelaySeconds,omitempty" yaml:"host_remove_delay_seconds,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	Members []ProjectMember `json:"members,omitempty" yaml:"members,omitempty"`
 
+	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	Orchestration string `json:"orchestration,omitempty" yaml:"orchestration,omitempty"`
+
+	ProjectLinks []string `json:"projectLinks,omitempty" yaml:"project_links,omitempty"`
 
 	ProjectTemplateId string `json:"projectTemplateId,omitempty" yaml:"project_template_id,omitempty"`
 
@@ -39,9 +47,9 @@ type Project struct {
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
-
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
 	VirtualMachine bool `json:"virtualMachine,omitempty" yaml:"virtual_machine,omitempty"`
 }
@@ -72,8 +80,6 @@ type ProjectOperations interface {
 	ActionPurge(*Project) (*Account, error)
 
 	ActionRemove(*Project) (*Account, error)
-
-	ActionRestore(*Project) (*Account, error)
 
 	ActionSetmembers(*Project, *SetProjectMembersInput) (*SetProjectMembersInput, error)
 
@@ -173,15 +179,6 @@ func (c *ProjectClient) ActionRemove(resource *Project) (*Account, error) {
 	resp := &Account{}
 
 	err := c.rancherClient.doAction(PROJECT_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *ProjectClient) ActionRestore(resource *Project) (*Account, error) {
-
-	resp := &Account{}
-
-	err := c.rancherClient.doAction(PROJECT_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }

@@ -1,3 +1,0 @@
-{
-    "note": "This event is fire and forget. We dont care about the response, but the test framework needs the _resp file."
-}
