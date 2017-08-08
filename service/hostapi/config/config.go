@@ -61,12 +61,7 @@ func Parse() error {
 	Config.IP = utils.HostAPIIP()
 	Config.DockerURL = "unix:///var/run/docker.sock"
 	Config.Auth = true
-	if os.Getenv("CATTLE_PHYSICAL_HOST_UUID") == "" {
-		Config.HostUUID = "DEFAULT"
-	} else {
-		Config.HostUUID = os.Getenv("CATTLE_PHYSICAL_HOST_UUID")
-	}
-
+	Config.HostUUID = "DEFAULT"
 	Config.HostUUIDCheck = true
 	Config.Key = utils.JwtPublicKeyFile()
 	Config.EventsPoolSize = 10
