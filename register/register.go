@@ -14,7 +14,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
-	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/go-rancher/v3"
 )
 
 const (
@@ -28,9 +28,6 @@ func RunRegistration(url string) error {
 	accessKey, secretKey, cattleURL, agentIP := loadEnv(url)
 	os.Setenv(cattleAgentIP, agentIP)
 	os.Setenv(cattleURLEnv, cattleURL)
-	if err := downloadAPICrt(); err != nil {
-		return err
-	}
 	return register(accessKey, secretKey, cattleURL)
 }
 
@@ -157,7 +154,7 @@ func getToken() (string, error) {
 	return token, nil
 }
 
-func downloadAPICrt() error {
+func DownloadAPICrt() error {
 	if _, err := os.Stat(apiCrtFile); err == nil {
 		os.Remove(apiCrtFile)
 	}
