@@ -15,7 +15,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/docker/docker/pkg/tlsconfig"
+	"github.com/docker/go-connections/tlsconfig"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rancher/websocket-proxy/k8s"
@@ -86,7 +86,7 @@ func (s *Starter) StartProxy() error {
 		router.Handle(p, frontendHandler).Methods("GET")
 	}
 	for _, p := range s.FrontendHTTPPaths {
-		router.Handle(p, frontendHTTPHandler).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
+		router.Handle(p, frontendHTTPHandler).Methods("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD")
 	}
 	for _, p := range s.StatsPaths {
 		router.Handle(p, statsHandler).Methods("GET")

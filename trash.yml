@@ -3,10 +3,10 @@ import:
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
 - package: github.com/rancher/event-subscriber
-  version: cdcd1659ec46128cf3118ae6c56ade83b220ff79
+  version: d3bd4e5241fb884dcb0f99ba222623250115fb56
 
 - package: github.com/rancher/go-rancher
-  version: f4560b58215d7eefc74f867a450ded571b731609
+  version: 3ce282a25812c3876a55bae174a0980bac08870f
 
 - package: github.com/gorilla/mux
   version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e
@@ -18,10 +18,10 @@ import:
   version: e2e3d8414d0fbae04004f151979f4e27c6747fe7
 
 - package: github.com/mitchellh/mapstructure
-  version: d2dd0262208475919e1a362f675cfc0e7c10e905
+  version: d0303fe809921458f417bcf828397a65db30a7e4
 
 - package: github.com/docker/docker
-  version: 60ef48dd4acab218449d1f64c5fbb0850c493a31
+  version: 3a1279393faf78632bf169619d407e584da84b66
 
 - package: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
@@ -30,13 +30,13 @@ import:
   version: f841c39de738b1d0df95b5a7187744f0e03d8112
 
 - package: github.com/docker/distribution
-  version: 4e17ab5d319ac5b70b2769442947567a83386fbc
+  version: 3da015f8aaa8653690917031108bd45a2bed5cfa
 
 - package: github.com/docker/go-units
   version: f2d77a61e3c169b43402a0a1e84f06daf29b8190
 
 - package: github.com/docker/go-connections
-  version: 990a1a1a70b0da4c4cb70e117971a4f0babfbf1a
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
 
 - package: github.com/opencontainers/runc
   version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
@@ -65,9 +65,6 @@ import:
 - package: github.com/go-ole/go-ole
   version: 7dfdcf409020452e29b4babcbb22f984d2aa308a
 
-- package: github.com/patrickmn/go-cache
-  version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
-
 - package: github.com/vishvananda/netlink
   version: da7420cab5e209195f5f7387fccd4c7f48758d30
 
@@ -84,7 +81,7 @@ import:
   version: 415abc325023f1a00cd2d9fa512e0e71745791a2
 
 - package: github.com/rancher/websocket-proxy
-  version: 4b6c147a7434c740067e7613002d87977c029fa2
+  version: e3ef8e011b5cfe881d1382ce3e23abeb001fa3ac
 
 - package: github.com/rakyll/goini
   version: 907cca0f578a5316fb864ec6992dc3d9730ec58c
@@ -100,3 +97,9 @@ import:
 
 - package: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+
+- package: github.com/opencontainers/go-digest
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
+
+- package: github.com/patrickmn/go-cache
+  version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
