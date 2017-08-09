@@ -11,12 +11,3 @@ OS_ARCH_ARG[windows]="amd64"
 
 mkdir -p bin
 CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION -linkmode external -extldflags -static -s" -o bin/agent
-
-if [ -n "$CROSS" ]; then
-    rm -rf bin
-    mkdir -p bin
-    echo "Building binary for linux/amd64..."
-    GOARCH=amd64 GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION -linkmode external -extldflags -static -s" -o bin/agent ./
-    echo "Building binary for windows/amd64..."
-    GOARCH=amd64 GOOS=windows CGO_ENABLED=0 go build -ldflags="-w -X main.VERSION=$VERSION" -o bin/agent.exe ./
-fi
