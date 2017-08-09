@@ -1,270 +1,167 @@
 {
-   "id":"d9fe025e-985b-497d-9cce-a0ad89099a6f",
-   "name":"storage.volume.remove",
-   "replyTo":"reply.8346387150710195997",
-   "resourceId":"1vspm251",
-   "resourceType":"volumeStoragePoolMap",
-   "publisher":null,
-   "transitioning":null,
-   "transitioningMessage":null,
-   "transitioningInternalMessage":null,
-   "previousIds":null,
-   "previousNames":null,
-   "data":{
-      "volumeStoragePoolMap":{
-         "name":null,
-         "id":251,
-         "state":"removing",
-         "description":null,
-         "created":1443633371000,
-         "data":{
+	"id": "d9fe025e-985b-497d-9cce-a0ad89099a6f",
+	"name": "storage.volume.remove",
+	"replyTo": "reply.8346387150710195997",
+	"resourceId": "1vspm251",
+	"resourceType": "volumeStoragePoolMap",
+	"publisher": null,
+	"transitioning": null,
+	"transitioningMessage": null,
+	"transitioningInternalMessage": null,
+	"previousIds": null,
+	"previousNames": null,
+	"data": {
+		"volume": {
+			"name": null,
+			"id": 342,
+			"state": "purging",
+			"uri": null,
+			"description": null,
+			"imageId": 573,
+			"created": 1443633371000,
+			"data": {
 
-         },
-         "kind":"volumeStoragePoolMap",
-         "uuid":"b2feffce-4142-4fe1-ad9d-7ef2ca33f7f8",
-         "storagePoolId":107,
-         "volumeId":342,
-         "removed":null,
-         "removeTime":null,
-         "type":"volumeStoragePoolMap",
-         "volume":{
-            "name":null,
-            "id":342,
-            "state":"purging",
-            "uri":null,
-            "description":null,
-            "imageId":573,
-            "created":1443633371000,
-            "data":{
+			},
+			"format": "docker",
+			"kind": "volume",
+			"accountId": 5,
+			"uuid": "f1f952df-eafa-424f-9c5a-3200636d9c44",
+			"deviceNumber": -1,
+			"offeringId": null,
+			"attachedState": "active",
+			"instanceId": 452,
+			"zoneId": 1,
+			"removed": 1443633500000,
+			"removeTime": 1443633560000,
+			"allocationState": "deactivating",
+			"physicalSizeMb": null,
+			"virtualSizeMb": null,
+			"type": "volume",
+			"offering": null,
+			"instance": {
+				"name": null,
+				"id": 452,
+				"state": "purging",
+				"domain": null,
+				"registryCredentialId": null,
+				"description": null,
+				"imageId": 573,
+				"hostname": null,
+				"created": 1443633371000,
+				"data": {
+					"fields": {
+						"ports": [
 
-            },
-            "format":"docker",
-            "kind":"volume",
-            "accountId":5,
-            "uuid":"f1f952df-eafa-424f-9c5a-3200636d9c44",
-            "deviceNumber":-1,
-            "offeringId":null,
-            "attachedState":"active",
-            "instanceId":452,
-            "zoneId":1,
-            "removed":1443633500000,
-            "removeTime":1443633560000,
-            "allocationState":"deactivating",
-            "physicalSizeMb":null,
-            "virtualSizeMb":null,
-            "type":"volume",
-            "offering":null,
-            "instance":{
-               "name":null,
-               "id":452,
-               "state":"purging",
-               "domain":null,
-               "registryCredentialId":null,
-               "description":null,
-               "imageId":573,
-               "hostname":null,
-               "created":1443633371000,
-               "data":{
-                  "fields":{
-                     "ports":[
+						],
+						"startOnCreate": true,
+						"networkIds": [
+							10
+						],
+						"capAdd": [
 
-                     ],
-                     "startOnCreate":true,
-                     "networkIds":[
-                        10
-                     ],
-                     "capAdd":[
+						],
+						"extraHosts": [
 
-                     ],
-                     "extraHosts":[
+						],
+						"imageUuid": "docker:library/redis:latest",
+						"networkMode": "managed",
+						"logConfig": null,
+						"dataVolumesFrom": [
 
-                     ],
-                     "imageUuid":"docker:library/redis:latest",
-                     "networkMode":"managed",
-                     "logConfig":null,
-                     "dataVolumesFrom":[
+						],
+						"publishAllPorts": false,
+						"devices": [
 
-                     ],
-                     "publishAllPorts":false,
-                     "devices":[
+						],
+						"volumeDriver": "convoy",
+						"stdinOpen": false,
+						"dataVolumes": [
+							"abc:/abc"
+						],
+						"dns": [
 
-                     ],
-                     "volumeDriver":"convoy",
-                     "stdinOpen":false,
-                     "dataVolumes":[
-                        "abc:/abc"
-                     ],
-                     "dns":[
+						],
+						"readOnly": false,
+						"expose": [
 
-                     ],
-                     "readOnly":false,
-                     "expose":[
+						],
+						"restartPolicy": null,
+						"command": [
 
-                     ],
-                     "restartPolicy":null,
-                     "command":[
+						],
+						"privileged": false,
+						"build": null,
+						"healthCheck": null,
+						"securityOpt": [
 
-                     ],
-                     "privileged":false,
-                     "build":null,
-                     "healthCheck":null,
-                     "securityOpt":[
+						],
+						"dataVolumeMounts": {
+							"/abc": 341
+						},
+						"capDrop": [
 
-                     ],
-                     "dataVolumeMounts":{
-                        "/abc":341
-                     },
-                     "capDrop":[
+						],
+						"tty": false,
+						"dnsSearch": [
 
-                     ],
-                     "tty":false,
-                     "dnsSearch":[
+						],
+						"entryPoint": [
 
-                     ],
-                     "entryPoint":[
+						],
+						"dockerHostIp": "72.201.177.73",
+						"dockerIp": null,
+						"dockerPorts": {
 
-                     ],
-                     "dockerHostIp":"72.201.177.73",
-                     "dockerIp":null,
-                     "dockerPorts":{
+						}
+					},
+					"dockerInspect": null,
+					"dockerContainer": null
+				},
+				"kind": "container",
+				"externalId": null,
+				"accountId": 5,
+				"uuid": "806c81f5-9ff2-4a26-900b-6334727a0f68",
+				"userdata": null,
+				"memoryMb": null,
+				"offeringId": null,
+				"healthState": null,
+				"startCount": 4,
+				"deploymentUnitUuid": null,
+				"firstRunning": null,
+				"createIndex": null,
+				"compute": null,
+				"agentId": null,
+				"token": "hOy223H9pW5Kr4R0ijvoTIPE0wh17pxXuqKYYAscIcEnBK1LhSyVZFiIpbv2VoNZBWaMLkoaSgZQMPSt13pg",
+				"zoneId": 1,
+				"instanceTriggeredStop": "stop",
+				"systemContainer": null,
+				"removed": 1443633500000,
+				"removeTime": 1443633560000,
+				"allocationState": "deactivating",
+				"nativeContainer": false,
+				"networkcontainerID": null,
+				"type": "instance",
+				"dataVolumesFromContainers": [
 
-                     }
-                  },
-                  "dockerInspect":null,
-                  "dockerContainer":null
-               },
-               "kind":"container",
-               "externalId":null,
-               "accountId":5,
-               "uuid":"806c81f5-9ff2-4a26-900b-6334727a0f68",
-               "userdata":null,
-               "memoryMb":null,
-               "offeringId":null,
-               "healthState":null,
-               "startCount":4,
-               "deploymentUnitUuid":null,
-               "firstRunning":null,
-               "createIndex":null,
-               "compute":null,
-               "agentId":null,
-               "token":"hOy223H9pW5Kr4R0ijvoTIPE0wh17pxXuqKYYAscIcEnBK1LhSyVZFiIpbv2VoNZBWaMLkoaSgZQMPSt13pg",
-               "zoneId":1,
-               "instanceTriggeredStop":"stop",
-               "systemContainer":null,
-               "removed":1443633500000,
-               "removeTime":1443633560000,
-               "allocationState":"deactivating",
-               "nativeContainer":false,
-               "networkContainerId":null,
-               "type":"instance",
-               "dataVolumesFromContainers":[
-
-               ]
-            },
-            "storagePools":[
-               {
-                  "name":"ubuntu Storage Pool",
-                  "id":107,
-                  "state":"active",
-                  "description":null,
-                  "created":1443633250000,
-                  "data":{
-                     "fields":{
-                        "reportedUuid":"77218982-8724-430a-a5a4-f2fc7d6b8019-pool",
-                        "type":"storagePool",
-                        "hostUuid":"77218982-8724-430a-a5a4-f2fc7d6b8019"
-                     }
-                  },
-                  "kind":"docker",
-                  "accountId":5,
-                  "uuid":"96fc3317-ebab-440d-859e-1b7bfe3de64f",
-                  "agentId":386,
-                  "zoneId":1,
-                  "removed":null,
-                  "removeTime":null,
-                  "physicalTotalSizeMb":null,
-                  "virtualTotalSizeMb":null,
-                  "external":false,
-                  "type":"storagePool"
-               }
-            ],
-            "image":{
-               "name":"library/redis:latest",
-               "id":573,
-               "state":"active",
-               "registryCredentialId":null,
-               "description":null,
-               "created":1443633371000,
-               "data":{
-                  "dockerImage":{
-                     "id":null,
-                     "repository":"redis",
-                     "namespace":"library",
-                     "tag":"latest",
-                     "server":"index.docker.io",
-                     "serverAddress":"https://index.docker.io",
-                     "qualifiedName":"library/redis",
-                     "fullName":"library/redis:latest",
-                     "lookUpName":"library/redis"
-                  }
-               },
-               "format":"docker",
-               "url":null,
-               "kind":"image",
-               "instanceKind":"container",
-               "accountId":null,
-               "uuid":"64d21781-295e-40ac-b3db-9f575b9bbe34",
-               "removed":null,
-               "removeTime":null,
-               "isPublic":false,
-               "physicalSizeMb":null,
-               "virtualSizeMb":null,
-               "checksum":null,
-               "type":"image"
-            }
-         },
-         "storagePool":{
-            "name":"ubuntu Storage Pool",
-            "id":107,
-            "state":"active",
-            "description":null,
-            "created":1443633250000,
-            "data":{
-               "fields":{
-                  "reportedUuid":"77218982-8724-430a-a5a4-f2fc7d6b8019-pool",
-                  "type":"storagePool",
-                  "hostUuid":"77218982-8724-430a-a5a4-f2fc7d6b8019"
-               }
-            },
-            "kind":"docker",
-            "accountId":5,
-            "uuid":"96fc3317-ebab-440d-859e-1b7bfe3de64f",
-            "agentId":386,
-            "zoneId":1,
-            "removed":null,
-            "removeTime":null,
-            "physicalTotalSizeMb":null,
-            "virtualTotalSizeMb":null,
-            "external":false,
-            "type":"storagePool"
-         }
-      }
-   },
-   "time":1443633586826,
-   "timeoutMillis":15000,
-   "transitioningProgress":null,
-   "context":{
-      "topProcessName":"volume.purge",
-      "resouceId":"251",
-      "logicPath":"volume.purge->(VolumePurge)->volume.deallocate->(VolumeDeallocate)->volumestoragepoolmap.remove->(VolumeStoragePoolMapRemove)",
-      "logicName":"VolumeStoragePoolMapRemove",
-      "topResourceId":"342",
-      "resouceType":"volumeStoragePoolMap",
-      "processId":"12652",
-      "processName":"volumestoragepoolmap.remove",
-      "topResourceType":"volume",
-      "processUuid":"06853436-84c0-4e8d-89a8-84337aff0bc2",
-      "prettyResource":"volume:342->volumeStoragePoolMap:251",
-      "prettyProcess":"volume.purge->volumestoragepoolmap.remove"
-   }
+				]
+			}
+		}
+	},
+	"time": 1443633586826,
+	"timeoutMillis": 15000,
+	"transitioningProgress": null,
+	"context": {
+		"topProcessName": "volume.purge",
+		"resouceId": "251",
+		"logicPath": "volume.purge->(VolumePurge)->volume.deallocate->(VolumeDeallocate)->volumestoragepoolmap.remove->(VolumeStoragePoolMapRemove)",
+		"logicName": "VolumeStoragePoolMapRemove",
+		"topResourceId": "342",
+		"resouceType": "volumeStoragePoolMap",
+		"processId": "12652",
+		"processName": "volumestoragepoolmap.remove",
+		"topResourceType": "volume",
+		"processUuid": "06853436-84c0-4e8d-89a8-84337aff0bc2",
+		"prettyResource": "volume:342->volumeStoragePoolMap:251",
+		"prettyProcess": "volume.purge->volumestoragepoolmap.remove"
+	}
 }

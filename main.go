@@ -38,6 +38,10 @@ func main() {
 		logrus.Fatalf("Failed to Initialize Service err: %v", err)
 	}
 
+	if err := register.DownloadAPICrt(); err != nil {
+		logrus.Fatalf("Exiting. Error: %v", err)
+	}
+
 	if *rurl != "" {
 		err := register.RunRegistration(*rurl)
 		if err != nil {

@@ -1,24 +1,22 @@
 package events
 
 import (
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
-	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
-	"os"
-	"time"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	logrus.Infof("Listening for events on %v", eventURL)
 
-	config.SetAccessKey(accessKey)
-	config.SetSecretKey(secretKey)
-	config.SetAPIURL(eventURL)
-
-	config.PhysicalHostUUID(true)
-	config.SetDockerUUID()
+	utils.SetAccessKey(accessKey)
+	utils.SetSecretKey(secretKey)
+	utils.SetAPIURL(eventURL)
 
 	logrus.Info("launching hostapi")
 	go hostapi.StartUp()
@@ -53,7 +51,7 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 }
 
 func checkTS(timestamps *time.Time) bool {
-	stampFile := config.Stamp()
+	stampFile := utils.Stamp()
 	stats, err := os.Stat(stampFile)
 	if err != nil {
 		return true

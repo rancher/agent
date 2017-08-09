@@ -118,7 +118,7 @@ func (h *FrontendHandler) auth(req *http.Request) (*jwt.Token, string, error) {
 	token, tokenParam, err := parseToken(req, h.parsedPublicKey)
 	if err != nil {
 		if tokenParam == "" {
-			return nil, "", noTokenError{}
+			return nil, "", noAuthError{err: err.Error()}
 		}
 		return nil, "", fmt.Errorf("Error parsing token: %v. Token parameter: %v", err, tokenParam)
 	}
@@ -158,20 +158,26 @@ func parseToken(req *http.Request, parsedPublicKey interface{}) (*jwt.Token, str
 		return nil, "", fmt.Errorf("No JWT provided")
 	}
 
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, "", fmt.Errorf("No JWT provided")
+	}
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return parsedPublicKey, nil
 	})
 	return token, tokenString, err
 }
 
-type noTokenError struct {
+type noAuthError struct {
+	err string
 }
 
-func (e noTokenError) Error() string {
-	return "Request did not have a token parameter."
+func (e noAuthError) Error() string {
+	return e.err
 }
 
-func IsNoTokenError(err error) bool {
-	_, ok := err.(noTokenError)
+func IsNoAuthError(err error) bool {
+	_, ok := err.(noAuthError)
 	return ok
 }

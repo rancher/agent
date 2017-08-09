@@ -35,11 +35,23 @@ func (b *BackendHTTPWriter) Close() error {
 func (b *BackendHTTPWriter) WriteRequest(req *http.Request, hijack bool, address, scheme string) error {
 	vars := mux.Vars(req)
 
-	url := *req.URL
-	url.Host = address
-	if path, ok := vars["path"]; ok {
-		url.Path = path
+	headers := http.Header{}
+	for k, v := range req.Header {
+		headers[k] = v
 	}
+
+	url := *req.URL
+
+	if req.TLS == nil {
+		url.Scheme = "http"
+	} else {
+		url.Scheme = "https"
+	}
+	url.Host = req.Host
+	headers.Set("X-API-request-url", url.String())
+
+	url.Host = address
+	url.Path = vars["path"]
 	if !strings.HasPrefix(url.Path, "/") {
 		url.Path = "/" + url.Path
 	}
@@ -55,7 +67,7 @@ func (b *BackendHTTPWriter) WriteRequest(req *http.Request, hijack bool, address
 		Host:    req.Host,
 		Method:  req.Method,
 		URL:     url.String(),
-		Headers: map[string][]string(req.Header),
+		Headers: headers,
 	})
 }
 

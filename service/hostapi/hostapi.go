@@ -78,6 +78,10 @@ func StartUp() {
 			var block chan bool
 			<-block
 		}
+
+		config.Config.HostUUID = tokenResponse.ReportedUuid
+		logrus.Errorf("HostUUID: %s", config.Config.HostUUID)
+
 		handlers := make(map[string]backend.Handler)
 		handlers["/v1/logs/"] = &logs.Handler{}
 		handlers["/v2-beta/logs/"] = &logs.Handler{}
