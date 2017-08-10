@@ -9,9 +9,12 @@ import (
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utils"
 	revents "github.com/rancher/event-subscriber/events"
+	kattleHandlers "github.com/rancher/kattle/handlers"
+	"github.com/rancher/kattle/kubernetesclient"
+	"github.com/rancher/kattle/watch"
 )
 
-func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
+func Listen(eventURL, accessKey, secretKey string, workerCount int, kubernetes string) error {
 	logrus.Infof("Listening for events on %v", eventURL)
 
 	utils.SetAccessKey(accessKey)
@@ -35,6 +38,31 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	eventHandlers, err := handlers.GetHandlers()
 	if err != nil {
 		return err
+	}
+
+	if kubernetes == "import" {
+		clientset, err := kubernetesclient.CreateKubernetesClient()
+		if err != nil {
+			return err
+		}
+
+		version, err := clientset.Discovery().ServerVersion()
+		if err != nil {
+			return err
+		}
+		logrus.Infof("Kubernetes version: %s", version.String())
+
+		watchClient := watch.NewClient(clientset)
+		watchClient.Start()
+
+		time.Sleep(5 * time.Second)
+
+		kattleHandlers.WatchClient = watchClient
+		kattleHandlers.Clientset = clientset
+
+		for name, handler := range kattleHandlers.GetHandlers() {
+			eventHandlers[name] = handler
+		}
 	}
 
 	pingConfig := revents.PingConfig{
