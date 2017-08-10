@@ -1,0 +1,14 @@
+package: github.com/rancher/kattle
+import:
+- package: k8s.io/client-go
+  version: v3.0.0-beta.0
+- package: github.com/rancher/go-rancher
+  version: bcc65036739e5e1b3a4eeea0cfaa2ee76fca9d56
+- package: github.com/Sirupsen/logrus
+  version: 26709e2714106fb8ad40b773b711ebce25b78914
+- package: github.com/mitchellh/mapstructure
+  version: d0303fe809921458f417bcf828397a65db30a7e4
+- package: github.com/fatih/structs
+  version: v1.0.0
+- package: github.com/rancher/event-subscriber
+  version: d3bd4e5241fb884dcb0f99ba222623250115fb56
