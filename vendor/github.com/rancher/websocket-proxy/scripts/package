@@ -1,0 +1,13 @@
+
+#!/bin/bash
+set -e
+
+cd $(dirname $0)/..
+
+if [ ! -e bin/websocket-proxy ]; then
+    ./scripts/build
+fi
+
+mkdir -p dist/artifacts
+cd bin/
+tar cvJf ../dist/artifacts/websocket-proxy.tar.xz .
