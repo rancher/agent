@@ -19,6 +19,7 @@ var (
 func main() {
 	version := flag.Bool("version", false, "go-agent version")
 	rurl := flag.String("url", "", "registration url")
+	kubernetes := flag.String("kubernetes", "", "")
 	registerService := flag.String("register-service", "", "register rancher-agent service")
 	unregisterService := flag.Bool("unregister-service", false, "unregister rancher-agent service")
 	flag.Parse()
@@ -38,16 +39,16 @@ func main() {
 		logrus.Fatalf("Failed to Initialize Service err: %v", err)
 	}
 
-	if err := register.DownloadAPICrt(); err != nil {
-		logrus.Fatalf("Exiting. Error: %v", err)
-	}
-
 	if *rurl != "" {
 		err := register.RunRegistration(*rurl)
 		if err != nil {
 			logrus.Errorf("registration failed. err: %v", err)
 			os.Exit(1)
 		}
+	}
+
+	if err := register.DownloadAPICrt(); err != nil {
+		logrus.Fatalf("Exiting. Error: %v", err)
 	}
 
 	logrus.Info("Launching agent")
@@ -60,7 +61,7 @@ func main() {
 	provider := aws.NewProvider()
 	go provider.GetCloudProviderInfo()
 
-	err := events.Listen(url, accessKey, secretKey, workerCount)
+	err := events.Listen(url, accessKey, secretKey, workerCount, *kubernetes)
 	if err != nil {
 		logrus.Fatalf("Exiting. Error: %v", err)
 		register.NotifyShutdown(err)
