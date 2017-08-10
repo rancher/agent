@@ -1,4 +1,13 @@
+package: github.com/rancher/agent
 import:
+- package: k8s.io/client-go
+  version: v3.0.0-beta.0
+- package: github.com/fatih/structs
+  version: v1.0.0
+- package: github.com/rancher/kattle
+  version: 2d643ba0a4ddeff16846b05bebc38bb41e9f7e8c
+
+
 - package: github.com/Sirupsen/logrus
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
