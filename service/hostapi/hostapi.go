@@ -4,8 +4,11 @@ import (
 	"os"
 	"time"
 
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"strconv"
+	"strings"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/glog"
 	"github.com/rancher/agent/service/hostapi/config"
@@ -19,9 +22,6 @@ import (
 	"github.com/rancher/agent/service/hostapi/util"
 	rclient "github.com/rancher/go-rancher/client"
 	"github.com/rancher/websocket-proxy/backend"
-	"io/ioutil"
-	"strconv"
-	"strings"
 )
 
 func StartUp() {
@@ -70,7 +70,6 @@ func StartUp() {
 		}
 		tokenResponse, err := getConnectionToken(0, tokenRequest, rancherClient)
 		if err != nil {
-			logrus.Error(err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		} else if tokenResponse == nil {
@@ -96,7 +95,7 @@ func StartUp() {
 		handlers["/v1/container-proxy/"] = &proxy.Handler{}
 		handlers["/v2-beta/container-proxy/"] = &proxy.Handler{}
 		if err := backend.ConnectToProxy(tokenResponse.Url+"?token="+tokenResponse.Token, handlers); err != nil {
-			logrus.Error(err)
+			logrus.Errorf("failed to connect to proxy. err: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		}
@@ -114,16 +113,20 @@ func getConnectionToken(try int, tokenReq *rclient.HostApiProxyToken, rancherCli
 	if err != nil {
 		if apiError, ok := err.(*rclient.ApiError); ok {
 			if apiError.StatusCode == 422 {
-				parsed := &ParsedError{}
-				if uErr := json.Unmarshal([]byte(apiError.Body), &parsed); uErr == nil {
-					if strings.EqualFold(parsed.Code, "InvalidReference") && strings.EqualFold(parsed.FieldName, "reportedUuid") {
-						logrus.WithField("reportedUuid", config.Config.HostUUID).WithField("Attempt", try).Infof("Host not registered yet. Sleeping 1 second and trying again.")
-						time.Sleep(time.Second)
-						try++
-						return getConnectionToken(try, tokenReq, rancherClient) // Recursion!
+				m := map[string]string{}
+				apiBody := apiError.Body
+				parts := strings.Split(apiBody, ", ")
+				for _, part := range parts {
+					data := strings.Split(part, "=")
+					if len(data) == 2 {
+						m[data[0]] = data[1]
 					}
-				} else {
-					return nil, uErr
+				}
+				if strings.EqualFold(m["code"], "InvalidReference") && strings.EqualFold(m["fieldName"], "reportedUuid") {
+					logrus.WithField("reportedUuid", config.Config.HostUUID).WithField("Attempt", try).Infof("Host not registered yet. Sleeping 1 second and trying again.")
+					time.Sleep(time.Second)
+					try++
+					return getConnectionToken(try, tokenReq, rancherClient) // Recursion!
 				}
 			} else if apiError.StatusCode == 501 {
 				logrus.Infof("Host-api proxy disabled. Will not connect.")
