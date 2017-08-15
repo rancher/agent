@@ -85,14 +85,6 @@ func agentIP() string {
 	return DefaultValue("AGENT_IP", "")
 }
 
-func Sh() string {
-	return DefaultValue("CONFIG_SCRIPT", fmt.Sprintf("%s/config.sh", Home()))
-}
-
-func UpdatePyagent() bool {
-	return DefaultValue("CONFIG_UPDATE_PYAGENT", "true") == "true"
-}
-
 func HostAPIIP() string {
 	return DefaultValue("HOST_API_IP", "0.0.0.0")
 }

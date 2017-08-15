@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/cnf/structhash"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
@@ -30,6 +32,7 @@ const (
 type Response struct {
 	Resources []Resource `json:"resources,omitempty" yaml:"resources,omitempty"`
 	Options   Options    `json:"options,omitempty" yaml:"options,omitempty"`
+	HashKey   string     `json:"hashKey,omitempty" yaml:"hashKey,omitempty"`
 }
 
 type Options struct {
@@ -54,7 +57,7 @@ type Resource struct {
 	Created                        int64                  `json:"created,omitempty" yaml:"created,omitempty"`
 	Memory                         uint64                 `json:"memory,omitempty" yaml:"memory,omitempty"`
 	MilliCPU                       uint64                 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
-	LocalStorageMb                 uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty"`
+	LocalStorageMb                 uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty" hash:"-"`
 	ExternalID                     string                 `json:"externalId,omitempty" yaml:"externalId,omitempty"`
 	MachineServiceRegistrationUUID string                 `json:"machineServiceRegistrationUuid,omitempty" yaml:"machineServiceRegistrationUuid,omitempty"`
 }
@@ -87,11 +90,6 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		return errors.Wrap(err, "failed to get hostname")
 	}
 
-	physicalHost, err := physicalHost(hostname)
-	if err != nil {
-		return errors.Wrap(err, "failed to get physical host")
-	}
-
 	labels, err := getHostLabels(collectors)
 	if err != nil {
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
@@ -105,6 +103,7 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		createLabels[requireAnyLabel] = os.Getenv(requireAny)
 	}
 	labels[RancherAgentImage] = rancherImage
+	// host resource
 	compute := Resource{
 		Type:                           "host",
 		Kind:                           "docker",
@@ -143,12 +142,14 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		}
 	}
 
+	// storage pool
 	pool := Resource{
 		Type: "storagePool",
 		Kind: "docker",
 		Name: compute.HostName + " Storage Pool",
 	}
 
+	// ip resource
 	resolvedIP, err := net.LookupIP(utils.DockerHostIP())
 	ipAddr := ""
 	if err != nil {
@@ -161,7 +162,9 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		UUID:     ipAddr,
 		Addresss: ipAddr,
 	}
-	pong.Resources = append(pong.Resources, physicalHost, compute, pool, ip)
+
+	pong.Resources = append(pong.Resources, compute, pool, ip)
+	pong.HashKey = fmt.Sprintf("%x", structhash.Sha1(pong.Resources, 1))
 	return nil
 }
 
@@ -262,14 +265,6 @@ func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[st
 	}
 	done <- true
 	return runningContainers, nonRunningContainers, nil
-}
-
-func physicalHost(hostname string) (Resource, error) {
-	return Resource{
-		Type: "physicalHost",
-		Kind: "physicalHost",
-		Name: hostname,
-	}, nil
 }
 
 func addContainer(state string, container types.Container, containers []Resource) []Resource {

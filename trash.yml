@@ -103,3 +103,6 @@ import:
 
 - package: github.com/patrickmn/go-cache
   version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
+
+- package: github.com/cnf/structhash
+  version: 7710f1f78fb9c581deeeab57ecfb7978901b36bc
