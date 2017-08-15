@@ -23,6 +23,7 @@ func (h *PingHandler) Ping(event *revents.Event, cli *v3.RancherClient) error {
 	data := map[string]interface{}{
 		"resources": resp.Resources,
 		"options":   resp.Options,
+		"hashKey":   resp.HashKey,
 	}
 	return reply(data, event, cli)
 }
