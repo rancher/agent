@@ -44,7 +44,7 @@ func constructDeploymentSyncReply(containerSpec v3.Container, client *client.Cli
 	}
 	status := v3.InstanceStatus{}
 	status.ExternalId = inspect.ID
-	dockerInspect, err := utils.StructToMap(inspect)
+	dockerInspect, err := utils.StructToMap(utils.ConvertInspect(inspect, containerSpec))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unMarshall docker inspect")
 	}

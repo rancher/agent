@@ -27,17 +27,18 @@ func (s *EventTestSuite) unTestConflictVolumeRemove(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
 	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
 	volumeName := ""
 	volume := ""
-	for _, mounts := range inspect.Mounts {
+	for _, mounts := range inspect.MountPoint {
 		if mounts.Destination == "/foo" {
 			volumeName = string(mounts.Name)
 			volume = fmt.Sprintf("%v:%v", string(mounts.Name), "/bar")
 		}
 	}
+
 	config := &con.Config{
 		Image:     "ibuildthecloud/helloworld:latest",
 		OpenStdin: true,

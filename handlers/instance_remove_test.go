@@ -22,8 +22,8 @@ func (s *EventTestSuite) TestInstanceRemove(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	containerID := inspect.ID
+	inspect := getContainerSpec(reply, c)
+	containerID := inspect.ExternalId
 
 	event.Name = "compute.instance.remove"
 

@@ -45,14 +45,23 @@ func getDeploymentSyncRequest(path string, request interface{}, c *check.C) reve
 	return event
 }
 
-func getDockerInspect(reply *client.Publish, c *check.C) types.ContainerJSON {
+func getContainerSpec(reply *client.Publish, c *check.C) client.Container {
 	response := reply.Data["deploymentSyncResponse"].(client.DeploymentSyncResponse)
 	c.Assert(response.InstanceStatus, check.HasLen, 1)
-	var inspect types.ContainerJSON
-	if err := utils.Unmarshalling(response.InstanceStatus[0].DockerInspect, &inspect); err != nil {
+	var spec client.Container
+	if err := utils.Unmarshalling(response.InstanceStatus[0].DockerInspect, &spec); err != nil {
 		c.Fatal(err)
 	}
-	return inspect
+	return spec
+}
+
+func inspectContainer(id string, c *check.C) types.ContainerJSON {
+	cli := utils.GetRuntimeClient("docker", utils.DefaultVersion)
+	insp, err := cli.ContainerInspect(context.Background(), id)
+	if err != nil {
+		c.Fatal(err)
+	}
+	return insp
 }
 
 func loadEvent(eventFile string, c *check.C) []byte {

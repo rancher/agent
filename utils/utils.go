@@ -266,3 +266,11 @@ func ToMapString(m map[string]interface{}) map[string]string {
 	}
 	return r
 }
+
+func toMapInterface(m map[string]string) map[string]interface{} {
+	r := map[string]interface{}{}
+	for k, v := range m {
+		r[k] = v
+	}
+	return r
+}

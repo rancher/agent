@@ -25,7 +25,8 @@ func (s *EventTestSuite) TestInstanceDeactivate(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
-	c.Assert(inspect.State.Pid, check.Equals, 0)
+	insp := inspectContainer(inspect.ExternalId, c)
+	c.Assert(insp.State.Pid, check.Equals, 0)
 }

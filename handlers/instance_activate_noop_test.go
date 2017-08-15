@@ -43,9 +43,10 @@ func (s *EventTestSuite) TestNativeInstanceActivateOnly(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.ID, check.Equals, resp.ID)
-	c.Assert(inspect.State.Running, check.Equals, true)
+	inspect := getContainerSpec(reply, c)
+	c.Assert(inspect.ExternalId, check.Equals, resp.ID)
+	insp := inspectContainer(resp.ID, c)
+	c.Assert(insp.State.Running, check.Equals, true)
 }
 
 // Receiving an activate event for a pre-existing stopped container
@@ -80,9 +81,10 @@ func (s *EventTestSuite) TestNativeInstanceNotRunning(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.ID, check.Equals, resp.ID)
-	c.Assert(inspect.State.Running, check.Equals, false)
+	inspect := getContainerSpec(reply, c)
+	c.Assert(inspect.ExternalId, check.Equals, resp.ID)
+	insp := inspectContainer(resp.ID, c)
+	c.Assert(insp.State.Running, check.Equals, false)
 }
 
 // Receiving an activate event for a pre-existing, but removed container
@@ -134,20 +136,21 @@ func (s *EventTestSuite) TestNativeInstanceDeactivateOnly(c *check.C) {
 	rawEvent := marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	inspect := getDockerInspect(reply, c)
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
-	c.Assert(inspect.State.Running, check.Equals, false)
+	insp := inspectContainer(cont.ID, c)
+	c.Assert(insp.State.Running, check.Equals, false)
 
 	event = getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 	request.Containers[0].ExternalId = cont.ID
 
+	event.Data["deploymentSyncRequest"] = request
 	rawEvent = marshalEvent(event, c)
 	reply = testEvent(rawEvent, c)
 
-	inspect = getDockerInspect(reply, c)
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
-	c.Assert(inspect.State.Running, check.Equals, true)
+	insp = inspectContainer(cont.ID, c)
+	c.Assert(insp.State.Running, check.Equals, true)
 }
 
 // If a container receives a no-op deactivate event, it should not
@@ -171,8 +174,9 @@ func (s *EventTestSuite) TestNativeInstanceDeactivateNoOp(c *check.C) {
 	rawEvent := marshalEvent(event, c)
 	reply := testEvent(rawEvent, c)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
-	c.Assert(inspect.ID, check.Equals, cont.ID)
-	c.Assert(inspect.State.Running, check.Equals, true)
+	c.Assert(inspect.ExternalId, check.Equals, cont.ID)
+	insp := inspectContainer(cont.ID, c)
+	c.Assert(insp.State.Running, check.Equals, true)
 }

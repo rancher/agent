@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	"github.com/rancher/agent/utils"
 	v3 "github.com/rancher/go-rancher/v3"
 	"golang.org/x/net/context"
@@ -28,10 +26,9 @@ func (s *EventTestSuite) TestNetworkModeNone(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.HostConfig.NetworkMode.IsNone(), check.Equals, true)
-	c.Assert(inspect.Config.NetworkDisabled, check.Equals, true)
-	c.Assert(inspect.Config.Hostname, check.Equals, "nameisset")
+	spec := getContainerSpec(reply, c)
+	c.Assert(spec.NetworkMode, check.Equals, "none")
+	c.Assert(spec.Hostname, check.Equals, "nameisset")
 }
 
 func (s *EventTestSuite) TestNetworkModeHost(c *check.C) {
@@ -51,10 +48,9 @@ func (s *EventTestSuite) TestNetworkModeHost(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.HostConfig.NetworkMode.IsHost(), check.Equals, true)
-	c.Assert(inspect.Config.NetworkDisabled, check.Equals, false)
-	c.Assert(inspect.Config.Hostname != "nameisset", check.Equals, true)
+	spec := getContainerSpec(reply, c)
+	c.Assert(spec.NetworkMode, check.Equals, "host")
+	c.Assert(spec.Hostname != "nameisset", check.Equals, true)
 }
 
 func (s *EventTestSuite) TestNetworkModeContainer(c *check.C) {
@@ -92,11 +88,9 @@ func (s *EventTestSuite) TestNetworkModeContainer(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.HostConfig.NetworkMode.IsContainer(), check.Equals, true)
-	c.Assert(inspect.HostConfig.NetworkMode, check.Equals, container.NetworkMode(fmt.Sprintf("container:%v", resp.ID)))
-	c.Assert(inspect.Config.NetworkDisabled, check.Equals, false)
-	c.Assert(inspect.Config.Hostname != "notset", check.Equals, true)
+	spec := getContainerSpec(reply, c)
+	c.Assert(spec.NetworkMode, check.Equals, "container")
+	c.Assert(spec.Hostname != "notset", check.Equals, true)
 }
 
 func (s *EventTestSuite) TestNetworkModeBridge(c *check.C) {
@@ -123,9 +117,12 @@ func (s *EventTestSuite) TestNetworkModeBridge(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.HostConfig.NetworkMode.IsDefault(), check.Equals, true)
-	c.Assert(inspect.Config.NetworkDisabled, check.Equals, false)
-	c.Assert(inspect.Config.Hostname, check.Equals, "nameisset")
-	c.Assert(inspect.HostConfig.PortBindings["10000/tcp"][0], check.Equals, nat.PortBinding{HostPort: "10003"})
+	spec := getContainerSpec(reply, c)
+	c.Assert(spec.NetworkMode, check.Equals, "bridge")
+	c.Assert(spec.Hostname, check.Equals, "nameisset")
+	c.Assert(spec.PublicEndpoints[0], check.DeepEquals, v3.PublicEndpoint{
+		PublicPort:  int64(10003),
+		PrivatePort: int64(10000),
+		Protocol:    "tcp",
+	})
 }

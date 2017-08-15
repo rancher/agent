@@ -11,10 +11,6 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/blkiodev"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-units"
 	"github.com/rancher/agent/utils"
 	v3 "github.com/rancher/go-rancher/v3"
 	"golang.org/x/net/context"
@@ -36,10 +32,10 @@ func (s *EventTestSuite) TestMillCpuReservation(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
 	// Value should be 20% of 1024, rounded down
-	c.Assert(inspect.HostConfig.CPUShares, check.Equals, int64(204))
+	c.Assert(inspect.CpuShares, check.Equals, int64(204))
 }
 
 func (s *EventTestSuite) TestMemoryReservation(c *check.C) {
@@ -57,9 +53,9 @@ func (s *EventTestSuite) TestMemoryReservation(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
-	c.Assert(inspect.HostConfig.MemoryReservation, check.Equals, int64(4194304))
+	c.Assert(inspect.MemoryReservation, check.Equals, int64(4194304))
 }
 
 func (s *EventTestSuite) TestLabelOverride(c *check.C) {
@@ -82,14 +78,14 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
-	expectedLabels := map[string]string{
+	expectedLabels := map[string]interface{}{
 		"foo": "bar",
 		"io.rancher.container.uuid": request.Containers[0].Uuid,
 		"io.rancher.container.name": request.Containers[0].Name,
 	}
-	c.Assert(inspect.Config.Labels, check.DeepEquals, expectedLabels)
+	c.Assert(inspect.Labels, check.DeepEquals, expectedLabels)
 }
 
 func (s *EventTestSuite) TestDockerFields(c *check.C) {
@@ -128,30 +124,30 @@ func (s *EventTestSuite) TestDockerFields(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
-	c.Assert(inspect.HostConfig.BlkioWeight, check.Equals, uint16(100))
-	c.Assert(inspect.HostConfig.CPUPeriod, check.Equals, int64(100000))
-	c.Assert(inspect.HostConfig.CPUQuota, check.Equals, int64(50000))
-	c.Assert(inspect.HostConfig.CpusetMems, check.Equals, "0")
-	c.Assert(inspect.HostConfig.KernelMemory, check.Equals, int64(10000000))
-	c.Assert(inspect.HostConfig.Memory, check.Equals, int64(10000000))
-	c.Assert(*(inspect.HostConfig.MemorySwappiness), check.Equals, int64(50))
-	c.Assert(*(inspect.HostConfig.OomKillDisable), check.Equals, true)
-	c.Assert(inspect.HostConfig.OomScoreAdj, check.Equals, 500)
-	c.Assert(inspect.HostConfig.ShmSize, check.Equals, int64(67108864))
-	c.Assert(inspect.HostConfig.GroupAdd, check.DeepEquals, []string{"root"})
-	c.Assert(string(inspect.HostConfig.UTSMode), check.Equals, "host")
-	c.Assert(string(inspect.HostConfig.IpcMode), check.Equals, "host")
-	c.Assert(inspect.Config.StopSignal, check.Equals, "SIGKILL")
-	ulimits := []units.Ulimit{
+	c.Assert(inspect.BlkioWeight, check.Equals, int64(100))
+	c.Assert(inspect.CpuPeriod, check.Equals, int64(100000))
+	c.Assert(inspect.CpuQuota, check.Equals, int64(50000))
+	c.Assert(inspect.CpuSetMems, check.Equals, "0")
+	c.Assert(inspect.KernelMemory, check.Equals, int64(10000000))
+	c.Assert(inspect.Memory, check.Equals, int64(10000000))
+	c.Assert(inspect.MemorySwappiness, check.Equals, int64(50))
+	c.Assert(inspect.OomKillDisable, check.Equals, true)
+	c.Assert(inspect.OomScoreAdj, check.Equals, int64(500))
+	c.Assert(inspect.ShmSize, check.Equals, int64(67108864))
+	c.Assert(inspect.GroupAdd, check.DeepEquals, []string{"root"})
+	c.Assert(inspect.Uts, check.Equals, "host")
+	c.Assert(inspect.IpcMode, check.Equals, "host")
+	c.Assert(inspect.StopSignal, check.Equals, "SIGKILL")
+	ulimits := []v3.Ulimit{
 		{
 			Name: "cpu",
 			Hard: int64(100000),
 			Soft: int64(100000),
 		},
 	}
-	c.Assert(*(inspect.HostConfig.Ulimits[0]), check.DeepEquals, ulimits[0])
+	c.Assert(inspect.Ulimits[0], check.DeepEquals, ulimits[0])
 }
 
 func (s *EventTestSuite) TestDNSFields(c *check.C) {
@@ -171,7 +167,7 @@ func (s *EventTestSuite) TestDNSFields(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
 	file, err := os.Open("/etc/resolv.conf")
 	if err != nil {
@@ -195,55 +191,48 @@ func (s *EventTestSuite) TestDNSFields(c *check.C) {
 			}
 		}
 	}
-	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
+	c.Assert(inspect.DnsSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
 }
 
 // need docker daemon with version 1.12.1
 func (s *EventTestSuite) TestDockerFieldsExtra(c *check.C) {
-	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
-	version, err := dockerClient.ServerVersion(context.Background())
-	if err != nil {
-		c.Fatal(err)
+	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
+
+	var request v3.DeploymentSyncRequest
+	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
+	c.Assert(request.Containers, check.HasLen, 1)
+
+	request.Containers[0].Sysctls = map[string]interface{}{
+		"net.ipv4.ip_forward": "1",
 	}
-	if version.Version == "1.12.1" {
-		deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
-
-		var request v3.DeploymentSyncRequest
-		event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
-		c.Assert(request.Containers, check.HasLen, 1)
-
-		request.Containers[0].Sysctls = map[string]interface{}{
-			"net.ipv4.ip_forward": "1",
-		}
-		request.Containers[0].Tmpfs = map[string]interface{}{
-			"/run": "rw,noexec,nosuid,size=65536k",
-		}
-		request.Containers[0].HealthCmd = []string{"ls"}
-		request.Containers[0].UsernsMode = "host"
-		request.Containers[0].HealthInterval = 5
-		request.Containers[0].HealthTimeout = 60
-		request.Containers[0].HealthRetries = 3
-
-		event.Data["deploymentSyncRequest"] = request
-		rawEvent := marshalEvent(event, c)
-		reply := testEvent(rawEvent, c)
-
-		c.Assert(reply.Transitioning != "error", check.Equals, true)
-
-		inspect := getDockerInspect(reply, c)
-
-		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
-			"net.ipv4.ip_forward": "1",
-		})
-		c.Assert(inspect.Config.Healthcheck.Test, check.DeepEquals, []string{"ls"})
-		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
-		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
-		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
-		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
-			"/run": "rw,noexec,nosuid,size=65536k",
-		})
-		c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
+	request.Containers[0].Tmpfs = map[string]interface{}{
+		"/run": "rw,noexec,nosuid,size=65536k",
 	}
+	request.Containers[0].HealthCmd = []string{"ls"}
+	request.Containers[0].UsernsMode = "host"
+	request.Containers[0].HealthInterval = 5
+	request.Containers[0].HealthTimeout = 60
+	request.Containers[0].HealthRetries = 3
+
+	event.Data["deploymentSyncRequest"] = request
+	rawEvent := marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	c.Assert(reply.Transitioning != "error", check.Equals, true)
+
+	inspect := getContainerSpec(reply, c)
+
+	c.Assert(inspect.Sysctls, check.DeepEquals, map[string]interface{}{
+		"net.ipv4.ip_forward": "1",
+	})
+	c.Assert(inspect.HealthCmd, check.DeepEquals, []string{"ls"})
+	c.Assert(inspect.HealthRetries, check.Equals, int64(3))
+	c.Assert(inspect.HealthTimeout, check.Equals, int64(60))
+	c.Assert(inspect.HealthInterval, check.Equals, int64(5))
+	c.Assert(inspect.Tmpfs, check.DeepEquals, map[string]interface{}{
+		"/run": "rw,noexec,nosuid,size=65536k",
+	})
+	c.Assert(inspect.UsernsMode, check.Equals, "host")
 }
 
 // need docker daemon with version 1.13.1
@@ -279,8 +268,8 @@ func (s *EventTestSuite) TestInstanceActivateNoName(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
-	c.Assert(inspect.ContainerJSONBase.Name, check.Equals, "/r-"+request.Containers[0].Uuid)
+	inspect := getContainerSpec(reply, c)
+	c.Assert(inspect.Name, check.Equals, "r-"+request.Containers[0].Uuid)
 }
 
 func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
@@ -318,7 +307,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].Environment = map[string]interface{}{
 		"foo": "bar",
 	}
-	request.Containers[0].CpuSet = "0,1"
+	request.Containers[0].CpuSet = "0"
 	request.Containers[0].ReadOnly = true
 	request.Containers[0].Memory = 12000000
 	request.Containers[0].MemorySwap = 16000000
@@ -362,9 +351,9 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 
-	inspect := getDockerInspect(reply, c)
+	inspect := getContainerSpec(reply, c)
 
-	c.Assert(inspect.Name, check.Equals, "/r-"+request.Containers[0].Name+"-"+strings.Split(request.Containers[0].Uuid, "-")[0])
+	c.Assert(inspect.Name, check.Equals, "r-"+request.Containers[0].Name+"-"+strings.Split(request.Containers[0].Uuid, "-")[0])
 	cont := findContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
 	for _, port := range cont.Ports {
 		if port.PublicPort == uint16(10000) {
@@ -379,55 +368,45 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 			c.Assert(port.IP, check.Equals, "127.0.0.1")
 		}
 	}
-	c.Assert(inspect.HostConfig.CpusetCpus, check.Equals, "0,1")
-	c.Assert(inspect.HostConfig.Memory, check.DeepEquals, int64(12000000))
-	c.Assert(inspect.Config.Labels[UUIDLabel], check.DeepEquals, request.Containers[0].Uuid)
-	c.Assert(inspect.Config.Labels["foo"], check.DeepEquals, "bar")
+	c.Assert(inspect.CpuSet, check.Equals, "0")
+	c.Assert(inspect.Memory, check.DeepEquals, int64(12000000))
+	c.Assert(inspect.Labels[UUIDLabel], check.DeepEquals, request.Containers[0].Uuid)
+	c.Assert(inspect.Labels["foo"], check.DeepEquals, "bar")
 	if swap {
-		c.Assert(inspect.HostConfig.MemorySwap, check.DeepEquals, int64(16000000))
+		c.Assert(inspect.MemorySwap, check.DeepEquals, int64(16000000))
 	} else {
-		c.Assert(inspect.HostConfig.MemorySwap, check.DeepEquals, int64(-1))
+		c.Assert(inspect.MemorySwap, check.DeepEquals, int64(-1))
 	}
 
-	c.Assert(inspect.HostConfig.ExtraHosts, check.DeepEquals, []string{"host:1.1.1.1", "b:2.2.2.2"})
-	c.Assert(inspect.HostConfig.PidMode, check.Equals, container.PidMode("host"))
-	c.Assert(inspect.HostConfig.LogConfig.Type, check.Equals, "json-file")
-	c.Assert(inspect.HostConfig.LogConfig.Config["max-size"], check.Equals, "10")
-	c.Assert(checkStringInArray(inspect.HostConfig.SecurityOpt, "label:foo"), check.Equals, true)
-	c.Assert(checkStringInArray(inspect.HostConfig.SecurityOpt, "label:bar"), check.Equals, true)
-	c.Assert(inspect.Config.WorkingDir, check.Equals, "/home")
-	c.Assert(inspect.Config.Entrypoint, check.DeepEquals, strslice.StrSlice{"../sleep.sh"})
-	c.Assert(inspect.Config.Tty, check.DeepEquals, true)
-	c.Assert(inspect.Config.OpenStdin, check.DeepEquals, true)
-	c.Assert(inspect.Config.Domainname, check.DeepEquals, "rancher.io")
-	c.Assert(inspect.HostConfig.Devices[0], check.DeepEquals, container.DeviceMapping{
-		PathOnHost:        "/dev/null",
-		PathInContainer:   "/dev/xnull",
-		CgroupPermissions: "rwm",
+	c.Assert(inspect.ExtraHosts, check.DeepEquals, []string{"host:1.1.1.1", "b:2.2.2.2"})
+	c.Assert(inspect.PidMode, check.Equals, "host")
+	c.Assert(inspect.LogConfig.Driver, check.Equals, "json-file")
+	c.Assert(inspect.LogConfig.Config["max-size"], check.Equals, "10")
+	c.Assert(checkStringInArray(inspect.SecurityOpt, "label:foo"), check.Equals, true)
+	c.Assert(checkStringInArray(inspect.SecurityOpt, "label:bar"), check.Equals, true)
+	c.Assert(inspect.WorkingDir, check.Equals, "/home")
+	c.Assert(inspect.EntryPoint, check.DeepEquals, []string{"../sleep.sh"})
+	c.Assert(inspect.Tty, check.DeepEquals, true)
+	c.Assert(inspect.StdinOpen, check.DeepEquals, true)
+	c.Assert(inspect.DomainName, check.DeepEquals, "rancher.io")
+	c.Assert(inspect.Devices[0], check.DeepEquals, "/dev/null:/dev/xnull:rwm")
+	c.Assert(inspect.Devices[1], check.DeepEquals, "/dev/random:/dev/xrandom:rw")
+	c.Assert(inspect.Dns, check.DeepEquals, []string{"1.2.3.4", "8.8.8.8"})
+	c.Assert(inspect.DnsSearch, check.DeepEquals, []string{"5.6.7.8", "7.7.7.7"})
+	c.Assert(inspect.CapAdd, check.DeepEquals, []string{"MKNOD", "SYS_ADMIN"})
+	c.Assert(inspect.CapDrop, check.DeepEquals, []string{"MKNOD", "SYS_ADMIN"})
+	c.Assert(inspect.Privileged, check.DeepEquals, true)
+	c.Assert(inspect.RestartPolicy.Name, check.DeepEquals, "on-failure")
+	c.Assert(inspect.RestartPolicy.MaximumRetryCount, check.DeepEquals, int64(2))
+	c.Assert(inspect.BlkioDeviceOptions, check.DeepEquals, map[string]interface{}{
+		"/dev/random": map[string]interface{}{
+			"readBps":   float64(1000),
+			"writeIops": float64(2000),
+		},
 	})
-	c.Assert(inspect.HostConfig.Devices[1], check.DeepEquals, container.DeviceMapping{
-		PathOnHost:        "/dev/random",
-		PathInContainer:   "/dev/xrandom",
-		CgroupPermissions: "rw",
-	})
-	c.Assert(inspect.HostConfig.DNS, check.DeepEquals, []string{"1.2.3.4", "8.8.8.8"})
-	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, []string{"5.6.7.8", "7.7.7.7"})
-	c.Assert(inspect.HostConfig.CapAdd, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
-	c.Assert(inspect.HostConfig.CapDrop, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
-	c.Assert(inspect.HostConfig.Privileged, check.DeepEquals, true)
-	c.Assert(inspect.HostConfig.RestartPolicy.Name, check.DeepEquals, "on-failure")
-	c.Assert(inspect.HostConfig.RestartPolicy.MaximumRetryCount, check.DeepEquals, 2)
-	c.Assert(*inspect.HostConfig.BlkioDeviceReadBps[0], check.DeepEquals, blkiodev.ThrottleDevice{
-		Path: "/dev/random",
-		Rate: 1000,
-	})
-	c.Assert(*inspect.HostConfig.BlkioDeviceWriteIOps[0], check.DeepEquals, blkiodev.ThrottleDevice{
-		Path: "/dev/random",
-		Rate: 2000,
-	})
-	c.Assert(inspect.Config.Cmd, check.DeepEquals, strslice.StrSlice{"cd", "/home"})
-	c.Assert(inspect.HostConfig.CPUShares, check.DeepEquals, int64(400))
-	c.Assert(utils.SearchInList(inspect.Config.Env, "foo=bar"), check.Equals, true)
+	c.Assert(inspect.Command, check.DeepEquals, []string{"cd", "/home"})
+	c.Assert(inspect.CpuShares, check.DeepEquals, int64(400))
+	c.Assert(inspect.Environment["foo"], check.DeepEquals, "bar")
 }
 
 func (s *EventTestSuite) TestInstanceActivateFailed(c *check.C) {

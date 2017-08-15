@@ -22,6 +22,6 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v3.RancherCl
 		return errors.Wrap(err, "failed to inspect instance")
 	}
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
-	result := map[string]interface{}{event.ResourceType: inspectResp}
+	result := map[string]interface{}{event.ResourceType: utils.ConvertInspect(inspectResp, v3.Container{})}
 	return reply(result, event, cli)
 }
