@@ -396,7 +396,7 @@ def test_instance_activate_cpu_set(agent):
     def pre(req):
         delete_container('/c861f990-4472-4fa1-960f-65171b544c28')
         instance = req['data']['instanceHostMap']['instance']
-        instance['data']['fields']['cpuSet'] = '0,1'
+        instance['data']['fields']['cpuSetCpus'] = '0,1'
 
     def preNull(req):
         delete_container('/c861f990-4472-4fa1-960f-65171b544c28')

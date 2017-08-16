@@ -337,7 +337,7 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 
 	hostConfig.RestartPolicy = fields.RestartPolicy
 
-	hostConfig.CpusetCpus = fields.CPUSet
+	hostConfig.CpusetCpus = fields.CPUsetCpus
 
 	hostConfig.BlkioWeight = fields.BlkioWeight
 
@@ -348,6 +348,10 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.CPUQuota = fields.CPUQuota
 
 	hostConfig.CpusetMems = fields.CPUsetMems
+
+	hostConfig.CPURealtimePeriod = fields.CPURealtimePeriod
+
+	hostConfig.CPURealtimeRuntime = fields.CPURealtimeRuntime
 
 	hostConfig.DNSOptions = fields.DNSOpt
 
