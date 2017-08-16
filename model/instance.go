@@ -194,12 +194,14 @@ type InstanceFields struct {
 	RestartPolicy      container.RestartPolicy
 	CPUShares          int64 `json:"cpuShares"`
 	VolumeDriver       string
-	CPUSet             string
 	BlkioWeight        uint16
 	CgroupParent       string
 	CPUPeriod          int64  `json:"cpuPeriod"`
 	CPUQuota           int64  `json:"cpuQuota"`
 	CPUsetMems         string `json:"cpuSetMems"`
+	CPUsetCpus         string `json:"cpuSetCpus"`
+	CPURealtimePeriod  int64  `json:"cpuRealtimePeriod"`
+	CPURealtimeRuntime int64  `json:"cpuRealtimeRuntime"`
 	DNSOpt             []string
 	GroupAdd           []string
 	Isolation          container.Isolation

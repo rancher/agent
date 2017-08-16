@@ -79,6 +79,7 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	fields["cpuPeriod"] = 100000
 	fields["cpuQuota"] = 50000
 	fields["cpuSetMems"] = "0"
+	fields["cpuSetCpus"] = "0,1"
 	fields["kernelMemory"] = 10000000
 	fields["memory"] = 10000000
 	fields["memorySwappiness"] = 50
@@ -113,6 +114,7 @@ func (s *ComputeTestSuite) TestNewFields(c *check.C) {
 	c.Assert(inspect.HostConfig.CPUPeriod, check.Equals, int64(100000))
 	c.Assert(inspect.HostConfig.CPUQuota, check.Equals, int64(50000))
 	c.Assert(inspect.HostConfig.CpusetMems, check.Equals, "0")
+	c.Assert(inspect.HostConfig.CpusetCpus, check.Equals, "0,1")
 	c.Assert(inspect.HostConfig.KernelMemory, check.Equals, int64(10000000))
 	c.Assert(inspect.HostConfig.Memory, check.Equals, int64(10000000))
 	c.Assert(*(inspect.HostConfig.MemorySwappiness), check.Equals, int64(50))
@@ -250,6 +252,9 @@ func (s *ComputeTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 		fields["healthRetries"] = 3
 		fields["healthTimeout"] = 60
 		fields["stopTimeout"] = 30
+		// need manual test for these two fields
+		//fields["cpuRealtimePeriod"] = 1000000
+		//fields["cpuRealtimeRuntime"] = 10000
 		rawEvent = marshalEvent(event, c)
 		reply := testEvent(rawEvent, c)
 		cont, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
@@ -267,6 +272,8 @@ func (s *ComputeTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
 		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
 		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
+		//c.Assert(inspect.HostConfig.CPURealtimePeriod, check.Equals, int64(1000000))
+		//c.Assert(inspect.HostConfig.CPURealtimeRuntime, check.Equals, int64(10000))
 		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
 			"/run": "rw,noexec,nosuid,size=65536k",
 		})
