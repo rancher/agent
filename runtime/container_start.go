@@ -104,13 +104,13 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	return nil
 }
 
-func IsContainerStarted(containerSpec v3.Container, client *client.Client) (bool, error) {
+func IsContainerStarted(containerSpec v3.Container, client *client.Client) (bool, bool, error) {
 	cont, err := utils.FindContainer(client, containerSpec, false)
 	if err != nil {
 		if utils.IsContainerNotFoundError(err) {
-			return false, nil
+			return false, false, nil
 		}
-		return false, errors.Wrap(err, "failed to get container")
+		return false, false, errors.Wrap(err, "failed to get container")
 	}
 	return isRunning(client, cont)
 }
@@ -214,14 +214,6 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 		return "", errors.Wrap(err, "failed to create container")
 	}
 	return containerResponse.ID, nil
-}
-
-func getImageTag(containerSpec v3.Container) (string, error) {
-	dockerImage := containerSpec.ImageUuid
-	if dockerImage == "" {
-		return "", errors.New("the full name of docker image is empty")
-	}
-	return dockerImage, nil
 }
 
 func initializeMaps(config *container.Config, hostConfig *container.HostConfig) {
@@ -473,17 +465,17 @@ func setupFieldsConfig(spec v3.Container, config *container.Config) {
 	config.User = spec.User
 }
 
-func isRunning(dockerClient *client.Client, containerID string) (bool, error) {
+func isRunning(dockerClient *client.Client, containerID string) (bool, bool, error) {
 	if containerID == "" {
-		return false, nil
+		return false, false, nil
 	}
 	inspect, err := dockerClient.ContainerInspect(context.Background(), containerID)
 	if err == nil {
-		return inspect.State.Running, nil
+		return inspect.State.Running && !inspect.State.Restarting, inspect.State.Restarting, nil
 	} else if client.IsErrContainerNotFound(err) {
-		return false, nil
+		return false, false, nil
 	}
-	return false, err
+	return false, false, err
 }
 
 func getHostEntries() map[string]string {

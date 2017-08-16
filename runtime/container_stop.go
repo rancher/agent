@@ -55,9 +55,9 @@ func IsContainerStopped(containerSpec v3.Container, client *client.Client) (bool
 }
 
 func isStopped(client *client.Client, containerID string) (bool, error) {
-	ok, err := isRunning(client, containerID)
+	running, _, err := isRunning(client, containerID)
 	if err != nil {
 		return false, err
 	}
-	return !ok, nil
+	return !running, nil
 }

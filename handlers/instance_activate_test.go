@@ -344,10 +344,6 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].CapAdd = []string{"MKNOD", "SYS_ADMIN"}
 	request.Containers[0].CapDrop = []string{"MKNOD", "SYS_ADMIN"}
 	request.Containers[0].Privileged = true
-	request.Containers[0].RestartPolicy = &v3.RestartPolicy{
-		Name:              "on-failure",
-		MaximumRetryCount: 2,
-	}
 	request.Containers[0].BlkioDeviceOptions = map[string]interface{}{
 		"/dev/random": v3.BlkioDeviceOption{
 			WriteIops: 2000,
@@ -415,8 +411,6 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	c.Assert(inspect.HostConfig.CapAdd, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
 	c.Assert(inspect.HostConfig.CapDrop, check.DeepEquals, strslice.StrSlice{"MKNOD", "SYS_ADMIN"})
 	c.Assert(inspect.HostConfig.Privileged, check.DeepEquals, true)
-	c.Assert(inspect.HostConfig.RestartPolicy.Name, check.DeepEquals, "on-failure")
-	c.Assert(inspect.HostConfig.RestartPolicy.MaximumRetryCount, check.DeepEquals, 2)
 	c.Assert(*inspect.HostConfig.BlkioDeviceReadBps[0], check.DeepEquals, blkiodev.ThrottleDevice{
 		Path: "/dev/random",
 		Rate: 1000,
