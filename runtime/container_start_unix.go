@@ -202,13 +202,6 @@ func setupFieldsHostConfig(fields v3.Container, hostConfig *container.HostConfig
 
 	hostConfig.CapDrop = fields.CapDrop
 
-	if fields.RestartPolicy != nil {
-		hostConfig.RestartPolicy = container.RestartPolicy{
-			Name:              fields.RestartPolicy.Name,
-			MaximumRetryCount: int(fields.RestartPolicy.MaximumRetryCount),
-		}
-	}
-
 	hostConfig.CpusetCpus = fields.CpuSet
 
 	hostConfig.BlkioWeight = uint16(fields.BlkioWeight)

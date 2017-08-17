@@ -40,7 +40,13 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v3.RancherC
 	}
 
 	if !noop {
-		if started, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
+		if started, restarting, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
+			if restarting {
+				err = runtime.ContainerStop(request.Containers[0], request.Volumes, h.dockerClient, 10)
+				if err != nil {
+					return errors.Wrap(err, "failed to stop restarting container")
+				}
+			}
 			if err := runtime.ContainerStart(request.Containers[0], request.Volumes, networkKind, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
 				return errors.Wrap(err, "failed to activate instance")
 			}
