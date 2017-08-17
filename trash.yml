@@ -6,7 +6,7 @@ import:
   version: d3bd4e5241fb884dcb0f99ba222623250115fb56
 
 - package: github.com/rancher/go-rancher
-  version: 3ce282a25812c3876a55bae174a0980bac08870f
+  version: aa5e8adccdcc3200190c466dc92297e9d736f5ce
 
 - package: github.com/gorilla/mux
   version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e
@@ -37,9 +37,6 @@ import:
 
 - package: github.com/docker/go-connections
   version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
-
-- package: github.com/opencontainers/runc
-  version: 4eb8c2fb1dcb10fa3bf9bd7031f3a25a8ce2fef6
 
 - package: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
