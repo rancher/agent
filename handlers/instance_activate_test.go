@@ -114,6 +114,7 @@ func (s *EventTestSuite) TestDockerFields(c *check.C) {
 	request.Containers[0].Uts = "host"
 	request.Containers[0].IpcMode = "host"
 	request.Containers[0].StopSignal = "SIGKILL"
+
 	request.Containers[0].Ulimits = []v3.Ulimit{
 		{
 			Name: "cpu",
@@ -198,52 +199,45 @@ func (s *EventTestSuite) TestDNSFields(c *check.C) {
 	c.Assert(inspect.HostConfig.DNSSearch, check.DeepEquals, append(dnsSearch, "rancher.internal"))
 }
 
-// need docker daemon with version 1.12.1
 func (s *EventTestSuite) TestDockerFieldsExtra(c *check.C) {
-	dockerClient := utils.GetRuntimeClient("docker", utils.DefaultVersion)
-	version, err := dockerClient.ServerVersion(context.Background())
-	if err != nil {
-		c.Fatal(err)
+	deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
+
+	var request v3.DeploymentSyncRequest
+	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
+	c.Assert(request.Containers, check.HasLen, 1)
+
+	request.Containers[0].Sysctls = map[string]interface{}{
+		"net.ipv4.ip_forward": "1",
 	}
-	if version.Version == "1.12.1" {
-		deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
-
-		var request v3.DeploymentSyncRequest
-		event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
-		c.Assert(request.Containers, check.HasLen, 1)
-
-		request.Containers[0].Sysctls = map[string]interface{}{
-			"net.ipv4.ip_forward": "1",
-		}
-		request.Containers[0].Tmpfs = map[string]interface{}{
-			"/run": "rw,noexec,nosuid,size=65536k",
-		}
-		request.Containers[0].HealthCmd = []string{"ls"}
-		request.Containers[0].UsernsMode = "host"
-		request.Containers[0].HealthInterval = 5
-		request.Containers[0].HealthTimeout = 60
-		request.Containers[0].HealthRetries = 3
-
-		event.Data["deploymentSyncRequest"] = request
-		rawEvent := marshalEvent(event, c)
-		reply := testEvent(rawEvent, c)
-
-		c.Assert(reply.Transitioning != "error", check.Equals, true)
-
-		inspect := getDockerInspect(reply, c)
-
-		c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
-			"net.ipv4.ip_forward": "1",
-		})
-		c.Assert(inspect.Config.Healthcheck.Test, check.DeepEquals, []string{"ls"})
-		c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
-		c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
-		c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
-		c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
-			"/run": "rw,noexec,nosuid,size=65536k",
-		})
-		c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
+	request.Containers[0].Tmpfs = map[string]interface{}{
+		"/run": "rw,noexec,nosuid,size=65536k",
 	}
+	request.Containers[0].HealthCmd = []string{"ls"}
+	request.Containers[0].UsernsMode = "host"
+	request.Containers[0].HealthInterval = 5
+	request.Containers[0].HealthTimeout = 60
+	request.Containers[0].HealthRetries = 3
+
+	event.Data["deploymentSyncRequest"] = request
+	rawEvent := marshalEvent(event, c)
+	reply := testEvent(rawEvent, c)
+
+	c.Assert(reply.Transitioning != "error", check.Equals, true)
+
+	inspect := getDockerInspect(reply, c)
+
+	c.Assert(inspect.HostConfig.Sysctls, check.DeepEquals, map[string]string{
+		"net.ipv4.ip_forward": "1",
+	})
+	c.Assert(inspect.Config.Healthcheck.Test, check.DeepEquals, []string{"ls"})
+	c.Assert(inspect.Config.Healthcheck.Retries, check.Equals, 3)
+	c.Assert(inspect.Config.Healthcheck.Timeout, check.Equals, time.Duration(60)*time.Second)
+	c.Assert(inspect.Config.Healthcheck.Interval, check.Equals, time.Duration(5)*time.Second)
+	c.Assert(inspect.HostConfig.Tmpfs, check.DeepEquals, map[string]string{
+		"/run": "rw,noexec,nosuid,size=65536k",
+	})
+	c.Assert(inspect.HostConfig.UsernsMode, check.Equals, container.UsernsMode("host"))
+
 }
 
 // need docker daemon with version 1.13.1
@@ -253,14 +247,25 @@ func (s *EventTestSuite) TestNewFieldsExtra_1_13(c *check.C) {
 	if err != nil {
 		c.Fatal(err)
 	}
-	if version.Version == "1.13.1" {
+	if version.Version != "1.12.1" && version.Version != "1.13.1" {
 		deleteContainer("85db87bf-cb14-4643-9e7d-a13e3e77a991")
 
 		var request v3.DeploymentSyncRequest
-		getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
+		event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 		c.Assert(request.Containers, check.HasLen, 1)
 
 		// TODO: add init tests
+		request.Containers[0].StopTimeout = 10
+
+		event.Data["deploymentSyncRequest"] = request
+		rawEvent := marshalEvent(event, c)
+		reply := testEvent(rawEvent, c)
+
+		c.Assert(reply.Transitioning != "error", check.Equals, true)
+
+		inspect := getDockerInspect(reply, c)
+
+		c.Assert(*inspect.Config.StopTimeout, check.DeepEquals, 10)
 	}
 }
 

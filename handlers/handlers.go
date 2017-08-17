@@ -85,7 +85,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 
 func initializeHandlers() *Handler {
 	runtime := utils.DefaultValue("RUNTIME", "docker")
-	ver := utils.DefaultValue("RUNTIME_VERSION", "v1.22")
+	ver := utils.DefaultValue("RUNTIME_VERSION", utils.DefaultVersion)
 	runtimeClient := utils.GetRuntimeClient(runtime, ver)
 
 	// initialize the info and version so we don't have to call docker API every time a ping request comes
@@ -119,6 +119,7 @@ func initializeHandlers() *Handler {
 	}
 	hostInfo.DockerData.Info = info
 	hostInfo.DockerData.Version = version
+	runtimeClient.UpdateClientVersion(version.APIVersion)
 
 	Collectors := []hostInfo.Collector{
 		hostInfo.CPUCollector{},

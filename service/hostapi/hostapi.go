@@ -118,7 +118,6 @@ func getConnectionToken(try int, tokenReq *rclient.HostApiProxyToken, rancherCli
 			if apiError.StatusCode == 422 {
 				m := map[string]string{}
 				apiBody := apiError.Body
-				fmt.Println(apiBody)
 				parts := strings.Split(apiBody, ", ")
 				for _, part := range parts {
 					data := strings.Split(part, "=")
