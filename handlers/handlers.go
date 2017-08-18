@@ -120,6 +120,7 @@ func initializeHandlers() *Handler {
 	hostInfo.DockerData.Info = info
 	hostInfo.DockerData.Version = version
 	runtimeClient.UpdateClientVersion(version.APIVersion)
+	logrus.Infof("Docker client API version: %v", version.APIVersion)
 
 	Collectors := []hostInfo.Collector{
 		hostInfo.CPUCollector{},
