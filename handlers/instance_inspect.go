@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -20,6 +22,21 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v3.RancherCl
 	inspectResp, err := runtime.ContainerInspect(inspect, h.dockerClient)
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return errors.Wrap(err, "failed to inspect instance")
+	}
+	if strings.HasPrefix(inspectResp.Image, "sha256:") {
+		v, ok := h.cache.Get(inspectResp.Image)
+		if ok {
+			inspectResp.Image = v.(string)
+		} else {
+			imageInsp, _, err := h.dockerClient.ImageInspectWithRaw(context.Background(), inspectResp.Image)
+			if err != nil {
+				return errors.Wrap(err, "failed to inspect image")
+			}
+			if len(imageInsp.RepoTags) > 0 {
+				inspectResp.Image = imageInsp.RepoTags[0]
+				h.cache.Add(inspectResp.Image, imageInsp.RepoTags[0], time.Hour*24)
+			}
+		}
 	}
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
 	result := map[string]interface{}{event.ResourceType: inspectResp}

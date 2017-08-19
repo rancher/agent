@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
 	"github.com/rancher/agent/host_info"
 )
 
@@ -13,6 +14,7 @@ type Handler struct {
 
 type ComputeHandler struct {
 	dockerClient *client.Client
+	cache        *cache.Cache
 }
 
 type PingHandler struct {

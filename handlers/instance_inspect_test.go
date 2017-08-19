@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/rancher/agent/utils"
@@ -38,7 +39,7 @@ func (s *EventTestSuite) TestInstanceInspectByName(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
-	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, inspect.Image)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, config.Image)
 }
 
 func (s *EventTestSuite) TestInstanceInspectById(c *check.C) {
@@ -77,5 +78,44 @@ func (s *EventTestSuite) TestInstanceInspectById(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
-	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, inspect.Image)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, config.Image)
+}
+
+func (s *EventTestSuite) TestInstanceInspectImage(c *check.C) {
+	deleteContainer("/inspect_test")
+
+	cli := utils.GetRuntimeClient("docker", utils.DefaultVersion)
+	config := &container.Config{
+		Image:     "sha256:1a1156f993e03c7fe77b6a506821a8067b2d3aa27d9884b92bb6de569dacc071",
+		OpenStdin: true,
+	}
+	hostConfig := &container.HostConfig{}
+	resp, err := cli.ContainerCreate(context.Background(), config, hostConfig, nil, "inspect_test")
+	if err != nil {
+		c.Fatal(err)
+	}
+	err = cli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{})
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	rawEvent := loadEvent("./test_events/instance_inspect", c)
+	var event events.Event
+	if err := json.Unmarshal(rawEvent, &event); err != nil {
+		c.Fatal(err)
+	}
+	event.Data["instanceInspect"] = map[string]interface{}{
+		"id":   resp.ID,
+		"kind": "docker",
+	}
+	reply := testEvent(rawEvent, c)
+
+	inspect, err := cli.ContainerInspect(context.Background(), resp.ID)
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	c.Assert(reply.Transitioning != "error", check.Equals, true)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, "ibuildthecloud/helloworld:latest")
 }
