@@ -199,9 +199,9 @@ type InstanceFields struct {
 	CPUPeriod          int64  `json:"cpuPeriod"`
 	CPUQuota           int64  `json:"cpuQuota"`
 	CPUsetMems         string `json:"cpuSetMems"`
-	CPUsetCpus         string `json:"cpuSetCpus"`
-	CPURealtimePeriod  int64  `json:"cpuRealtimePeriod"`
-	CPURealtimeRuntime int64  `json:"cpuRealtimeRuntime"`
+	CPUSet             string
+	CPURealtimePeriod  int64 `json:"cpuRealtimePeriod"`
+	CPURealtimeRuntime int64 `json:"cpuRealtimeRuntime"`
 	DNSOpt             []string
 	GroupAdd           []string
 	Isolation          container.Isolation
