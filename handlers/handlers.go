@@ -8,6 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	goUUID "github.com/nu7hatch/gouuid"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/utils"
@@ -133,8 +134,10 @@ func initializeHandlers() *Handler {
 		hostInfo.KeyCollector{},
 		hostInfo.CloudProviderCollector{},
 	}
+	cach := cache.New(time.Hour*24, time.Hour*1)
 	computerHandler := ComputeHandler{
 		dockerClient: runtimeClient,
+		cache:        cach,
 	}
 	storageHandler := StorageHandler{
 		dockerClient: runtimeClient,
