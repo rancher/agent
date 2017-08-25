@@ -72,7 +72,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 		Resource:     client.Resource{Id: uuid},
 	}
 
-	if reply.ResourceType != "agent" {
+	if event.Name != "ping" {
 		logrus.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
 	}
 	logrus.Debugf("Reply: %+v", reply)
@@ -86,7 +86,7 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 
 func initializeHandlers() *Handler {
 	runtime := utils.DefaultValue("RUNTIME", "docker")
-	ver := utils.DefaultValue("RUNTIME_VERSION", "v1.22")
+	ver := utils.DefaultValue("RUNTIME_VERSION", utils.DefaultVersion)
 	runtimeClient := utils.GetRuntimeClient(runtime, ver)
 
 	// initialize the info and version so we don't have to call docker API every time a ping request comes
@@ -120,6 +120,8 @@ func initializeHandlers() *Handler {
 	}
 	hostInfo.DockerData.Info = info
 	hostInfo.DockerData.Version = version
+	runtimeClient.UpdateClientVersion(version.APIVersion)
+	logrus.Infof("Docker client API version: %v", version.APIVersion)
 
 	Collectors := []hostInfo.Collector{
 		hostInfo.CPUCollector{},

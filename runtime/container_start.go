@@ -10,16 +10,19 @@ import (
 
 	"os"
 
+	"sync"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/host_info"
 	"github.com/rancher/agent/progress"
 	"github.com/rancher/agent/utils"
 	v3 "github.com/rancher/go-rancher/v3"
-	"sync"
 )
 
 const (
@@ -461,6 +464,13 @@ func setupFieldsConfig(spec v3.Container, config *container.Config) {
 	config.Domainname = spec.DomainName
 
 	config.StopSignal = spec.StopSignal
+
+	if !versions.LessThan(hostInfo.DockerData.Version.APIVersion, "1.25") {
+		timeout := int(spec.StopTimeout)
+		if timeout != 0 {
+			config.StopTimeout = &timeout
+		}
+	}
 
 	config.User = spec.User
 }
