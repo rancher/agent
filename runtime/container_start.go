@@ -317,9 +317,9 @@ func setupNonRancherVolumes(config *container.Config, volumes []v3.Volume, conta
 			bind := fmt.Sprintf("%s:%s:%s", parts[0], parts[1], mode)
 			binds = append(binds, bind)
 		}
-		config.Volumes = volumesMap
-		hostConfig.Binds = append(hostConfig.Binds, binds...)
 	}
+	config.Volumes = volumesMap
+	hostConfig.Binds = append(hostConfig.Binds, binds...)
 
 	containers := []string{}
 	if containerSpec.DataVolumesFrom != nil {
