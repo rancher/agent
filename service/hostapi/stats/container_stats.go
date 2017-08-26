@@ -155,6 +155,9 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 		}
 		for {
 			infos := []containerInfo{}
+			if len(readerMap) == 0 {
+				return
+			}
 			for id, r := range readerMap {
 				cInfo, err := getContainerStats(r, id, pidMap[id])
 				if err != nil {
