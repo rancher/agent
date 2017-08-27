@@ -23,7 +23,7 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v3.RancherCl
 	if err != nil && !strings.Contains(err.Error(), "not found") {
 		return errors.Wrap(err, "failed to inspect instance")
 	}
-	if strings.HasPrefix(inspectResp.Image, "sha256:") {
+	if err == nil && strings.HasPrefix(inspectResp.Image, "sha256:") {
 		v, ok := h.cache.Get(inspectResp.Image)
 		if ok {
 			inspectResp.Image = v.(string)
@@ -38,7 +38,9 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v3.RancherCl
 			}
 		}
 	}
-	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
+	if err == nil {
+		logrus.Infof("rancher id [%v]: Container with docker id [%v] has been inspected", event.ResourceID, inspect.ID)
+	}
 	result := map[string]interface{}{event.ResourceType: inspectResp}
 	return reply(result, event, cli)
 }
