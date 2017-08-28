@@ -55,7 +55,7 @@ func main() {
 	url := os.Getenv("CATTLE_URL")
 	accessKey := os.Getenv("CATTLE_ACCESS_KEY")
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
-	workerCount := 250
+	workerCount := 1000
 
 	provider := aws.NewProvider()
 	go provider.GetCloudProviderInfo()

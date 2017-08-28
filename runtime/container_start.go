@@ -30,6 +30,7 @@ const (
 	PullImageLabels    = "io.rancher.container.pull_image"
 	UUIDLabel          = "io.rancher.container.uuid"
 	AgentIDLabel       = "io.rancher.container.agent_id"
+	nameInuseError     = "You have to remove (or rename) that container to be able to reuse that name"
 )
 
 var (
@@ -38,13 +39,13 @@ var (
 	HTTPProxyList  = []string{"http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "no_proxy", "NO_PROXY"}
 )
 
-func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind string, credentials []v3.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) error {
+func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind string, credentials []v3.Credential, progress *progress.Progress, runtimeClient *client.Client, idsMap map[string]string) (string, error) {
 	started := false
 
 	// setup name
 	parts := strings.Split(containerSpec.Uuid, "-")
 	if len(parts) == 0 {
-		return errors.New("Failed to parse UUID")
+		return "", errors.New("Failed to parse UUID")
 	}
 	name := fmt.Sprintf("r-%s", containerSpec.Uuid)
 	if str := utils.NameRegexCompiler.FindString(containerSpec.Name); str != "" {
@@ -54,7 +55,7 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	// creating managed volumes
 	rancherBindMounts, err := setupRancherFlexVolume(volumes, containerSpec.DataVolumes, progress)
 	if err != nil {
-		return errors.Wrap(err, "failed to set up rancher flex volumes")
+		return "", errors.Wrap(err, "failed to set up rancher flex volumes")
 	}
 
 	// make sure managed volumes are unmounted if container is not started
@@ -67,14 +68,12 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	// setup container spec(config and hostConfig)
 	spec, err := setupContainerSpec(containerSpec, volumes, networkKind, rancherBindMounts, runtimeClient, progress, idsMap)
 	if err != nil {
-		return errors.Wrap(err, "failed to generate container spec")
+		return "", errors.Wrap(err, "failed to generate container spec")
 	}
 
 	containerID, err := utils.FindContainer(runtimeClient, containerSpec, false)
-	if err != nil {
-		if !utils.IsContainerNotFoundError(err) {
-			return errors.Wrap(err, "failed to get container")
-		}
+	if err != nil && !utils.IsContainerNotFoundError(err) {
+		return "", errors.Wrap(err, "failed to get container")
 	}
 	created := false
 	if containerID == "" {
@@ -83,10 +82,19 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 			credential = credentials[0]
 		}
 		newID, err := createContainer(runtimeClient, &spec.config, &spec.hostConfig, containerSpec, credential, name, progress)
-		if err != nil {
-			return errors.Wrap(err, "failed to create container")
+		if err != nil && !strings.Contains(err.Error(), nameInuseError) {
+			return "", errors.Wrap(err, "failed to create container")
 		}
-		containerID = newID
+		if newID == "" {
+			contID, err := utils.FindContainer(runtimeClient, containerSpec, true)
+			if err != nil && !utils.IsContainerNotFoundError(err) {
+				return "", errors.Wrap(err, "failed to get container")
+			}
+			containerID = contID
+		} else {
+			containerID = newID
+		}
+
 		created = true
 	}
 
@@ -96,15 +104,15 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	if startErr != nil {
 		if created {
 			if err := utils.RemoveContainer(runtimeClient, containerID); err != nil {
-				return errors.Wrap(err, "failed to remove container")
+				return "", errors.Wrap(err, "failed to remove container")
 			}
 		}
-		return errors.Wrap(startErr, "failed to start container")
+		return "", errors.Wrap(startErr, "failed to start container")
 	}
 
 	logrus.Infof("rancher id [%v]: Container [%v] with docker id [%v] has been started", containerSpec.Id, containerSpec.Name, containerID)
 	started = true
-	return nil
+	return containerID, nil
 }
 
 func IsContainerStarted(containerSpec v3.Container, client *client.Client) (bool, bool, error) {

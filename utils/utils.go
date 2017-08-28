@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	engineCli "github.com/docker/docker/client"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -131,7 +132,7 @@ func (c ContainerNotFoundError) Error() string {
 	return "Container not found"
 }
 
-func FindContainer(client *engineCli.Client, containerSpec v3.Container, byAgent bool) (string, error) {
+func FindContainer(client *engineCli.Client, containerSpec v3.Container, search bool) (string, error) {
 	if containerSpec.ExternalId != "" {
 		_, err := client.ContainerInspect(context.Background(), containerSpec.ExternalId)
 		if err != nil && !engineCli.IsErrContainerNotFound(err) {
@@ -141,38 +142,20 @@ func FindContainer(client *engineCli.Client, containerSpec v3.Container, byAgent
 		}
 	}
 
-	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{All: true})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to list containers")
-	}
-	for _, cont := range containers {
-		if uuid, ok := cont.Labels[UUIDLabel]; ok && uuid == containerSpec.Uuid {
-			return cont.ID, nil
+	if containerSpec.FirstRunning != "" || search {
+		filter := filters.NewArgs()
+		filter.Add("label", fmt.Sprintf("%s=%s", UUIDLabel, containerSpec.Uuid))
+		containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
+			All:     true,
+			Filters: filter,
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "failed to list containers")
 		}
-	}
-	if cont, ok := FindFirst(containers, func(c types.Container) bool {
-		if c.Labels[UUIDLabel] == containerSpec.Uuid {
-			return true
+		if len(containers) == 0 {
+			return "", ContainerNotFoundError{}
 		}
-		return false
-	}); ok {
-		return cont.ID, nil
-	}
-
-	if externalID := containerSpec.ExternalId; externalID != "" {
-		if cont, ok := FindFirst(containers, func(c types.Container) bool {
-			return IDFilter(externalID, c)
-		}); ok {
-			return cont.ID, nil
-		}
-	}
-
-	if byAgent {
-		if cont, ok := FindFirst(containers, func(c types.Container) bool {
-			return AgentIDFilter(containerSpec.AgentId, c)
-		}); ok {
-			return cont.ID, nil
-		}
+		return containers[0].ID, nil
 	}
 
 	return "", ContainerNotFoundError{}
@@ -185,18 +168,6 @@ func FindFirst(containers []types.Container, f func(types.Container) bool) (type
 		}
 	}
 	return types.Container{}, false
-}
-
-func IDFilter(id string, container types.Container) bool {
-	return container.ID == id
-}
-
-func AgentIDFilter(id string, container types.Container) bool {
-	containerID, ok := container.Labels[AgentIDLabel]
-	if ok {
-		return containerID == id
-	}
-	return false
 }
 
 func SemverTrunk(version string, vals int) string {
