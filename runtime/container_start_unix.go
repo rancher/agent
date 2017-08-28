@@ -110,7 +110,7 @@ func setupNetworkMode(containerSpec v3.Container, networkKind string, config *co
 	portsSupported := true
 	hostnameSupported := true
 	kind := networkKind
-	if kind == "dockerHost" {
+	if kind == "host" {
 		portsSupported = false
 		hostnameSupported = false
 		config.NetworkDisabled = false
@@ -121,12 +121,12 @@ func setupNetworkMode(containerSpec v3.Container, networkKind string, config *co
 			hostConfig.DNS = nil
 			hostConfig.DNSSearch = nil
 		}
-	} else if kind == "dockerNone" {
+	} else if kind == "none" {
 		portsSupported = false
 		config.NetworkDisabled = true
 		hostConfig.NetworkMode = "none"
 		hostConfig.Links = nil
-	} else if kind == "dockerContainer" {
+	} else if kind == "container" {
 		// TODO: find network container id
 		portsSupported = false
 		hostnameSupported = false

@@ -18,7 +18,7 @@ func (s *EventTestSuite) TestNetworkModeNone(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Networks = []v3.Network{{Kind: "dockerNone", Resource: v3.Resource{Id: "1n5"}}}
+	request.Networks = []v3.Network{{Kind: "none", Resource: v3.Resource{Id: "1n5"}}}
 	request.Containers[0].Hostname = "nameisset"
 	request.Containers[0].PrimaryNetworkId = "1n5"
 
@@ -41,7 +41,7 @@ func (s *EventTestSuite) TestNetworkModeHost(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Networks = []v3.Network{{Kind: "dockerHost", Resource: v3.Resource{Id: "1n5"}}}
+	request.Networks = []v3.Network{{Kind: "host", Resource: v3.Resource{Id: "1n5"}}}
 	request.Containers[0].Hostname = "nameisset"
 	request.Containers[0].PrimaryNetworkId = "1n5"
 
@@ -80,7 +80,7 @@ func (s *EventTestSuite) TestNetworkModeContainer(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Networks = []v3.Network{{Kind: "dockerContainer", Resource: v3.Resource{Id: "1n5"}}}
+	request.Networks = []v3.Network{{Kind: "container", Resource: v3.Resource{Id: "1n5"}}}
 	request.Containers[0].Hostname = "notset"
 	request.Containers[0].PrimaryNetworkId = "1n5"
 	request.Containers[0].NetworkContainerId = "1c1"
