@@ -5,14 +5,18 @@ import (
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
+	"github.com/rancher/agent/utils"
 	"github.com/rancher/event-subscriber/locks"
 	rclient "github.com/rancher/go-rancher/client"
+	"strings"
 )
 
 type SendToRancherHandler struct {
 	client   *client.Client
 	rancher  *rclient.RancherClient
 	hostUUID string
+	cache    *cache.Cache
 }
 
 func (h *SendToRancherHandler) Handle(event *events.Message) error {
@@ -33,6 +37,12 @@ func (h *SendToRancherHandler) Handle(event *events.Message) error {
 	container, err := h.client.ContainerInspect(context.Background(), event.ID)
 	if err != nil {
 		if ok := client.IsErrContainerNotFound(err); !ok {
+			return err
+		}
+	}
+
+	if err == nil && strings.HasPrefix(container.Image, "sha256:") {
+		if err := utils.ReplaceFriendlyImage(h.cache, h.client, &container); err != nil {
 			return err
 		}
 	}

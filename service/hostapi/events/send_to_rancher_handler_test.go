@@ -1,11 +1,14 @@
 package events
 
 import (
+	"testing"
+	"time"
+
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
+	"github.com/patrickmn/go-cache"
 	rclient "github.com/rancher/go-rancher/client"
-	"testing"
 )
 
 func TestSendToRancherHandler(t *testing.T) {
@@ -32,7 +35,7 @@ func TestSendToRancherHandler(t *testing.T) {
 	}
 	rancher := mockRancherClient(expectedEvent, t)
 
-	handler := &SendToRancherHandler{client: dockerClient, rancher: rancher, hostUUID: hostUUID}
+	handler := &SendToRancherHandler{client: dockerClient, rancher: rancher, hostUUID: hostUUID, cache: cache.New(time.Hour*24, time.Hour*1)}
 
 	if err := handler.Handle(event); err != nil {
 		t.Fatal(err)
