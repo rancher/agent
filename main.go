@@ -42,6 +42,9 @@ func main() {
 		logrus.Fatalf("Exiting. Error: %v", err)
 	}
 
+	if *rurl == "" {
+		*rurl = os.Getenv("CATTLE_REGISTRATION_URL")
+	}
 	if *rurl != "" {
 		err := register.RunRegistration(*rurl)
 		if err != nil {

@@ -24,6 +24,10 @@ const (
 	cattleSecretKey = "CATTLE_SECRET_KEY"
 )
 
+var (
+	orchestration = os.Getenv("CATTLE_ORCHESTRATION")
+)
+
 func RunRegistration(url string) error {
 	accessKey, secretKey, cattleURL, agentIP := loadEnv(url)
 	os.Setenv(cattleAgentIP, agentIP)
@@ -83,6 +87,7 @@ func register(accessKey, secretKey, cattleURL string) error {
 	if len(resp.Data) == 0 {
 		_, err := apiClient.Register.Create(&client.Register{
 			Key: token,
+			Orchestration: orchestration,
 		})
 		if err != nil {
 			return err
@@ -90,7 +95,7 @@ func register(accessKey, secretKey, cattleURL string) error {
 		i := 0
 		for {
 			if i == 10 {
-				return errors.New("Failed to genarate access key")
+				return errors.New("Failed to generate access key")
 			}
 			list, err := apiClient.Register.List(&client.ListOpts{
 				Filters: map[string]interface{}{

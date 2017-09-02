@@ -47,7 +47,7 @@ if [ "$1" = "run" ]; then
     CONTAINER="rancher-agent"
 fi
 
-if [[ "$1" != "inspect-host" && $1 != "--" && "$1" != "state" ]]; then
+if [[ "$1" != "k8srun" && "$1" != "inspect-host" && $1 != "--" && "$1" != "state" ]]; then
     RUNNING_IMAGE="$(docker inspect -f '{{.Config.Image}}' ${CONTAINER})"
 fi
 
@@ -271,21 +271,23 @@ run_bootstrap()
     export CATTLE_CONFIG_URL="${CATTLE_CONFIG_URL:-${CATTLE_URL}}"
     export CATTLE_STORAGE_URL="${CATTLE_STORAGE_URL:-${CATTLE_URL}}"
 
-    # Sanity check that these credentials are valid
-    if curl -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/containerevent >test.json 2>&1; then
-        if cat test.json | jq -r .id >/dev/null 2>&1 && [ "$(cat test.json | jq -r .id)" != "containerEvent" ]; then
-            error Credentials are no longer valid, please re-register this agent
-            return 1
+    if [ -n "$CATTLE_ACCESS_KEY" ]; then
+        # Sanity check that these credentials are valid
+        if curl -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/containerevent >test.json 2>&1; then
+            if cat test.json | jq -r .id >/dev/null 2>&1 && [ "$(cat test.json | jq -r .id)" != "containerEvent" ]; then
+                error Credentials are no longer valid, please re-register this agent
+                return 1
+            fi
+        fi
+
+        # Sanity check if this account is really being authenticated as an agent account or the default admin auth
+        if curl -f -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/account >/dev/null 2>&1; then
+            error Please re-register this agent
+            exit 1
         fi
     fi
 
-    curl -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/scripts/bootstrap > $SCRIPT 
-
-    # Sanity check if this account is really being authenticated as an agent account or the default admin auth
-    if curl -f -u ${CATTLE_ACCESS_KEY}:${CATTLE_SECRET_KEY} -s ${CATTLE_URL}/schemas/account >/dev/null 2>&1; then
-        error Please re-register this agent
-        exit 1
-    fi
+    curl -s ${CATTLE_URL}/scripts/bootstrap > $SCRIPT
 
     info "Starting agent for ${CATTLE_ACCESS_KEY}"
     if [ "$CATTLE_EXEC_AGENT" = "true" ]; then
@@ -445,7 +447,7 @@ elif [ "$1" = "inspect-host" ]; then
     inspect
 elif [ "$1" = "state" ]; then
     echo Rancher State
-elif [ "$1" = "run" ]; then
+elif [ "$1" = "run" ] || [ "$1" = "k8srun" ]; then
     cleanup_upgrade
     setup_state
     run
