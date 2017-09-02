@@ -20,6 +20,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+var (
+	nodeName = os.Getenv(nodeNameEnv)
+)
+
 const (
 	ipLabel           = "io.rancher.scheduler.ips"
 	agentImage        = "RANCHER_AGENT_IMAGE"
@@ -27,6 +31,7 @@ const (
 	requireAny        = "CATTLE_SCHEDULER_REQUIRE_ANY"
 	requireAnyLabel   = "io.rancher.scheduler.require_any"
 	RancherAgentImage = "io.rancher.host.agent_image"
+	nodeNameEnv       = "CATTLE_NODE_NAME"
 )
 
 type Response struct {
@@ -43,6 +48,7 @@ type Resource struct {
 	Type                           string                 `json:"type,omitempty" yaml:"type,omitempty"`
 	Kind                           string                 `json:"kind,omitempty" yaml:"kind,omitempty"`
 	HostName                       string                 `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+	NodeName                       string                 `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
 	CreateLabels                   map[string]string      `json:"createLabels,omitempty" yaml:"createLabels,omitempty"`
 	Labels                         map[string]string      `json:"labels,omitempty" yaml:"labels,omitempty"`
 	UUID                           string                 `json:"uuid,omitempty" yaml:"uuid,omitempty"`
@@ -108,6 +114,7 @@ func addResource(ping *revents.Event, pong *Response, collectors []hostInfo.Coll
 		Type:                           "host",
 		Kind:                           "docker",
 		HostName:                       hostname,
+		NodeName:                       nodeName,
 		CreateLabels:                   createLabels,
 		Labels:                         labels,
 		Info:                           stats,
