@@ -17,34 +17,42 @@ const (
 	UUIDLabel       = "io.rancher.container.uuid"
 )
 
-func constructDeploymentSyncReply(containerSpec v3.Container, client *client.Client, ca *cache.Cache, networkKind string, pro *progress.Progress) (v3.DeploymentSyncResponse, error) {
+func constructDeploymentSyncReply(containerSpec v3.Container, containerID string, dclient *client.Client, ca *cache.Cache, networkKind string, pro *progress.Progress) (interface{}, error) {
 	response := v3.DeploymentSyncResponse{}
 
-	containerID, err := utils.FindContainer(client, containerSpec, false)
-	if err != nil && !utils.IsContainerNotFoundError(err) {
-		return v3.DeploymentSyncResponse{}, errors.Wrap(err, "failed to get container")
+	if containerID == "" && containerSpec.ExternalId != "" {
+		containerID = containerSpec.ExternalId
 	}
 
 	if containerID == "" {
-		status := v3.InstanceStatus{}
-		status.InstanceUuid = containerSpec.Uuid
-		response.InstanceStatus = []v3.InstanceStatus{status}
+		contID, err := utils.FindContainer(dclient, containerSpec, true)
+		if err != nil && !utils.IsContainerNotFoundError(err) {
+			return map[string]interface{}{}, errors.Wrap(err, "failed to get container")
+		}
+		containerID = contID
+	}
+
+	if containerID == "" {
+		response.InstanceStatus = []v3.InstanceStatus{{InstanceUuid: containerSpec.Uuid}}
 		return response, nil
 	}
 
-	inspect, err := client.ContainerInspect(context.Background(), containerID)
-	if err != nil {
+	inspect, err := dclient.ContainerInspect(context.Background(), containerID)
+	if err != nil && !client.IsErrContainerNotFound(err) {
 		return v3.DeploymentSyncResponse{}, errors.Wrap(err, "failed to inspect container")
+	} else if err != nil {
+		response.InstanceStatus = []v3.InstanceStatus{{InstanceUuid: containerSpec.Uuid}}
+		return response, nil
 	}
 	// converting images
 	if strings.HasPrefix(inspect.Image, "sha256:") {
-		if err := utils.ReplaceFriendlyImage(ca, client, &inspect); err != nil {
+		if err := utils.ReplaceFriendlyImage(ca, dclient, &inspect); err != nil {
 			return v3.DeploymentSyncResponse{}, errors.Wrap(err, "failed to get ip of the container")
 		}
 	}
 	dockerIP, err := getIP(inspect, networkKind, pro)
 	if err != nil && !utils.IsNoOp(containerSpec) {
-		if running, err2 := isRunning(inspect.ID, client); err2 != nil {
+		if running, err2 := isRunning(inspect.ID, dclient); err2 != nil {
 			return v3.DeploymentSyncResponse{}, errors.Wrap(err2, "failed to inspect running container")
 		} else if running {
 			return v3.DeploymentSyncResponse{}, errors.Wrap(err, "failed to get ip of the container")

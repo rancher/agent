@@ -39,6 +39,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v3.RancherC
 		noop = utils.InterfaceToBool(value)
 	}
 
+	containerID := ""
 	if !noop {
 		if started, restarting, err := runtime.IsContainerStarted(request.Containers[0], h.dockerClient); err == nil && !started {
 			if restarting {
@@ -47,15 +48,17 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v3.RancherC
 					return errors.Wrap(err, "failed to stop restarting container")
 				}
 			}
-			if err := runtime.ContainerStart(request.Containers[0], request.Volumes, networkKind, request.RegistryCredentials, progress, h.dockerClient, idsMap); err != nil {
+			contID, err := runtime.ContainerStart(request.Containers[0], request.Volumes, networkKind, request.RegistryCredentials, progress, h.dockerClient, idsMap)
+			if err != nil {
 				return errors.Wrap(err, "failed to activate instance")
 			}
+			containerID = contID
 		} else if err != nil {
 			return errors.Wrap(err, "failed to check whether instance is activated")
 		}
 	}
 
-	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, h.cache, networkKind, progress)
+	response, err := constructDeploymentSyncReply(request.Containers[0], containerID, h.dockerClient, h.cache, networkKind, progress)
 	if err != nil {
 		return errors.Wrap(err, "failed to construct deploymentSyncResponse")
 	}

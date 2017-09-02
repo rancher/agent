@@ -9,7 +9,7 @@ import (
 )
 
 func ContainerRemove(containerSpec v3.Container, dockerClient *client.Client) error {
-	containerID, err := utils.FindContainer(dockerClient, containerSpec, false)
+	containerID, err := utils.FindContainer(dockerClient, containerSpec, true)
 	if err != nil {
 		if utils.IsContainerNotFoundError(err) {
 			return nil
@@ -24,7 +24,7 @@ func ContainerRemove(containerSpec v3.Container, dockerClient *client.Client) er
 }
 
 func IsContainerRemoved(containerSpec v3.Container, dockerClient *client.Client) (bool, error) {
-	containerID, err := utils.FindContainer(dockerClient, containerSpec, false)
+	containerID, err := utils.FindContainer(dockerClient, containerSpec, true)
 	if err != nil {
 		if utils.IsContainerNotFoundError(err) {
 			return true, nil

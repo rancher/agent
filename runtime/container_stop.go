@@ -19,15 +19,11 @@ func ContainerStop(containerSpec v3.Container, volumes []v3.Volume, client *clie
 	}
 
 	t := time.Duration(timeout) * time.Second
-	containerID, err := utils.FindContainer(client, containerSpec, false)
+	containerID, err := utils.FindContainer(client, containerSpec, true)
 	if err != nil {
 		return errors.Wrap(err, "failed to get container")
 	}
 	client.ContainerStop(context.Background(), containerID, &t)
-	containerID, err = utils.FindContainer(client, containerSpec, false)
-	if err != nil {
-		return errors.Wrap(err, "failed to get container")
-	}
 	if ok, err := isStopped(client, containerID); err != nil {
 		return errors.Wrap(err, "failed to check whether container is stopped")
 	} else if !ok {
@@ -45,7 +41,7 @@ func ContainerStop(containerSpec v3.Container, volumes []v3.Volume, client *clie
 }
 
 func IsContainerStopped(containerSpec v3.Container, client *client.Client) (bool, error) {
-	containerID, err := utils.FindContainer(client, containerSpec, false)
+	containerID, err := utils.FindContainer(client, containerSpec, true)
 	if err != nil {
 		if !utils.IsContainerNotFoundError(err) {
 			return false, errors.Wrap(err, "failed to get container")
