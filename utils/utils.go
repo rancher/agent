@@ -40,8 +40,8 @@ func GetContainerSpec(event *revents.Event) (v3.Container, error) {
 	return deploymentSyncRequest.Containers[0], nil
 }
 
-func IsNoOp(containerSpec v3.Container) bool {
-	if value, ok := GetFieldsIfExist(containerSpec.Data, "processData", "containerNoOpEvent"); ok {
+func IsNoOp(event *revents.Event) bool {
+	if value, ok := GetFieldsIfExist(event.Data, "processData", "containerNoOpEvent"); ok {
 		return InterfaceToBool(value)
 	}
 	return false

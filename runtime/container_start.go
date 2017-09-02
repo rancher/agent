@@ -172,8 +172,6 @@ func setupContainerSpec(containerSpec v3.Container, volumes []v3.Volume, network
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up networking")
 	}
 
-	setupProxy(containerSpec, &config, getHostEntries())
-
 	setupCattleConfigURL(containerSpec, &config)
 
 	setupDeviceOptions(&hostConfig, containerSpec)
@@ -367,50 +365,6 @@ func setupHeathConfig(spec v3.Container, config *container.Config) {
 	healthConfig.Retries = int(spec.HealthRetries)
 	healthConfig.Timeout = time.Duration(spec.HealthTimeout) * time.Second
 	config.Healthcheck = healthConfig
-}
-
-func setupProxy(containerSpec v3.Container, config *container.Config, hostEntries map[string]string) {
-	// only setup envs for system container
-	if containerSpec.System {
-		envMap := map[string]string{}
-		envList := []string{}
-		for _, env := range config.Env {
-			/*
-				3 case:
-				1. foo=bar. Parse as normal
-				2. foo=. Parse as foo=
-				3. foo. Parse as foo
-			*/
-			part := strings.SplitN(env, "=", 2)
-			if len(part) == 1 {
-
-				if strings.Contains(env, "=") {
-					//case 2
-					envMap[part[0]] = ""
-				} else {
-					envList = append(envList, env)
-				}
-			} else if len(part) == 2 {
-				envMap[part[0]] = part[1]
-			}
-		}
-		for _, key := range HTTPProxyList {
-			if hostEntries[key] != "" {
-				envMap[key] = hostEntries[key]
-			}
-		}
-		envs := []string{}
-		for _, env := range envList {
-			if _, ok := envMap[env]; ok {
-				continue
-			}
-			envs = append(envs, env)
-		}
-		for key, value := range envMap {
-			envs = append(envs, fmt.Sprintf("%v=%v", key, value))
-		}
-		config.Env = envs
-	}
 }
 
 func setupCattleConfigURL(containerSpec v3.Container, config *container.Config) {
