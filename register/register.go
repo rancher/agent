@@ -86,7 +86,7 @@ func register(accessKey, secretKey, cattleURL string) error {
 	}
 	if len(resp.Data) == 0 {
 		_, err := apiClient.Register.Create(&client.Register{
-			Key: token,
+			Key:           token,
 			Orchestration: orchestration,
 		})
 		if err != nil {
