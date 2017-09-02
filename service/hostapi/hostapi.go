@@ -137,6 +137,8 @@ func getConnectionToken(try int, tokenReq *rclient.HostApiProxyToken, rancherCli
 			}
 			return nil, err
 		}
+		logrus.Errorf("failed to create HostApiProxyToken. Error: %v", err)
+		return nil, err
 	}
 	return tokenResponse, nil
 }
