@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	engineCli "github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/progress"
 	revents "github.com/rancher/event-subscriber/events"
@@ -265,4 +266,21 @@ func ToMapString(m map[string]interface{}) map[string]string {
 		r[k] = InterfaceToString(v)
 	}
 	return r
+}
+
+func ReplaceFriendlyImage(ca *cache.Cache, dclient *engineCli.Client, inspect *types.ContainerJSON) error {
+	v, ok := ca.Get(inspect.Image)
+	if ok {
+		inspect.Config.Image = v.(string)
+	} else {
+		imageInsp, _, err := dclient.ImageInspectWithRaw(context.Background(), inspect.Image)
+		if err != nil {
+			return errors.Wrap(err, "failed to inspect image")
+		}
+		if len(imageInsp.RepoTags) > 0 {
+			inspect.Config.Image = imageInsp.RepoTags[0]
+			ca.Add(inspect.Image, imageInsp.RepoTags[0], time.Hour*24)
+		}
+	}
+	return nil
 }

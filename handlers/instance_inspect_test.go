@@ -39,7 +39,7 @@ func (s *EventTestSuite) TestInstanceInspectByName(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
-	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, config.Image)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Config.Image, check.Equals, config.Image)
 }
 
 func (s *EventTestSuite) TestInstanceInspectById(c *check.C) {
@@ -78,7 +78,7 @@ func (s *EventTestSuite) TestInstanceInspectById(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
-	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, config.Image)
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Config.Image, check.Equals, config.Image)
 }
 
 func (s *EventTestSuite) TestInstanceInspectImage(c *check.C) {
@@ -117,5 +117,5 @@ func (s *EventTestSuite) TestInstanceInspectImage(c *check.C) {
 
 	c.Assert(reply.Transitioning != "error", check.Equals, true)
 	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).ID, check.Equals, inspect.ID)
-	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Image, check.Equals, "ibuildthecloud/helloworld:latest")
+	c.Assert(reply.Data["instanceInspect"].(types.ContainerJSON).Config.Image, check.Equals, "ibuildthecloud/helloworld:latest")
 }

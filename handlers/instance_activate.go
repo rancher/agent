@@ -55,7 +55,7 @@ func (h *ComputeHandler) InstanceActivate(event *revents.Event, cli *v3.RancherC
 		}
 	}
 
-	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, networkKind, progress)
+	response, err := constructDeploymentSyncReply(request.Containers[0], h.dockerClient, h.cache, networkKind, progress)
 	if err != nil {
 		return errors.Wrap(err, "failed to construct deploymentSyncResponse")
 	}

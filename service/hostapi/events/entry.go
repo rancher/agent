@@ -1,11 +1,14 @@
 package events
 
 import (
+	"time"
+
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/patrickmn/go-cache"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/util"
 	rclient "github.com/rancher/go-rancher/client"
@@ -90,6 +93,7 @@ func getHandlersFn(dockerClient *client.Client, rancherClient *rclient.RancherCl
 			client:   dockerClient,
 			rancher:  rancherClient,
 			hostUUID: getHostUUID(),
+			cache:    cache.New(time.Hour*24, time.Hour*1),
 		}
 		handlers["start"] = append(handlers["start"], sendToRancherHandler)
 		handlers["stop"] = []Handler{sendToRancherHandler}

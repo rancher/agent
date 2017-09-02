@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"context"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -24,18 +22,8 @@ func (h *ComputeHandler) InstanceInspect(event *revents.Event, cli *v3.RancherCl
 		return errors.Wrap(err, "failed to inspect instance")
 	}
 	if err == nil && strings.HasPrefix(inspectResp.Image, "sha256:") {
-		v, ok := h.cache.Get(inspectResp.Image)
-		if ok {
-			inspectResp.Image = v.(string)
-		} else {
-			imageInsp, _, err := h.dockerClient.ImageInspectWithRaw(context.Background(), inspectResp.Image)
-			if err != nil {
-				return errors.Wrap(err, "failed to inspect image")
-			}
-			if len(imageInsp.RepoTags) > 0 {
-				inspectResp.Image = imageInsp.RepoTags[0]
-				h.cache.Add(inspectResp.Image, imageInsp.RepoTags[0], time.Hour*24)
-			}
+		if err := utils.ReplaceFriendlyImage(h.cache, h.dockerClient, &inspectResp); err != nil {
+			return err
 		}
 	}
 	if err == nil {
