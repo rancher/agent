@@ -14,9 +14,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
 	"github.com/rancher/go-rancher/v3"
+	"regexp"
 )
 
 const MaxWait = time.Duration(time.Second * 10)
+
+var slashRegex = regexp.MustCompile("[/]{2,}")
 
 // EventHandler Defines the function "interface" that handlers must conform to.
 type EventHandler func(*Event, *client.RancherClient) error
@@ -161,6 +164,16 @@ func (router *EventRouter) Stop() {
 }
 
 func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey string, secretKey string, data url.Values) (*websocket.Conn, error) {
+	// gorilla websocket will blow up if the path starts with //
+	parsed, err := url.Parse(subscribeURL)
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasPrefix(parsed.Path, "//") {
+		parsed.Path = slashRegex.ReplaceAllString(parsed.Path, "/")
+		subscribeURL = parsed.String()
+	}
+
 	dialer := &websocket.Dialer{
 		HandshakeTimeout: time.Second * 30,
 	}
