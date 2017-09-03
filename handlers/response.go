@@ -17,7 +17,7 @@ const (
 	UUIDLabel       = "io.rancher.container.uuid"
 )
 
-func constructDeploymentSyncReply(containerSpec v3.Container, containerID string, dclient *client.Client, ca *cache.Cache, networkKind string, pro *progress.Progress) (interface{}, error) {
+func constructDeploymentSyncReply(noOp bool, containerSpec v3.Container, containerID string, dclient *client.Client, ca *cache.Cache, networkKind string, pro *progress.Progress) (interface{}, error) {
 	response := v3.DeploymentSyncResponse{}
 
 	if containerID == "" && containerSpec.ExternalId != "" {
@@ -51,7 +51,7 @@ func constructDeploymentSyncReply(containerSpec v3.Container, containerID string
 		}
 	}
 	dockerIP, err := getIP(inspect, networkKind, pro)
-	if err != nil && !utils.IsNoOp(containerSpec) {
+	if err != nil && !noOp {
 		if running, err2 := isRunning(inspect.ID, dclient); err2 != nil {
 			return v3.DeploymentSyncResponse{}, errors.Wrap(err2, "failed to inspect running container")
 		} else if running {
@@ -67,7 +67,6 @@ func constructDeploymentSyncReply(containerSpec v3.Container, containerID string
 	status.DockerInspect = dockerInspect
 	status.InstanceUuid = containerSpec.Uuid
 	status.PrimaryIpAddress = dockerIP
-	status.State = inspect.State.Status
 	response.InstanceStatus = []v3.InstanceStatus{status}
 
 	return response, nil

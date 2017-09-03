@@ -13,8 +13,6 @@ type StorageDriver struct {
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
-	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
-
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
@@ -59,15 +57,9 @@ type StorageDriverOperations interface {
 	ById(id string) (*StorageDriver, error)
 	Delete(container *StorageDriver) error
 
-	ActionActivate(*StorageDriver) (*StorageDriver, error)
-
 	ActionCreate(*StorageDriver) (*StorageDriver, error)
 
-	ActionDeactivate(*StorageDriver) (*StorageDriver, error)
-
 	ActionRemove(*StorageDriver) (*StorageDriver, error)
-
-	ActionUpdate(*StorageDriver) (*StorageDriver, error)
 }
 
 func newStorageDriverClient(rancherClient *RancherClient) *StorageDriverClient {
@@ -120,15 +112,6 @@ func (c *StorageDriverClient) Delete(container *StorageDriver) error {
 	return c.rancherClient.doResourceDelete(STORAGE_DRIVER_TYPE, &container.Resource)
 }
 
-func (c *StorageDriverClient) ActionActivate(resource *StorageDriver) (*StorageDriver, error) {
-
-	resp := &StorageDriver{}
-
-	err := c.rancherClient.doAction(STORAGE_DRIVER_TYPE, "activate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *StorageDriverClient) ActionCreate(resource *StorageDriver) (*StorageDriver, error) {
 
 	resp := &StorageDriver{}
@@ -138,29 +121,11 @@ func (c *StorageDriverClient) ActionCreate(resource *StorageDriver) (*StorageDri
 	return resp, err
 }
 
-func (c *StorageDriverClient) ActionDeactivate(resource *StorageDriver) (*StorageDriver, error) {
-
-	resp := &StorageDriver{}
-
-	err := c.rancherClient.doAction(STORAGE_DRIVER_TYPE, "deactivate", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *StorageDriverClient) ActionRemove(resource *StorageDriver) (*StorageDriver, error) {
 
 	resp := &StorageDriver{}
 
 	err := c.rancherClient.doAction(STORAGE_DRIVER_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *StorageDriverClient) ActionUpdate(resource *StorageDriver) (*StorageDriver, error) {
-
-	resp := &StorageDriver{}
-
-	err := c.rancherClient.doAction(STORAGE_DRIVER_TYPE, "update", &resource.Resource, nil, resp)
 
 	return resp, err
 }

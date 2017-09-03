@@ -202,7 +202,7 @@ func setupFieldsHostConfig(fields v3.Container, hostConfig *container.HostConfig
 
 	hostConfig.CapDrop = fields.CapDrop
 
-	hostConfig.CpusetCpus = fields.CpuSet
+	hostConfig.CpusetCpus = fields.CpuSetCpu
 
 	hostConfig.BlkioWeight = uint16(fields.BlkioWeight)
 

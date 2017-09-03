@@ -323,7 +323,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].Environment = map[string]interface{}{
 		"foo": "bar",
 	}
-	request.Containers[0].CpuSet = "0,1"
+	request.Containers[0].CpuSetCpu = "0,1"
 	request.Containers[0].ReadOnly = true
 	request.Containers[0].Memory = 12000000
 	request.Containers[0].MemorySwap = 16000000

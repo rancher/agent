@@ -13,13 +13,9 @@ type Agent struct {
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
-	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
-
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
-
-	ManagedConfig bool `json:"managedConfig,omitempty" yaml:"managed_config,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
