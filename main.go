@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/cloudprovider/aws"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/events"
 	"github.com/rancher/agent/register"
 )
@@ -53,8 +53,7 @@ func main() {
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
 	workerCount := 250
 
-	provider := aws.NewProvider()
-	go provider.GetCloudProviderInfo()
+	cloudprovider.GetCloudProviderInfo()
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {
