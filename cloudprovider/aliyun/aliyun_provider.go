@@ -1,18 +1,16 @@
-package aws
+package aliyun
 
 import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/denverdino/aliyungo/metadata"
 	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/core/hostInfo"
 )
 
 const (
-	awsTag = "aws"
+	aliyunTag = "aliyun"
 )
 
 type Provider struct {
@@ -23,31 +21,31 @@ type Provider struct {
 }
 
 type metadataClient interface {
-	getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error)
+	Region() (string, error)
+	Zone() (string, error)
 }
 
 type metadataClientImpl struct {
-	client *ec2metadata.EC2Metadata
+	client *metadata.MetaData
 }
 
 func init() {
-	cloudprovider.AddCloudProvider(awsTag, &Provider{
+	cloudprovider.AddCloudProvider(aliyunTag, &Provider{
 		expireTime: time.Minute * 5,
 		interval:   time.Second * 10,
 	})
 }
 
-func (m metadataClientImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error) {
-	return m.client.GetInstanceIdentityDocument()
+func (m metadataClientImpl) Region() (string, error) {
+	return m.client.Region()
+}
+
+func (m metadataClientImpl) Zone() (string, error) {
+	return m.client.Zone()
 }
 
 func (p *Provider) Init() error {
-	s, err := session.NewSession()
-	if err != nil {
-		logrus.Error(err)
-		return err
-	}
-	client := metadataClientImpl{ec2metadata.New(s)}
+	client := metadataClientImpl{metadata.NewMetaData(nil)}
 	p.client = client
 	p.initialized = true
 	return nil
@@ -68,15 +66,20 @@ func (p *Provider) GetCloudProviderInfo() bool {
 		}
 		time.Sleep(p.interval)
 
-		document, err := p.client.getInstanceIdentityDocument()
+		zone, err := p.client.Zone()
+		if err != nil {
+			continue
+		}
+
+		region, err := p.client.Region()
 		if err != nil {
 			continue
 		}
 		i := hostInfo.Info{}
 		i.Labels = map[string]string{}
-		i.Labels[cloudprovider.RegionLabel] = document.Region
-		i.Labels[cloudprovider.AvailabilityZoneLabel] = document.AvailabilityZone
-		i.Labels[cloudprovider.CloudProviderLabel] = awsTag
+		i.Labels[cloudprovider.RegionLabel] = region
+		i.Labels[cloudprovider.AvailabilityZoneLabel] = zone
+		i.Labels[cloudprovider.CloudProviderLabel] = aliyunTag
 		if err = cloudprovider.WriteHostInfo(i); err != nil {
 			continue
 		}
