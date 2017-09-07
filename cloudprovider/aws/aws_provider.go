@@ -1,25 +1,18 @@
 package aws
 
 import (
-	"encoding/json"
 	"os"
-	"path"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/core/hostInfo"
-	"github.com/rancher/agent/utilities/config"
 )
 
 const (
-	cloudProviderLabel    = "io.rancher.host.provider"
-	regionLabel           = "io.rancher.host.region"
-	availabilityZoneLabel = "io.rancher.host.zone"
-	infoFile              = "info.json"
-	tempFile              = "temp.json"
-	awsTag                = "aws"
+	awsTag = "aws"
 )
 
 type Provider struct {
@@ -37,38 +30,40 @@ type metadataClientImpl struct {
 	client *ec2metadata.EC2Metadata
 }
 
+func init() {
+	cloudprovider.AddCloudProvider(awsTag, &Provider{
+		expireTime: time.Minute * 5,
+		interval:   time.Second * 10,
+	})
+}
+
 func (m metadataClientImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error) {
 	return m.client.GetInstanceIdentityDocument()
 }
 
-func NewProvider() Provider {
-	prod := Provider{}
+func (p *Provider) Init() error {
 	s, err := session.NewSession()
 	if err != nil {
 		logrus.Error(err)
-		return Provider{}
+		return err
 	}
 	client := metadataClientImpl{ec2metadata.New(s)}
-	prod.client = client
-	prod.expireTime = time.Minute * 5
-	prod.interval = time.Second * 10
-	prod.initialized = true
-	return prod
+	p.client = client
+	p.initialized = true
+	return nil
 }
 
-func (p Provider) GetCloudProviderInfo() bool {
+func (p *Provider) GetCloudProviderInfo() bool {
 	if !p.initialized {
 		return false
 	}
 	success := false
-	infoPath := path.Join(config.StateDir(), infoFile)
-	tempPath := path.Join(config.StateDir(), tempFile)
 	endtime := time.Now().Add(p.expireTime)
 	for {
 		if time.Now().After(endtime) {
 			break
 		}
-		if _, err := os.Stat(infoPath); err == nil {
+		if _, err := os.Stat(cloudprovider.InfoPath); err == nil {
 			break
 		}
 		time.Sleep(p.interval)
@@ -79,32 +74,14 @@ func (p Provider) GetCloudProviderInfo() bool {
 		}
 		i := hostInfo.Info{}
 		i.Labels = map[string]string{}
-		i.Labels[regionLabel] = document.Region
-		i.Labels[availabilityZoneLabel] = document.AvailabilityZone
-		i.Labels[cloudProviderLabel] = awsTag
-		bytes, err := json.Marshal(i)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		file, err := os.Create(tempPath)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		defer file.Close()
-		_, err = file.Write(bytes)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		err = os.Rename(tempPath, infoPath)
-		if err != nil {
-			logrus.Error(err)
+		i.Labels[cloudprovider.RegionLabel] = document.Region
+		i.Labels[cloudprovider.AvailabilityZoneLabel] = document.AvailabilityZone
+		i.Labels[cloudprovider.CloudProviderLabel] = awsTag
+		if err = cloudprovider.WriteHostInfo(i); err != nil {
 			continue
 		}
 	}
-	if _, err := os.Stat(infoPath); err == nil {
+	if _, err := os.Stat(cloudprovider.InfoPath); err == nil {
 		success = true
 	}
 	return success

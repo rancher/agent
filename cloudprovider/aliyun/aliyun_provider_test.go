@@ -2,12 +2,13 @@ package aliyun
 
 import (
 	"os"
-	"path"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/utilities/config"
+
 	"gopkg.in/check.v1"
 )
 
@@ -54,8 +55,7 @@ func (s *ComputeTestSuite) TestGetCloudProviderInfo(c *check.C) {
 	p.client = fakeReplyImpl{}
 	success := p.GetCloudProviderInfo()
 	c.Assert(success, check.Equals, true)
-	infoPath := path.Join(config.StateDir(), infoFile)
-	os.Remove(infoPath)
+	os.Remove(cloudprovider.InfoPath)
 
 	p.client = errorReplyImpl{}
 	success = p.GetCloudProviderInfo()

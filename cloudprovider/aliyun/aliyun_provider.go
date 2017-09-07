@@ -1,24 +1,16 @@
 package aliyun
 
 import (
-	"encoding/json"
 	"os"
-	"path"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/denverdino/aliyungo/metadata"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/core/hostInfo"
-	"github.com/rancher/agent/utilities/config"
 )
 
 const (
-	cloudProviderLabel    = "io.rancher.host.provider"
-	regionLabel           = "io.rancher.host.region"
-	availabilityZoneLabel = "io.rancher.host.zone"
-	infoFile              = "info.json"
-	tempFile              = "temp.json"
-	aliyunTag             = "aliyun"
+	aliyunTag = "aliyun"
 )
 
 type Provider struct {
@@ -37,6 +29,13 @@ type metadataClientImpl struct {
 	client *metadata.MetaData
 }
 
+func init() {
+	cloudprovider.AddCloudProvider(aliyunTag, &Provider{
+		expireTime: time.Minute * 5,
+		interval:   time.Second * 10,
+	})
+}
+
 func (m metadataClientImpl) Region() (string, error) {
 	return m.client.Region()
 }
@@ -45,29 +44,24 @@ func (m metadataClientImpl) Zone() (string, error) {
 	return m.client.Zone()
 }
 
-func NewProvider() Provider {
-	prod := Provider{}
+func (p *Provider) Init() error {
 	client := metadataClientImpl{metadata.NewMetaData(nil)}
-	prod.client = client
-	prod.expireTime = time.Minute * 5
-	prod.interval = time.Second * 10
-	prod.initialized = true
-	return prod
+	p.client = client
+	p.initialized = true
+	return nil
 }
 
-func (p Provider) GetCloudProviderInfo() bool {
+func (p *Provider) GetCloudProviderInfo() bool {
 	if !p.initialized {
 		return false
 	}
 	success := false
-	infoPath := path.Join(config.StateDir(), infoFile)
-	tempPath := path.Join(config.StateDir(), tempFile)
 	endtime := time.Now().Add(p.expireTime)
 	for {
 		if time.Now().After(endtime) {
 			break
 		}
-		if _, err := os.Stat(infoPath); err == nil {
+		if _, err := os.Stat(cloudprovider.InfoPath); err == nil {
 			break
 		}
 		time.Sleep(p.interval)
@@ -83,32 +77,14 @@ func (p Provider) GetCloudProviderInfo() bool {
 		}
 		i := hostInfo.Info{}
 		i.Labels = map[string]string{}
-		i.Labels[regionLabel] = region
-		i.Labels[availabilityZoneLabel] = zone
-		i.Labels[cloudProviderLabel] = aliyunTag
-		bytes, err := json.Marshal(i)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		file, err := os.Create(tempPath)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		defer file.Close()
-		_, err = file.Write(bytes)
-		if err != nil {
-			logrus.Error(err)
-			continue
-		}
-		err = os.Rename(tempPath, infoPath)
-		if err != nil {
-			logrus.Error(err)
+		i.Labels[cloudprovider.RegionLabel] = region
+		i.Labels[cloudprovider.AvailabilityZoneLabel] = zone
+		i.Labels[cloudprovider.CloudProviderLabel] = aliyunTag
+		if err = cloudprovider.WriteHostInfo(i); err != nil {
 			continue
 		}
 	}
-	if _, err := os.Stat(infoPath); err == nil {
+	if _, err := os.Stat(cloudprovider.InfoPath); err == nil {
 		success = true
 	}
 	return success
