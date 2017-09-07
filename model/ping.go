@@ -30,4 +30,5 @@ type PingResource struct {
 	Memory           uint64                 `json:"memory,omitempty" yaml:"memory,omitempty"`
 	MilliCPU         uint64                 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
 	LocalStorageMb   uint64                 `json:"localStorageMb,omitempty" yaml:"local_storage_mb,omitempty"`
+	ExitCode         int                    `json:"exitCode,omitempty" yaml:"exitCode,omitempty"`
 }

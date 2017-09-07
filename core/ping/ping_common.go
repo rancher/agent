@@ -170,10 +170,16 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 			return errors.Wrap(err, constants.AddInstanceError+"failed to get all containers")
 		}
 		for _, container := range running {
-			containers = utils.AddContainer("running", container, containers, dockerClient)
+			containers, err = utils.AddContainer("running", container, containers, dockerClient)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add container %v into ping response", container.ID)
+			}
 		}
 		for _, container := range nonrunning {
-			containers = utils.AddContainer("stopped", container, containers, dockerClient)
+			containers, err = utils.AddContainer("stopped", container, containers, dockerClient)
+			if err != nil {
+				return errors.Wrapf(err, "failed to add container %v into ping response", container.ID)
+			}
 		}
 		pong.Resources = append(pong.Resources, containers...)
 		pong.Options.Instances = true

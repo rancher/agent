@@ -390,7 +390,7 @@ func RemoveContainer(client *engineCli.Client, containerID string) error {
 	return nil
 }
 
-func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client) []model.PingResource {
+func AddContainer(state string, container types.Container, containers []model.PingResource, dockerClient *engineCli.Client) ([]model.PingResource, error) {
 	containerData := model.PingResource{
 		Type:     "instance",
 		UUID:     GetUUID(container),
@@ -400,7 +400,14 @@ func AddContainer(state string, container types.Container, containers []model.Pi
 		Labels:   container.Labels,
 		Created:  container.Created,
 	}
-	return append(containers, containerData)
+	if state == "stopped" {
+		inspect, err := dockerClient.ContainerInspect(context.Background(), container.ID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to inspect container %v", container.ID)
+		}
+		containerData.ExitCode = inspect.State.ExitCode
+	}
+	return append(containers, containerData), nil
 }
 
 func IsContainerNotFoundError(e error) bool {

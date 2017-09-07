@@ -116,13 +116,19 @@ func (s *ComputeTestSuite) TestNoLabelField(c *check.C) {
 	containers := []model.PingResource{}
 
 	container.Labels = map[string]string{}
-	containers = utils.AddContainer("running", container, containers, client)
+	containers, err = utils.AddContainer("running", container, containers, client)
+	if err != nil {
+		c.Fatal(err)
+	}
 	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
 	c.Assert(containers[0].SystemContainer, check.Equals, "")
 
 	containers = []model.PingResource{}
 	container.Labels = map[string]string{}
-	containers = utils.AddContainer("running", container, containers, client)
+	containers, err = utils.AddContainer("running", container, containers, client)
+	if err != nil {
+		c.Fatal(err)
+	}
 	c.Assert(containers[0].UUID, check.Equals, "no-label-test")
 	c.Assert(containers[0].SystemContainer, check.Equals, "")
 }
