@@ -38,6 +38,7 @@ if 'POST' not in client.schema.types['registrationToken'].collectionMethods:
 clusters = client.list_cluster(removed_null=True)
 
 if len(clusters) == 1:
-    print clusters[0].registrationToken.registrationUrl
+    cluster = client.wait_success(clusters[0])
+    print cluster.registrationToken.registrationUrl
 else:
     print url
