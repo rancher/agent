@@ -35,13 +35,9 @@ if 'POST' not in client.schema.types['registrationToken'].collectionMethods:
         print 'Invalid client'
         sys.exit(1)
 
-tokens = client.list_registrationToken(state='active')
+clusters = client.list_cluster(removed_null=True)
 
-if len(tokens) == 0:
-    token = client.create_registrationToken()
+if len(clusters) == 1:
+    print clusters[0].registrationToken.registrationUrl
 else:
-    token = tokens[0]
-
-token = client.wait_success(token)
-
-print token.registrationUrl
+    print url
