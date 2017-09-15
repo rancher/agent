@@ -6,7 +6,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
-	rclient "github.com/rancher/go-rancher/client"
+	rclient "github.com/rancher/go-rancher/v3"
 	"testing"
 	"time"
 )

@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/patrickmn/go-cache"
-	rclient "github.com/rancher/go-rancher/client"
+	rclient "github.com/rancher/go-rancher/v3"
 )
 
 func TestSendToRancherHandler(t *testing.T) {
@@ -27,11 +27,9 @@ func TestSendToRancherHandler(t *testing.T) {
 	hostUUID := "host-123"
 	event := &events.Message{ID: c.ID, From: from, Status: status, Time: eventTime}
 	expectedEvent := &rclient.ContainerEvent{
-		ExternalId:        c.ID,
-		ExternalFrom:      from,
-		ExternalStatus:    status,
-		ExternalTimestamp: eventTime,
-		ReportedHostUuid:  hostUUID,
+		ExternalId:       c.ID,
+		ExternalStatus:   status,
+		ReportedHostUuid: hostUUID,
 	}
 	rancher := mockRancherClient(expectedEvent, t)
 
@@ -57,8 +55,6 @@ type MockContainerEventOps struct {
 
 func (m *MockContainerEventOps) Create(event *rclient.ContainerEvent) (*rclient.ContainerEvent, error) {
 	if event.ExternalId != m.expectedEvent.ExternalId ||
-		event.ExternalFrom != m.expectedEvent.ExternalFrom ||
-		event.ExternalTimestamp != m.expectedEvent.ExternalTimestamp ||
 		event.ExternalStatus != m.expectedEvent.ExternalStatus ||
 		event.ReportedHostUuid != m.expectedEvent.ReportedHostUuid ||
 		event.DockerInspect == nil {

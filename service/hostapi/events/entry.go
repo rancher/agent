@@ -11,7 +11,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/util"
-	rclient "github.com/rancher/go-rancher/client"
+	rclient "github.com/rancher/go-rancher/v3"
 )
 
 const (

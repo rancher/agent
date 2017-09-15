@@ -218,6 +218,8 @@ setup_state()
     for m in $MODULES; do
         nsenter -m -t 1 /sbin/modprobe $m >/dev/null 2>&1 || true
     done
+
+    ip route add 169.254.169.250/32 dev docker0 >/dev/null 2>&1 || true
 }
 
 load()

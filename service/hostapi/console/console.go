@@ -38,7 +38,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	socketLoc := fmt.Sprintf(socketLocFmt, container)
 	conn, err := net.Dial("unix", socketLoc)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Couldn't dial VM socket [%v].", socketLoc)
+		log.WithFields(log.Fields{"error": err}).Errorf("Couldn't dial VM socket [%v].", socketLoc)
 		return
 	}
 
