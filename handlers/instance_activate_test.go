@@ -69,7 +69,7 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Containers[0].Labels = map[string]interface{}{
+	request.Containers[0].Labels = map[string]string{
 		"io.rancher.container.uuid": "111",
 		"foo": "bar",
 	}
@@ -206,10 +206,10 @@ func (s *EventTestSuite) TestDockerFieldsExtra(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Containers[0].Sysctls = map[string]interface{}{
+	request.Containers[0].Sysctls = map[string]string{
 		"net.ipv4.ip_forward": "1",
 	}
-	request.Containers[0].Tmpfs = map[string]interface{}{
+	request.Containers[0].Tmpfs = map[string]string{
 		"/run": "rw,noexec,nosuid,size=65536k",
 	}
 	request.Containers[0].HealthCmd = []string{"ls"}
@@ -320,7 +320,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 			BindIpAddress: "127.0.0.1",
 		},
 	}
-	request.Containers[0].Environment = map[string]interface{}{
+	request.Containers[0].Environment = map[string]string{
 		"foo": "bar",
 	}
 	request.Containers[0].CpuSetCpu = "0,1"
@@ -331,7 +331,7 @@ func (s *EventTestSuite) TestInstanceActivateBasic(c *check.C) {
 	request.Containers[0].PidMode = "host"
 	request.Containers[0].LogConfig = &v3.LogConfig{
 		Driver: "json-file",
-		Config: map[string]interface{}{
+		Config: map[string]string{
 			"max-size": "10",
 		},
 	}
@@ -457,7 +457,7 @@ func (s *EventTestSuite) TestInstanceActivateWithPullImage(c *check.C) {
 	event := getDeploymentSyncRequest("./test_events/deployment_sync_request", &request, c)
 	c.Assert(request.Containers, check.HasLen, 1)
 
-	request.Containers[0].Labels = map[string]interface{}{}
+	request.Containers[0].Labels = map[string]string{}
 
 	event.Data["deploymentSyncRequest"] = request
 	rawEvent := marshalEvent(event, c)

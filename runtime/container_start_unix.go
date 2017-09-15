@@ -171,7 +171,7 @@ func setupFieldsHostConfig(fields v3.Container, hostConfig *container.HostConfig
 
 	if fields.LogConfig != nil {
 		hostConfig.LogConfig.Type = fields.LogConfig.Driver
-		hostConfig.LogConfig.Config = utils.ToMapString(fields.LogConfig.Config)
+		hostConfig.LogConfig.Config = fields.LogConfig.Config
 	}
 
 	hostConfig.SecurityOpt = fields.SecurityOpt
@@ -232,7 +232,7 @@ func setupFieldsHostConfig(fields v3.Container, hostConfig *container.HostConfig
 
 	hostConfig.ShmSize = fields.ShmSize
 
-	hostConfig.Tmpfs = utils.ToMapString(fields.Tmpfs)
+	hostConfig.Tmpfs = fields.Tmpfs
 
 	hostConfig.Ulimits = convertUlimits(fields.Ulimits)
 
@@ -240,9 +240,9 @@ func setupFieldsHostConfig(fields v3.Container, hostConfig *container.HostConfig
 
 	hostConfig.IpcMode = container.IpcMode(fields.IpcMode)
 
-	hostConfig.Sysctls = utils.ToMapString(fields.Sysctls)
+	hostConfig.Sysctls = fields.Sysctls
 
-	hostConfig.StorageOpt = utils.ToMapString(fields.StorageOpt)
+	hostConfig.StorageOpt = fields.StorageOpt
 
 	hostConfig.PidsLimit = fields.PidsLimit
 
@@ -370,7 +370,7 @@ func setupRancherFlexVolume(volumes []v3.Volume, dataVolumes []string, progress 
 				Options map[string]string `json:"Opts,omitempty"`
 			}{
 				Name:    volume.Name,
-				Options: utils.ToMapString(volume.DriverOpts),
+				Options: volume.DriverOpts,
 			}
 			progress.Update(fmt.Sprintf("Creating volume %s", volume.Name), "yes", nil)
 			_, err := callRancherStorageVolumePlugin(volume, Create, payload)

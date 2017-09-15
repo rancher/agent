@@ -402,9 +402,9 @@ func setupCattleConfigURL(containerSpec v3.Container, config *container.Config) 
 	}
 }
 
-func setupLabels(labels map[string]interface{}, config *container.Config) {
+func setupLabels(labels map[string]string, config *container.Config) {
 	for k, v := range labels {
-		config.Labels[k] = utils.InterfaceToString(v)
+		config.Labels[k] = v
 	}
 }
 
