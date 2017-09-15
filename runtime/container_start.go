@@ -208,6 +208,10 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	}
 	config.Image = containerSpec.Image
 
+	if containerSpec.ExternalId != "" {
+		return "", fmt.Errorf("Container %s has been deleted from the host", containerSpec.ExternalId)
+	}
+
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
