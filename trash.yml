@@ -6,7 +6,7 @@ import:
   version: d3bd4e5241fb884dcb0f99ba222623250115fb56
 
 - package: github.com/rancher/go-rancher
-  version: 743999ab3ae2b95a63f58dee83a7854e3c4995e4
+  version: c77c8f19e7d3009b683bab20f96e2238f9223a0b
 
 - package: github.com/gorilla/mux
   version: 9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e

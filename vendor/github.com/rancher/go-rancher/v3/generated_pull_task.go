@@ -15,11 +15,13 @@ type PullTask struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	HostIds []string `json:"hostIds,omitempty" yaml:"host_ids,omitempty"`
+
 	Image string `json:"image,omitempty" yaml:"image,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	Labels map[string]interface{} `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 
 	Mode string `json:"mode,omitempty" yaml:"mode,omitempty"`
 
@@ -31,7 +33,7 @@ type PullTask struct {
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
-	Status map[string]interface{} `json:"status,omitempty" yaml:"status,omitempty"`
+	Status map[string]string `json:"status,omitempty" yaml:"status,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
