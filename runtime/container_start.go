@@ -208,6 +208,10 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	}
 	config.Image = containerSpec.Image
 
+	if containerSpec.ExternalId != "" {
+		return "", fmt.Errorf("Container %s has been deleted from the host", containerSpec.ExternalId)
+	}
+
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
@@ -398,9 +402,9 @@ func setupCattleConfigURL(containerSpec v3.Container, config *container.Config) 
 	}
 }
 
-func setupLabels(labels map[string]interface{}, config *container.Config) {
+func setupLabels(labels map[string]string, config *container.Config) {
 	for k, v := range labels {
-		config.Labels[k] = utils.InterfaceToString(v)
+		config.Labels[k] = v
 	}
 }
 

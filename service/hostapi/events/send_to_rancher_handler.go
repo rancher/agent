@@ -1,6 +1,8 @@
 package events
 
 import (
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types/events"
@@ -8,8 +10,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/rancher/agent/utils"
 	"github.com/rancher/event-subscriber/locks"
-	rclient "github.com/rancher/go-rancher/client"
-	"strings"
+	rclient "github.com/rancher/go-rancher/v3"
 )
 
 type SendToRancherHandler struct {
@@ -47,12 +48,20 @@ func (h *SendToRancherHandler) Handle(event *events.Message) error {
 		}
 	}
 
+	if container.Config == nil {
+		return nil
+	}
+
+	ok, uuid := utils.GetUUIDForContainer(container.Config.Labels)
+	if !ok {
+		return nil
+	}
+
 	containerEvent := &rclient.ContainerEvent{
-		ExternalStatus:    event.Status,
-		ExternalId:        event.ID,
-		ExternalFrom:      event.From,
-		ExternalTimestamp: int64(event.Time),
-		ReportedHostUuid:  h.hostUUID,
+		ExternalStatus:   event.Status,
+		ExternalId:       event.ID,
+		ContainerUuid:    uuid,
+		ReportedHostUuid: h.hostUUID,
 	}
 	containerEvent.DockerInspect = container
 
