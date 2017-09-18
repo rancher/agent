@@ -78,8 +78,11 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	created := false
 	if containerID == "" {
 		credential := v3.Credential{}
-		if credentials != nil && len(credentials) > 0 {
-			credential = credentials[0]
+		for _, cred := range credentials {
+			if cred.Id == containerSpec.RegistryCredentialId {
+				credential = cred
+				break
+			}
 		}
 		newID, err := createContainer(runtimeClient, &spec.config, &spec.hostConfig, containerSpec, credential, name, progress)
 		if err != nil && !strings.Contains(err.Error(), nameInuseError) {
