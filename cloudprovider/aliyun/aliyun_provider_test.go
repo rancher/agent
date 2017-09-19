@@ -1,11 +1,10 @@
-package aws
+package aliyun
 
 import (
 	"os"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/pkg/errors"
 	. "gopkg.in/check.v1"
 
@@ -29,14 +28,22 @@ func (s *ComputeTestSuite) SetUpSuite(c *C) {
 
 type fakeReplyImpl struct{}
 
-func (f fakeReplyImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error) {
-	return ec2metadata.EC2InstanceIdentityDocument{Region: "fake", AvailabilityZone: "fake"}, nil
+func (f fakeReplyImpl) Region() (string, error) {
+	return "fake", nil
+}
+
+func (f fakeReplyImpl) Zone() (string, error) {
+	return "fake", nil
 }
 
 type errorReplyImpl struct{}
 
-func (e errorReplyImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error) {
-	return ec2metadata.EC2InstanceIdentityDocument{}, errors.New("fake error")
+func (e errorReplyImpl) Region() (string, error) {
+	return "", errors.New("fake error")
+}
+
+func (e errorReplyImpl) Zone() (string, error) {
+	return "", errors.New("fake error")
 }
 
 func (s *ComputeTestSuite) TestGetHostInfo(c *C) {
@@ -45,11 +52,12 @@ func (s *ComputeTestSuite) TestGetHostInfo(c *C) {
 		interval:   time.Second,
 		expireTime: time.Second * 5,
 	}
+
 	i := &hostInfo.Info{}
 	i.Labels = map[string]string{
 		cloudprovider.RegionLabel:           "fake",
 		cloudprovider.AvailabilityZoneLabel: "fake",
-		cloudprovider.CloudProviderLabel:    awsTag,
+		cloudprovider.CloudProviderLabel:    aliyunTag,
 	}
 
 	p.client = fakeReplyImpl{}
