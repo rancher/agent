@@ -264,30 +264,24 @@ func GetUUIDForContainer(labels map[string]string) (bool, string) {
 	podContainerName := labels[PODContainerNameLabel]
 
 	if uuid != "" && pod != "" {
-		fmt.Println("IGNORING POD CONTAINER", uuid, pod, podContainerName)
 		// This is a pod container from a cattle container, ignore
 		return false, uuid
 	}
 
 	if pod == "" {
-		fmt.Println("NOT POD CONTAINER", uuid, pod, podContainerName)
 		// Not a k8s container, just use UUID
 		return true, uuid
 	}
 
 	if podContainerName == "rancher-pause" {
-		fmt.Println("IGNOREING PAUSE CONTAINER", uuid, pod, podContainerName)
 		// Ignore rancher-pause containers
 		return false, uuid
 	}
 
 	m := containerRancherUUID.FindStringSubmatch(podContainerName)
 	if m != nil {
-		fmt.Println("SETTING UUID", m[1], uuid, pod, podContainerName)
 		uuid = m[1]
 	}
-
-	fmt.Println("RETURNING CONTAINER", uuid, pod, podContainerName)
 
 	return true, uuid
 }
