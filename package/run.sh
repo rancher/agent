@@ -219,7 +219,9 @@ setup_state()
         nsenter -m -t 1 /sbin/modprobe $m >/dev/null 2>&1 || true
     done
 
-    ip route add 169.254.169.250/32 dev docker0 >/dev/null 2>&1 || true
+    if [ -z "$CATTLE_NODE_NAME" ]; then
+        export CATTLE_NODE_NAME=$(hostname --fqdn || hostname)
+    fi
 }
 
 load()
