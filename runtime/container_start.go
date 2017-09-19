@@ -181,7 +181,7 @@ func setupContainerSpec(containerSpec v3.Container, volumes []v3.Volume, network
 
 	setupComputeResourceFields(&hostConfig, containerSpec)
 
-	setupHeathConfig(containerSpec, &config)
+	setupHealthConfig(containerSpec, &config)
 	return dockerContainerSpec{
 		config:     config,
 		hostConfig: hostConfig,
@@ -365,7 +365,7 @@ func setupNonRancherVolumes(config *container.Config, volumes []v3.Volume, conta
 	return nil
 }
 
-func setupHeathConfig(spec v3.Container, config *container.Config) {
+func setupHealthConfig(spec v3.Container, config *container.Config) {
 	healthConfig := &container.HealthConfig{}
 	healthConfig.Test = spec.HealthCmd
 	healthConfig.Interval = time.Duration(spec.HealthInterval) * time.Second
