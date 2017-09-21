@@ -263,7 +263,7 @@ func GetUUIDForContainer(labels map[string]string) (bool, string) {
 	pod := labels[PODNameLabel]
 	podContainerName := labels[PODContainerNameLabel]
 
-	if uuid != "" && pod != "" {
+	if uuid != "" && pod != "" && podContainerName == "POD" {
 		// This is a pod container from a cattle container, ignore
 		return false, uuid
 	}
