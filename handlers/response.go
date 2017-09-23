@@ -14,7 +14,7 @@ import (
 const (
 	linkName        = "eth0"
 	cniStateBaseDir = "/var/lib/rancher/state/cni"
-	UUIDLabel       = "io.rancher.container.uuid"
+	UUIDLabel       = "io.rancher.container.agent.uuid"
 )
 
 func constructDeploymentSyncReply(noOp bool, containerSpec v3.Container, containerID string, dclient *client.Client, ca *cache.Cache, networkKind string, pro *progress.Progress) (interface{}, error) {

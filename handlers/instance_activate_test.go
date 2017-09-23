@@ -70,7 +70,7 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 	c.Assert(request.Containers, check.HasLen, 1)
 
 	request.Containers[0].Labels = map[string]string{
-		"io.rancher.container.uuid": "111",
+		"io.rancher.container.agent.uuid": "111",
 		"foo": "bar",
 	}
 
@@ -86,8 +86,7 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 
 	expectedLabels := map[string]string{
 		"foo": "bar",
-		"io.rancher.container.uuid": request.Containers[0].Uuid,
-		"io.rancher.container.name": request.Containers[0].Name,
+		"io.rancher.container.agent.uuid": request.Containers[0].Uuid,
 	}
 	c.Assert(inspect.Config.Labels, check.DeepEquals, expectedLabels)
 }

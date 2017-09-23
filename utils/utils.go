@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	engineCli "github.com/docker/docker/client"
 	"github.com/patrickmn/go-cache"
@@ -17,8 +16,6 @@ import (
 	v3 "github.com/rancher/go-rancher/v3"
 	"golang.org/x/net/context"
 )
-
-var containerRancherUUID = regexp.MustCompile("^.*-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})")
 
 func GetDeploymentSyncRequest(event *revents.Event) (v3.DeploymentSyncRequest, error) {
 	var deploymentSyncRequest v3.DeploymentSyncRequest
@@ -49,10 +46,6 @@ func IsNoOp(event *revents.Event) bool {
 	return false
 }
 
-func AddLabel(config *container.Config, key string, value string) {
-	config.Labels[key] = value
-}
-
 func SearchInList(slice []string, target string) bool {
 	for _, value := range slice {
 		if target == value {
@@ -62,30 +55,8 @@ func SearchInList(slice []string, target string) bool {
 	return false
 }
 
-func AddToEnv(config *container.Config, result map[string]string, args ...string) {
-	envs := config.Env
-	existKeys := map[string]struct{}{}
-	for _, key := range envs {
-		parts := strings.Split(key, "=")
-		if len(parts) > 0 {
-			existKeys[parts[0]] = struct{}{}
-		}
-	}
-	for key, value := range result {
-		if _, ok := existKeys[key]; !ok {
-			envs = append(envs, fmt.Sprintf("%v=%v", key, value))
-		}
-	}
-	config.Env = envs
-}
-
 func HasKey(m interface{}, key string) bool {
 	_, ok := m.(map[string]interface{})[key]
-	return ok
-}
-
-func HasLabel(containerSpec v3.Container) bool {
-	_, ok := containerSpec.Labels[CattelURLLabel]
 	return ok
 }
 
@@ -233,14 +204,6 @@ func GetProgress(request *revents.Event, cli *v3.RancherClient) *progress.Progre
 	return &progress
 }
 
-func ToMapString(m map[string]interface{}) map[string]string {
-	r := map[string]string{}
-	for k, v := range m {
-		r[k] = InterfaceToString(v)
-	}
-	return r
-}
-
 func ReplaceFriendlyImage(ca *cache.Cache, dclient *engineCli.Client, inspect *types.ContainerJSON) error {
 	v, ok := ca.Get(inspect.Image)
 	if ok {
@@ -256,32 +219,4 @@ func ReplaceFriendlyImage(ca *cache.Cache, dclient *engineCli.Client, inspect *t
 		}
 	}
 	return nil
-}
-
-func GetUUIDForContainer(labels map[string]string) (bool, string) {
-	uuid := labels[UUIDLabel]
-	pod := labels[PODNameLabel]
-	podContainerName := labels[PODContainerNameLabel]
-
-	if uuid != "" && pod != "" {
-		// This is a pod container from a cattle container, ignore
-		return false, uuid
-	}
-
-	if pod == "" {
-		// Not a k8s container, just use UUID
-		return true, uuid
-	}
-
-	if podContainerName == "rancher-pause" {
-		// Ignore rancher-pause containers
-		return false, uuid
-	}
-
-	m := containerRancherUUID.FindStringSubmatch(podContainerName)
-	if m != nil {
-		uuid = m[1]
-	}
-
-	return true, uuid
 }
