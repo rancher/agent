@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	PullImageLabels    = "io.rancher.container.pull_image"
-	nameInuseError     = "You have to remove (or rename) that container to be able to reuse that name"
+	PullImageLabels = "io.rancher.container.pull_image"
+	nameInuseError  = "You have to remove (or rename) that container to be able to reuse that name"
 )
 
 var (
@@ -103,7 +103,7 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	if startErr != nil {
 		if created {
 			if err := utils.RemoveContainer(runtimeClient, containerID); err != nil {
-				return "", errors.Wrap(err, "failed to remove container")
+				return "", errors.Wrapf(err, "failed to remove container: failed to start: %v", startErr)
 			}
 		}
 		return "", errors.Wrap(startErr, "failed to start container")
@@ -366,11 +366,11 @@ func setupHealthConfig(spec v3.Container, config *container.Config) {
 }
 
 func setupLabels(spec v3.Container, config *container.Config) {
-	config.Labels[utils.UUIDLabel] = spec.Uuid
-
 	for k, v := range spec.Labels {
 		config.Labels[k] = v
 	}
+
+	config.Labels[utils.UUIDLabel] = spec.Uuid
 }
 
 // this method convert fields data to fields in configuration

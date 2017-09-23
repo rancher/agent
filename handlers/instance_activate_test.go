@@ -86,7 +86,7 @@ func (s *EventTestSuite) TestLabelOverride(c *check.C) {
 
 	expectedLabels := map[string]string{
 		"foo": "bar",
-		"io.rancher.container.agent.uuid": request.Containers[0].Uuid,
+		"io.rancher.container.agent.uuid": "85db87bf-cb14-4643-9e7d-a13e3e77a991",
 	}
 	c.Assert(inspect.Config.Labels, check.DeepEquals, expectedLabels)
 }
