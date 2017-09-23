@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	nodeName = os.Getenv(nodeNameEnv)
+	nodeName = strings.ToLower(os.Getenv(nodeNameEnv))
 )
 
 const (
@@ -275,14 +275,8 @@ func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[st
 }
 
 func addContainer(state string, container types.Container, containers []Resource) []Resource {
-	ok, uuid := utils.GetUUIDForContainer(container.Labels)
-	if !ok {
-		return containers
-	}
-
 	containerData := Resource{
 		Type:       "instance",
-		UUID:       uuid,
 		State:      state,
 		ExternalID: container.ID,
 	}

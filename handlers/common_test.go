@@ -69,7 +69,7 @@ func findContainer(uuid string) types.Container {
 	for _, c := range containerList {
 		found := false
 		labels := c.Labels
-		if labels["io.rancher.container.uuid"] == uuid {
+		if labels["io.rancher.container.agent.uuid"] == uuid {
 			found = true
 		}
 
@@ -92,7 +92,7 @@ func deleteContainer(uuid string) {
 	for _, c := range containerList {
 		found := false
 		labels := c.Labels
-		if labels["io.rancher.container.uuid"] == uuid {
+		if labels["io.rancher.container.agent.uuid"] == uuid {
 			found = true
 		}
 

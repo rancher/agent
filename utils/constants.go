@@ -5,10 +5,7 @@ import (
 )
 
 const (
-	UUIDLabel             = "io.rancher.container.uuid"
-	PODNameLabel          = "io.kubernetes.pod.name"
-	PODContainerNameLabel = "io.kubernetes.container.name"
-	CattelURLLabel        = "io.rancher.container.cattle_url"
+	UUIDLabel = "io.rancher.container.agent.uuid"
 )
 
 var ConfigOverride = make(map[string]string)

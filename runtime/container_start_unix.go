@@ -432,9 +432,3 @@ func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, con
 	})
 	return ret, err
 }
-
-func getContainerName(spec v3.Container) string {
-	instanceName := spec.Name
-	parts := strings.Split(spec.Uuid, "-")
-	return fmt.Sprintf("r-%s-%s", instanceName, parts[0])
-}

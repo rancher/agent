@@ -52,15 +52,9 @@ func (h *SendToRancherHandler) Handle(event *events.Message) error {
 		return nil
 	}
 
-	ok, uuid := utils.GetUUIDForContainer(container.Config.Labels)
-	if !ok {
-		return nil
-	}
-
 	containerEvent := &rclient.ContainerEvent{
 		ExternalStatus:   event.Status,
 		ExternalId:       event.ID,
-		ContainerUuid:    uuid,
 		ReportedHostUuid: h.hostUUID,
 	}
 	containerEvent.DockerInspect = container

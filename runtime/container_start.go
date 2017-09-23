@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	urls "net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -26,11 +25,8 @@ import (
 )
 
 const (
-	ContainerNameLabel = "io.rancher.container.name"
-	PullImageLabels    = "io.rancher.container.pull_image"
-	UUIDLabel          = "io.rancher.container.uuid"
-	AgentIDLabel       = "io.rancher.container.agent_id"
-	nameInuseError     = "You have to remove (or rename) that container to be able to reuse that name"
+	PullImageLabels = "io.rancher.container.pull_image"
+	nameInuseError  = "You have to remove (or rename) that container to be able to reuse that name"
 )
 
 var (
@@ -107,7 +103,7 @@ func ContainerStart(containerSpec v3.Container, volumes []v3.Volume, networkKind
 	if startErr != nil {
 		if created {
 			if err := utils.RemoveContainer(runtimeClient, containerID); err != nil {
-				return "", errors.Wrap(err, "failed to remove container")
+				return "", errors.Wrapf(err, "failed to remove container: failed to start: %v", startErr)
 			}
 		}
 		return "", errors.Wrap(startErr, "failed to start container")
@@ -146,10 +142,7 @@ func setupContainerSpec(containerSpec v3.Container, volumes []v3.Volume, network
 
 	initializeMaps(&config, &hostConfig)
 
-	setupLabels(containerSpec.Labels, &config)
-
-	config.Labels[UUIDLabel] = containerSpec.Uuid
-	config.Labels[ContainerNameLabel] = containerSpec.Name
+	setupLabels(containerSpec, &config)
 
 	setupFieldsHostConfig(containerSpec, &hostConfig)
 
@@ -174,8 +167,6 @@ func setupContainerSpec(containerSpec v3.Container, volumes []v3.Volume, network
 	if err := setupNetworking(containerSpec, &config, &hostConfig, idsMap, networkKind); err != nil {
 		return dockerContainerSpec{}, errors.Wrap(err, "failed to set up networking")
 	}
-
-	setupCattleConfigURL(containerSpec, &config)
 
 	setupDeviceOptions(&hostConfig, containerSpec)
 
@@ -374,41 +365,12 @@ func setupHealthConfig(spec v3.Container, config *container.Config) {
 	config.Healthcheck = healthConfig
 }
 
-func setupCattleConfigURL(containerSpec v3.Container, config *container.Config) {
-	if containerSpec.AgentId == "" && !utils.HasLabel(containerSpec) {
-		return
-	}
-
-	utils.AddLabel(config, AgentIDLabel, containerSpec.AgentId)
-
-	url := utils.URL()
-	if len(url) > 0 {
-		parsed, err := urls.Parse(url)
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			if strings.Contains(parsed.Host, "localhost") {
-				port := utils.APIProxyListenPort()
-				utils.AddToEnv(config, map[string]string{
-					"CATTLE_AGENT_INSTANCE":    "true",
-					"CATTLE_CONFIG_URL_SCHEME": parsed.Scheme,
-					"CATTLE_CONFIG_URL_PATH":   parsed.Path,
-					"CATTLE_CONFIG_URL_PORT":   strconv.Itoa(port),
-				})
-			} else {
-				utils.AddToEnv(config, map[string]string{
-					"CATTLE_CONFIG_URL": url,
-					"CATTLE_URL":        url,
-				})
-			}
-		}
-	}
-}
-
-func setupLabels(labels map[string]string, config *container.Config) {
-	for k, v := range labels {
+func setupLabels(spec v3.Container, config *container.Config) {
+	for k, v := range spec.Labels {
 		config.Labels[k] = v
 	}
+
+	config.Labels[utils.UUIDLabel] = spec.Uuid
 }
 
 // this method convert fields data to fields in configuration
