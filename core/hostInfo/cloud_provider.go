@@ -2,10 +2,11 @@ package hostInfo
 
 import (
 	"encoding/json"
-	"github.com/rancher/agent/utilities/config"
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/rancher/agent/utilities/config"
 )
 
 type CloudProviderCollector struct{}
@@ -23,6 +24,9 @@ func (c CloudProviderCollector) KeyName() string {
 }
 
 func (c CloudProviderCollector) GetLabels(prefix string) (map[string]string, error) {
+	if !config.DetectCloudProvider() {
+		return nil, nil
+	}
 	file, err := os.Open(path.Join(config.StateDir(), "info.json"))
 	// if file doesn't exit, just skip it
 	if err != nil {
