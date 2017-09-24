@@ -32,7 +32,7 @@ var (
 type Provider interface {
 	Init() error
 	GetHostInfo() (*hostInfo.Info, error)
-	ExpireTime() time.Duration
+	RetryCount() int
 	Interval() time.Duration
 	Name() string
 }
@@ -41,7 +41,6 @@ func AddCloudProvider(name string, provider Provider) {
 	if _, exists := providers[name]; exists {
 		logrus.Fatalf("Provider '%s' tried to register twice", name)
 	}
-	logrus.Infof("Provider '%s' adding", name)
 	providers[name] = provider
 }
 
@@ -53,7 +52,6 @@ func GetCloudProviderInfo() {
 		}
 
 		go func(p Provider) {
-			t0 := time.Now()
 			for i := 0; ; {
 				i++
 				if IsHostStateReady() {
@@ -67,15 +65,15 @@ func GetCloudProviderInfo() {
 					}
 				}
 
-				if delta := time.Now().Sub(t0); delta > p.ExpireTime() {
-					logrus.Errorf("error after %d attempts (during %s), last error: %s", i, delta, err)
+				if i >= p.RetryCount() {
+					logrus.Errorf("checking %s cloud provider error after %d attempts, last error: %s", p.Name(), i, err)
 					return
 				}
 
 				logrus.WithFields(logrus.Fields{
 					"count": i,
 					"error": err,
-				}).Error("retry")
+				}).Error("retry check cloud provider")
 
 				time.Sleep(p.Interval())
 			}
