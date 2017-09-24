@@ -17,7 +17,7 @@ const (
 type Provider struct {
 	client     metadataClient
 	interval   time.Duration
-	expireTime time.Duration
+	retryCount int
 }
 
 type metadataClient interface {
@@ -30,8 +30,8 @@ type metadataClientImpl struct {
 
 func init() {
 	cloudprovider.AddCloudProvider(awsTag, &Provider{
-		expireTime: time.Minute * 3,
-		interval:   time.Microsecond * 500,
+		retryCount: 6,
+		interval:   time.Second * 30,
 	})
 }
 
@@ -66,8 +66,8 @@ func (p *Provider) GetHostInfo() (i *hostInfo.Info, err error) {
 	return
 }
 
-func (p *Provider) ExpireTime() time.Duration {
-	return p.expireTime
+func (p *Provider) RetryCount() int {
+	return p.retryCount
 }
 
 func (p *Provider) Interval() time.Duration {

@@ -43,7 +43,7 @@ func (s *ComputeTestSuite) TestGetHostInfo(c *C) {
 	os.Mkdir(utils.StateDir(), 0755)
 	p := Provider{
 		interval:   time.Second,
-		expireTime: time.Second * 5,
+		retryCount: 2,
 	}
 	i := &hostInfo.Info{}
 	i.Labels = map[string]string{
