@@ -127,6 +127,10 @@ func DoPing() bool {
 	return DefaultValue("PING_ENABLED", "true") == "true"
 }
 
+func DetectCloudProvider() bool {
+	return DefaultValue("DETECT_CLOUD_PROVIDER", "true") == "true"
+}
+
 func SetSecretKey(value string) {
 	constants.ConfigOverride["SECRET_KEY"] = value
 }
