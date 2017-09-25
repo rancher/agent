@@ -2,12 +2,12 @@ package dockersocketproxy
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
@@ -25,16 +25,27 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		return
 	}
 	tokenString := requestURL.Query().Get("token")
-	_, valid := auth.GetAndCheckToken(tokenString)
+	token, valid := auth.GetAndCheckToken(tokenString)
 	if !valid {
 		return
 	}
 
-	conn, err := net.Dial("unix", "/var/run/docker.sock")
+	proto := "unix"
+	address := "/var/run/docker.sock"
+
+	if v, ok := token.Claims["proto"]; ok {
+		proto = fmt.Sprint(v)
+	}
+	if v, ok := token.Claims["address"]; ok {
+		address = fmt.Sprint(v)
+	}
+
+	conn, err := net.Dial(proto, address)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Couldn't dial docker socket.")
+		log.WithFields(log.Fields{"error": err}).Errorf("Couldn't dial %s:%s", proto, address)
 		return
 	}
+	log.Infof("Dialing %s:%s", proto, address)
 
 	closed := false
 	go func() {
