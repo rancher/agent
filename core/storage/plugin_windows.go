@@ -1,7 +1,7 @@
 package storage
 
 import (
-  "github.com/rancher/agent/model"
+	"github.com/rancher/agent/model"
 )
 
 // callRancherStorageVolumeAttach is not supported on windows
