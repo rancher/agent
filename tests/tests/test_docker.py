@@ -1459,7 +1459,7 @@ def ping_post_process(req, resp):
                 if 'io.rancher.host.kvm' in r['labels']:
                     assert r['labels']['io.rancher.host.kvm'] == 'true'
                     del r['labels']['io.rancher.host.kvm']
-                assert len(r['labels']) == 3
+                assert len(r['labels']) == 4
             r['labels'] = labels
             r['info'] = HostInfo.collect_data()
             r['physicalHostUuid'] = 'hostuuid'
