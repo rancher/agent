@@ -125,6 +125,10 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(startErr, constants.DoInstanceActivateError+"failed to start container")
 	}
 
+	if err := configureDNS(dockerClient, containerID); err != nil {
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up DNS")
+	}
+
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", instance.ID, containerID)
 	return nil
 }

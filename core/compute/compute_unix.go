@@ -480,6 +480,10 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 
 }
 
+func configureDNS(dockerClient *client.Client, containerID string) error {
+	return nil
+}
+
 func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) (types.ContainerCreateResponse, error) {
 	var (
 		ret types.ContainerCreateResponse
