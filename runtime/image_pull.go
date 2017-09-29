@@ -133,7 +133,7 @@ func wrapReader(reader io.ReadCloser, imageUUID string, progress *progress.Progr
 			return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
 		}
 		if utils.HasKey(status, "status") {
-			message = utils.InterfaceToString(status["status"])
+			message = fmt.Sprintf("%s: %v", imageUUID, status["status"])
 		}
 		if lastMessage != message && progress != nil {
 			progress.Update(message, "yes", nil)
