@@ -96,10 +96,7 @@ func WriteHostInfo(i *hostInfo.Info) error {
 		return err
 	}
 
-	if err := os.Rename(TempPath, InfoPath); err != nil {
-		return err
-	}
-	return nil
+	return os.Rename(TempPath, InfoPath)
 }
 
 func IsHostStateReady() bool {
