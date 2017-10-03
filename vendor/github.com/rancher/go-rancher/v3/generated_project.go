@@ -5,7 +5,7 @@ const (
 )
 
 type Project struct {
-	Resource
+	Resource `yaml:"-"`
 
 	ClusterId string `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
 
@@ -13,9 +13,9 @@ type Project struct {
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
-	DefaultNetworkId string `json:"defaultNetworkId,omitempty" yaml:"default_network_id,omitempty"`
-
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 

@@ -5,7 +5,7 @@ const (
 )
 
 type Cluster struct {
-	Resource
+	Resource `yaml:"-"`
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
@@ -35,7 +35,7 @@ type Cluster struct {
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
-	SystemStacks []Stack `json:"systemStacks,omitempty" yaml:"system_stacks,omitempty"`
+	SystemStacks []StackConfiguration `json:"systemStacks,omitempty" yaml:"system_stacks,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 

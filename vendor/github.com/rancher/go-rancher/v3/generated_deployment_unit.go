@@ -5,7 +5,7 @@ const (
 )
 
 type DeploymentUnit struct {
-	Resource
+	Resource `yaml:"-"`
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
@@ -14,6 +14,8 @@ type DeploymentUnit struct {
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
 	HostId string `json:"hostId,omitempty" yaml:"host_id,omitempty"`
 

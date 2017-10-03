@@ -5,13 +5,17 @@ const (
 )
 
 type InstanceInfo struct {
-	Resource
+	Resource `yaml:"-"`
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
 	AgentId string `json:"agentId,omitempty" yaml:"agent_id,omitempty"`
 
 	CreateIndex int64 `json:"createIndex,omitempty" yaml:"create_index,omitempty"`
+
+	DeploymentUnitId string `json:"deploymentUnitId,omitempty" yaml:"deployment_unit_id,omitempty"`
+
+	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
 
 	Dns []string `json:"dns,omitempty" yaml:"dns,omitempty"`
 
@@ -20,6 +24,8 @@ type InstanceInfo struct {
 	EnvironmentUuid string `json:"environmentUuid,omitempty" yaml:"environment_uuid,omitempty"`
 
 	ExitCode int64 `json:"exitCode,omitempty" yaml:"exit_code,omitempty"`
+
+	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 

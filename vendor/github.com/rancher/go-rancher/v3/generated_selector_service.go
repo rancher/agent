@@ -5,7 +5,7 @@ const (
 )
 
 type SelectorService struct {
-	Resource
+	Resource `yaml:"-"`
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
@@ -39,8 +39,6 @@ type SelectorService struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	LaunchConfig *LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
-
 	LbConfig *LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	LbTargetConfig *LbTargetConfig `json:"lbTargetConfig,omitempty" yaml:"lb_target_config,omitempty"`
@@ -58,16 +56,6 @@ type SelectorService struct {
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
 	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
-
-	Scale int64 `json:"scale,omitempty" yaml:"scale,omitempty"`
-
-	ScaleIncrement int64 `json:"scaleIncrement,omitempty" yaml:"scale_increment,omitempty"`
-
-	ScaleMax int64 `json:"scaleMax,omitempty" yaml:"scale_max,omitempty"`
-
-	ScaleMin int64 `json:"scaleMin,omitempty" yaml:"scale_min,omitempty"`
-
-	SecondaryLaunchConfigs []LaunchConfig `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
 
 	Selector string `json:"selector,omitempty" yaml:"selector,omitempty"`
 

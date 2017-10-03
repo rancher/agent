@@ -5,7 +5,7 @@ const (
 )
 
 type DeploymentSyncRequest struct {
-	Resource
+	Resource `yaml:"-"`
 
 	ClusterId string `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
 
@@ -14,6 +14,8 @@ type DeploymentSyncRequest struct {
 	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
+
+	InspectIp bool `json:"inspectIp,omitempty" yaml:"inspect_ip,omitempty"`
 
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 

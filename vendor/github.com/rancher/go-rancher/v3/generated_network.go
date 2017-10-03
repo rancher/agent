@@ -5,7 +5,7 @@ const (
 )
 
 type Network struct {
-	Resource
+	Resource `yaml:"-"`
 
 	ClusterId string `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
 
@@ -20,6 +20,8 @@ type Network struct {
 	DnsSearch []string `json:"dnsSearch,omitempty" yaml:"dns_search,omitempty"`
 
 	HostPorts bool `json:"hostPorts,omitempty" yaml:"host_ports,omitempty"`
+
+	IsDefault bool `json:"isDefault,omitempty" yaml:"is_default,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 

@@ -5,7 +5,9 @@ const (
 )
 
 type NetworkInfo struct {
-	Resource
+	Resource `yaml:"-"`
+
+	Default bool `json:"default,omitempty" yaml:"default,omitempty"`
 
 	DefaultPolicyAction string `json:"defaultPolicyAction,omitempty" yaml:"default_policy_action,omitempty"`
 

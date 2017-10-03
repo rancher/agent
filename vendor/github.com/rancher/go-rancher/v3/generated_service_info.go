@@ -5,9 +5,11 @@ const (
 )
 
 type ServiceInfo struct {
-	Resource
+	Resource `yaml:"-"`
 
 	EnvironmentUuid string `json:"environmentUuid,omitempty" yaml:"environment_uuid,omitempty"`
+
+	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
 
 	ExternalIps []string `json:"externalIps,omitempty" yaml:"external_ips,omitempty"`
 
@@ -31,7 +33,7 @@ type ServiceInfo struct {
 
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 
-	LbConfig LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
+	LbConfig *LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	Links []Link `json:"links,omitempty" yaml:"links,omitempty"`
 

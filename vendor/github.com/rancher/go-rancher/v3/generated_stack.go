@@ -5,7 +5,7 @@ const (
 )
 
 type Stack struct {
-	Resource
+	Resource `yaml:"-"`
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
@@ -88,6 +88,10 @@ type StackOperations interface {
 	ActionRemove(*Stack) (*Stack, error)
 
 	ActionRollback(*Stack) (*Stack, error)
+
+	ActionStartall(*Stack) (*Stack, error)
+
+	ActionStopall(*Stack) (*Stack, error)
 
 	ActionUpdate(*Stack) (*Stack, error)
 }
@@ -219,6 +223,24 @@ func (c *StackClient) ActionRollback(resource *Stack) (*Stack, error) {
 	resp := &Stack{}
 
 	err := c.rancherClient.doAction(STACK_TYPE, "rollback", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *StackClient) ActionStartall(resource *Stack) (*Stack, error) {
+
+	resp := &Stack{}
+
+	err := c.rancherClient.doAction(STACK_TYPE, "startall", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *StackClient) ActionStopall(resource *Stack) (*Stack, error) {
+
+	resp := &Stack{}
+
+	err := c.rancherClient.doAction(STACK_TYPE, "stopall", &resource.Resource, nil, resp)
 
 	return resp, err
 }

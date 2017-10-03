@@ -5,11 +5,9 @@ const (
 )
 
 type ContainerEvent struct {
-	Resource
+	Resource `yaml:"-"`
 
 	ClusterId int64 `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
-
-	ContainerUuid string `json:"containerUuid,omitempty" yaml:"container_uuid,omitempty"`
 
 	DockerInspect interface{} `json:"dockerInspect,omitempty" yaml:"docker_inspect,omitempty"`
 

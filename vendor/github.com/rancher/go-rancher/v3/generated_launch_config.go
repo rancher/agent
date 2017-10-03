@@ -5,7 +5,7 @@ const (
 )
 
 type LaunchConfig struct {
-	Resource
+	Resource `yaml:"-"`
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
@@ -138,6 +138,8 @@ type LaunchConfig struct {
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+
+	LaunchConfigName string `json:"launchConfigName,omitempty" yaml:"launch_config_name,omitempty"`
 
 	LogConfig *LogConfig `json:"logConfig,omitempty" yaml:"log_config,omitempty"`
 
