@@ -34,7 +34,7 @@ func main() {
 		logrus.SetOutput(os.Stdout)
 	}
 
-	if os.Getenv("CATTLE_SCRIPT_DEBUG") != "" {
+	if os.Getenv("CATTLE_SCRIPT_DEBUG") != "" || os.Getenv("RANCHER_DEBUG") != "" {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
