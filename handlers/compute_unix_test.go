@@ -311,3 +311,177 @@ func (s *ComputeTestSuite) TestPullImage(c *check.C) {
 	reply := testEvent(rawEvent, c)
 	c.Assert(reply.Transitioning, check.Not(check.Equals), "error")
 }
+
+func (s *ComputeTestSuite) TestInstanceDeactivateWithTimeoutSpecified(c *check.C) {
+	dockerClient := docker.GetClient(docker.DefaultVersion)
+	version, err := dockerClient.ServerVersion(context.Background())
+	if err != nil {
+		c.Fatal(err)
+	}
+	if version.Version == "1.13.1" {
+		// case 1: stopTimeout > timeout
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+		rawEvent := loadEvent("./test_events/instance_activate_sigtrap", c)
+		event, _, fields := unmarshalEventAndInstanceFields(rawEvent, c)
+		fields["stopTimeout"] = 20
+		rawEvent = marshalEvent(event, c)
+		reply := testEvent(rawEvent, c)
+		container, ok := utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		dockerClient := docker.GetClient(docker.DefaultVersion)
+		inspect, err := dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.Config.Image, check.Equals, "happykiki/sigtrap:v0.1.1")
+
+		rawEventDe := loadEvent("./test_events/instance_deactivate_sigtrap", c)
+		event, _, fields = unmarshalEventAndInstanceFields(rawEventDe, c)
+
+		jsonTimeout, tOk := event["data"].(map[string]interface{})["processData"].(map[string]interface{})
+		if tOk {
+			jsonTimeout["timeout"] = 15
+		}
+		rawEventDe = marshalEvent(event, c)
+
+		startTime := time.Now()
+		replyDe := testEvent(rawEventDe, c)
+		container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		for inspect.State.FinishedAt == "" {
+			time.Sleep(time.Millisecond * 100)
+			inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+			if err != nil {
+				c.Fatal("Inspect Err")
+			}
+		}
+		endTime, err := time.Parse(time.RFC3339, inspect.State.FinishedAt)
+		if err != nil {
+			c.Fatal("Time parsing error")
+		}
+		duration := endTime.Sub(startTime).Seconds()
+		if duration < 19 || duration > 21 {
+			c.Fatal("Wrong container timeout value")
+		}
+
+		// case 2: stopTimeout == timeout
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+		rawEvent = loadEvent("./test_events/instance_activate_sigtrap", c)
+		event, _, fields = unmarshalEventAndInstanceFields(rawEvent, c)
+		fields["stopTimeout"] = 15
+		rawEvent = marshalEvent(event, c)
+		reply = testEvent(rawEvent, c)
+		container, ok = utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		dockerClient = docker.GetClient(docker.DefaultVersion)
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.Config.Image, check.Equals, "happykiki/sigtrap:v0.1.1")
+
+		rawEventDe = loadEvent("./test_events/instance_deactivate_sigtrap", c)
+		event, _, fields = unmarshalEventAndInstanceFields(rawEventDe, c)
+
+		jsonTimeout, tOk = event["data"].(map[string]interface{})["processData"].(map[string]interface{})
+		if tOk {
+			jsonTimeout["timeout"] = 15
+		}
+		rawEventDe = marshalEvent(event, c)
+
+		startTime = time.Now()
+		replyDe = testEvent(rawEventDe, c)
+		container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		for inspect.State.FinishedAt == "" {
+			time.Sleep(time.Millisecond * 100)
+			inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+			if err != nil {
+				c.Fatal("Inspect Err")
+			}
+		}
+		endTime, err = time.Parse(time.RFC3339, inspect.State.FinishedAt)
+		if err != nil {
+			c.Fatal("Time parsing error")
+		}
+		duration = endTime.Sub(startTime).Seconds()
+		if duration < 14 || duration > 16 {
+			c.Fatal("Wrong container timeout value")
+		}
+
+		// case 3: stopTimeout < timeout
+		deleteContainer("/c861f990-4472-4fa1-960f-65171b544c28")
+
+		rawEvent = loadEvent("./test_events/instance_activate_sigtrap", c)
+		event, _, fields = unmarshalEventAndInstanceFields(rawEvent, c)
+		fields["stopTimeout"] = 15
+		rawEvent = marshalEvent(event, c)
+		reply = testEvent(rawEvent, c)
+		container, ok = utils.GetFieldsIfExist(reply.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+		dockerClient = docker.GetClient(docker.DefaultVersion)
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		c.Check(inspect.Config.Image, check.Equals, "happykiki/sigtrap:v0.1.1")
+
+		rawEventDe = loadEvent("./test_events/instance_deactivate_sigtrap", c)
+		event, _, fields = unmarshalEventAndInstanceFields(rawEventDe, c)
+
+		jsonTimeout, tOk = event["data"].(map[string]interface{})["processData"].(map[string]interface{})
+		if tOk {
+			jsonTimeout["timeout"] = 20
+		}
+		rawEventDe = marshalEvent(event, c)
+
+		startTime = time.Now()
+		replyDe = testEvent(rawEventDe, c)
+		container, ok = utils.GetFieldsIfExist(replyDe.Data, "instanceHostMap", "instance", "+data", "dockerContainer")
+		if !ok {
+			c.Fatal("No ID found")
+		}
+
+		inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+		if err != nil {
+			c.Fatal("Inspect Err")
+		}
+		for inspect.State.FinishedAt == "" {
+			time.Sleep(time.Millisecond * 100)
+			inspect, err = dockerClient.ContainerInspect(context.Background(), container.(types.Container).ID)
+			if err != nil {
+				c.Fatal("Inspect Err")
+			}
+		}
+		endTime, err = time.Parse(time.RFC3339, inspect.State.FinishedAt)
+		if err != nil {
+			c.Fatal("Time parsing error")
+		}
+		duration = endTime.Sub(startTime).Seconds()
+		if duration < 19 || duration > 21 {
+			c.Fatal("Wrong container timeout value")
+		}
+	}
+}

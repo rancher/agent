@@ -66,7 +66,7 @@ func (h *ComputeHandler) InstanceDeactivate(event *revents.Event, cli *client.Ra
 
 	timeout, ok := utils.GetFieldsIfExist(event.Data, "processData", "timeout")
 	if !ok {
-		timeout = 10
+		timeout = 0
 	}
 	switch timeout.(type) {
 	case float64:

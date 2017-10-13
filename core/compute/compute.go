@@ -166,11 +166,23 @@ func DoInstanceDeactivate(instance model.Instance, client *client.Client, timeou
 	if utils.IsNoOp(instance.ProcessData) {
 		return nil
 	}
-	t := time.Duration(timeout) * time.Second
+
 	container, err := utils.GetContainer(client, instance, false)
 	if err != nil {
 		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to get container")
 	}
+
+	inspect, err := client.ContainerInspect(context.Background(), container.ID)
+	if err != nil {
+		return errors.Wrap(err, constants.GetInstanceHostMapDataError+"failed to inspect container")
+	}
+
+	if inspect.Config.StopTimeout != nil && timeout < *inspect.Config.StopTimeout {
+		timeout = *inspect.Config.StopTimeout
+	}
+
+	t := time.Duration(timeout) * time.Second
+
 	client.ContainerStop(context.Background(), container.ID, &t)
 	container, err = utils.GetContainer(client, instance, false)
 	if err != nil {
