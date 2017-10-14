@@ -17,6 +17,14 @@ cleanup()
     return $exit
 }
 
+check()
+{   
+    if grep -E -q '^nameserver 127.*.*.*|^nameserver localhost|^nameserver ::1' /etc/resolv.conf; then
+        error DNS Checking loopback IP address 127.0.0.0/8, localhost or ::1 configured as the DNS server on the host file /etc/resolv.conf, can’t accept it
+        exit 1
+    fi
+}
+
 source ${CATTLE_HOME:-/var/lib/cattle}/common/scripts.sh
 
 DEST=$CATTLE_HOME/pyagent
@@ -69,6 +77,8 @@ conf()
 
 start(){
     export PATH=${CATTLE_HOME}/bin:$PATH
+    check
+    
     chmod +x $MAIN
     if [ "$CATTLE_PYPY" = "true" ] && which pypy >/dev/null; then
         MAIN="pypy $MAIN"
