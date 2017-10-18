@@ -7,9 +7,13 @@ import (
 	"runtime"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/agent/cloudprovider/aws"
+	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/events"
 	"github.com/rancher/agent/register"
+	"github.com/rancher/agent/utilities/config"
+
+	_ "github.com/rancher/agent/cloudprovider/aliyun"
+	_ "github.com/rancher/agent/cloudprovider/aws"
 )
 
 var (
@@ -30,7 +34,7 @@ func main() {
 		logrus.SetOutput(os.Stdout)
 	}
 
-	if os.Getenv("CATTLE_SCRIPT_DEBUG") != "" {
+	if os.Getenv("CATTLE_SCRIPT_DEBUG") != "" || os.Getenv("RANCHER_DEBUG") != "" {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
@@ -60,8 +64,10 @@ func main() {
 	secretKey := os.Getenv("CATTLE_SECRET_KEY")
 	workerCount := 1000
 
-	provider := aws.NewProvider()
-	go provider.GetCloudProviderInfo()
+	if config.DetectCloudProvider() {
+		logrus.Info("Detecting cloud provider")
+		cloudprovider.GetCloudProviderInfo()
+	}
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {

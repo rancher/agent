@@ -6,7 +6,11 @@ import (
 	"os"
 	"path"
 
+<<<<<<< HEAD:host_info/cloud_provider.go
 	"github.com/rancher/agent/utils"
+=======
+	"github.com/rancher/agent/utilities/config"
+>>>>>>> b2575c6... add flag to control cloud provider:core/hostInfo/cloud_provider.go
 )
 
 type CloudProviderCollector struct{}
@@ -24,7 +28,14 @@ func (c CloudProviderCollector) KeyName() string {
 }
 
 func (c CloudProviderCollector) GetLabels(prefix string) (map[string]string, error) {
+<<<<<<< HEAD:host_info/cloud_provider.go
 	file, err := os.Open(path.Join(utils.StateDir(), "info.json"))
+=======
+	if !config.DetectCloudProvider() {
+		return nil, nil
+	}
+	file, err := os.Open(path.Join(config.StateDir(), "info.json"))
+>>>>>>> b2575c6... add flag to control cloud provider:core/hostInfo/cloud_provider.go
 	// if file doesn't exit, just skip it
 	if err != nil {
 		return nil, nil
