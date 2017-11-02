@@ -11,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/image"
 	"github.com/rancher/agent/core/progress"
-	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	dutils "github.com/rancher/agent/utilities/docker"
@@ -28,6 +28,8 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	if err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
+
+	started := false
 
 	instanceName := instance.Name
 	parts := strings.Split(instance.UUID, "-")
@@ -78,6 +80,15 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up volumes")
 	}
 
+	defer func() {
+		if !started {
+			unmountRancherFlexVolume(instance)
+		}
+	}()
+	if err := setupRancherFlexVolume(instance, &hostConfig); err != nil {
+		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up rancher flex volumes")
+	}
+
 	if err := setupNetworking(instance, host, &config, &hostConfig, dockerClient, infoData); err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up networking")
 	}
@@ -104,6 +115,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 	containerID := container.ID
 	created := false
+
 	if containerID == "" {
 		newID, err := createContainer(dockerClient, &config, &hostConfig, &networkConfig, imageTag, instance, name, progress)
 		if err != nil {
@@ -130,6 +142,7 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", instance.ID, containerID)
+	started = true
 	return nil
 }
 
@@ -149,7 +162,7 @@ func DoInstancePull(params model.ImageParams, progress *progress.Progress, docke
 		}
 		return types.ImageInspect{}, nil
 	}
-	if err := storage.PullImage(params.Image, progress, dockerClient, params.ImageUUID); err != nil {
+	if err := image.PullImage(params.Image, progress, dockerClient, params.ImageUUID); err != nil {
 		return types.ImageInspect{}, errors.Wrap(err, constants.DoInstancePullError+"failed to pull image")
 	}
 

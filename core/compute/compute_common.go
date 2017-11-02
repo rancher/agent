@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/image"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
@@ -53,7 +54,7 @@ func createContainer(dockerClient *client.Client, config *container.Config, host
 	containerResponse, err := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)
 	// if image doesn't exist
 	if client.IsErrImageNotFound(err) {
-		if err := storage.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
+		if err := image.PullImage(instance.Image, progress, dockerClient, imageTag); err != nil {
 			return "", errors.Wrap(err, constants.CreateContainerError+"failed to pull image")
 		}
 		containerResponse, err1 := dockerContainerCreate(context.Background(), dockerClient, config, hostConfig, networkConfig, name)
@@ -134,14 +135,27 @@ func getDockerRoot(client *client.Client) string {
 	return dockerRoot
 }
 
+// setupVolumes volumes except rancher specific volumes. For rancher-managed volume driver they will be setup through special steps like flexvolume
 func setupVolumes(config *container.Config, instance model.Instance, hostConfig *container.HostConfig, client *client.Client, progress *progress.Progress) error {
-
 	volumes := instance.Data.Fields.DataVolumes
 	volumesMap := map[string]struct{}{}
 	binds := []string{}
+
+	rancherManagedVolumeNames := map[string]struct{}{}
+	if vMounts := instance.VolumesFromDataVolumeMounts; len(vMounts) > 0 {
+		for _, volume := range vMounts {
+			if storage.IsRancherVolume(volume) {
+				rancherManagedVolumeNames[volume.Name] = struct{}{}
+			}
+		}
+	}
 	if len(volumes) > 0 {
 		for _, volume := range volumes {
 			parts := strings.SplitN(volume, ":", 3)
+			// don't set rancher managed volume
+			if _, ok := rancherManagedVolumeNames[parts[0]]; ok {
+				continue
+			}
 			if len(parts) == 1 {
 				volumesMap[parts[0]] = struct{}{}
 			} else if len(parts) > 1 {
@@ -194,16 +208,13 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 		for _, vMount := range vMounts {
 			storagePool := model.StoragePool{}
 			// volume active == exists, possibly not attached to this host
-			if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
-				if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
-					return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
-				}
-			} else if err != nil {
-				return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
-			}
-			if storage.IsRancherVolume(vMount) {
-				if err := storage.RancherStorageVolumeAttach(vMount); err != nil {
-					return errors.Wrap(err, constants.SetupVolumesError+"failed to attach volume")
+			if !storage.IsRancherVolume(vMount) {
+				if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
+					if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
+						return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
+					}
+				} else if err != nil {
+					return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
 				}
 			}
 		}
@@ -234,7 +245,6 @@ func setupProxy(instance model.Instance, config *container.Config, hostEntries m
 			*/
 			part := strings.SplitN(env, "=", 2)
 			if len(part) == 1 {
-
 				if strings.Contains(env, "=") {
 					//case 2
 					envMap[part[0]] = ""
