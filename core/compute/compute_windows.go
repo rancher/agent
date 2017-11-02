@@ -83,6 +83,10 @@ func setupFieldsHostConfig(fields model.InstanceFields, hostConfig *container.Ho
 	hostConfig.IOMaximumBandwidth = fields.IOMaximumBandwidth
 }
 
+func setupRancherFlexVolume(instance model.Instance, hostConfig *container.HostConfig) error {
+	return nil
+}
+
 func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instance, infoData model.InfoData) {
 }
 

@@ -1,6 +1,6 @@
 //+build !windows
 
-package storage
+package image
 
 import (
 	"github.com/rancher/agent/model"
