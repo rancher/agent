@@ -206,7 +206,7 @@ func Labels() map[string]string {
 			logrus.Error(err)
 		}
 		for k, v := range m {
-			ret[k] = v[0]
+			ret[strings.TrimSpace(k)] = strings.TrimSpace(v[0])
 		}
 	}
 	return ret
