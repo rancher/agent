@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"net/url"
 	"strconv"
 	"strings"
@@ -62,9 +63,6 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		return
 	}
 
-	bothPrefix := "00 "
-	stdoutPrefix := "01 "
-	stderrPrefix := "02 "
 	logOpts := types.ContainerLogsOptions{
 		Follow:     follow,
 		ShowStdout: true,
@@ -91,33 +89,41 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		}
 	}()
 
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		body := ""
-		data := scanner.Bytes()
-		if bytes.Contains(data, stdoutHead) {
-			if len(data) > 8 {
-				body = stdoutPrefix + string(data[8:])
+	reader := bufio.NewReader(stdout)
+	for {
+		data, err := reader.ReadBytes('\n')
+		if err != nil {
+			// hacky, but can't do a type assertion on the cancellation error, which is the "normal" error received
+			// when the logs are closed properly
+			if err != io.EOF && !strings.Contains(err.Error(), "context canceled") {
+				log.WithFields(log.Fields{"error": err}).Error("Error with the container log scanner.")
 			}
-		} else if bytes.Contains(data, stderrHead) {
-			if len(data) > 8 {
-				body = stderrPrefix + string(data[8:])
-			}
-		} else {
-			body = bothPrefix + string(data)
+			break
 		}
-		message := common.Message{
-			Key:  key,
-			Type: common.Body,
-			Body: body,
-		}
-		response <- message
+		processData(data, key, response)
 	}
-	if err := scanner.Err(); err != nil {
-		// hacky, but can't do a type assertion on the cancellation error, which is the "normal" error received
-		// when the logs are closed properly
-		if !strings.Contains(err.Error(), "request canceled") {
-			log.WithFields(log.Fields{"error": err}).Error("Error with the container log scanner.")
+}
+
+func processData(data []byte, key string, response chan<- common.Message) {
+	body := ""
+	bothPrefix := "00 "
+	stdoutPrefix := "01 "
+	stderrPrefix := "02 "
+	if bytes.Contains(data, stdoutHead) {
+		if len(data) > 8 {
+			body = stdoutPrefix + string(data[8:])
 		}
+	} else if bytes.Contains(data, stderrHead) {
+		if len(data) > 8 {
+			body = stderrPrefix + string(data[8:])
+		}
+	} else {
+		body = bothPrefix + string(data)
 	}
+	message := common.Message{
+		Key:  key,
+		Type: common.Body,
+		Body: body,
+	}
+	response <- message
 }
