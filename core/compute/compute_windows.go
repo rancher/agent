@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/network"
-
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/rancher/agent/model"
+	dutils "github.com/rancher/agent/utilities/docker"
 )
 
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {}
@@ -22,6 +23,13 @@ func setupLinks(hostConfig *container.HostConfig, instance model.Instance) {}
 func setupNetworking(instance model.Instance, host model.Host, config *container.Config, hostConfig *container.HostConfig, client *client.Client, infoData model.InfoData) error {
 	if len(instance.Nics) > 0 {
 		hostConfig.NetworkMode = container.NetworkMode(instance.Nics[0].Network.Kind)
+		switch instance.Nics[0].Network.Kind {
+		case "transparent":
+			hostConfig.PublishAllPorts = false
+			config.ExposedPorts = map[nat.Port]struct{}{}
+			hostConfig.PortBindings = nat.PortMap{}
+		default:
+		}
 	}
 	return nil
 }
@@ -79,5 +87,13 @@ func configureDNS(dockerClient *client.Client, containerID string) error {
 }
 
 func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) (types.ContainerCreateResponse, error) {
-	return dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
+	var (
+		ret types.ContainerCreateResponse
+		err error
+	)
+	dutils.Serialize(func() error {
+		ret, err = dockerClient.ContainerCreate(context.Background(), config, hostConfig, networkingConfig, containerName)
+		return err
+	})
+	return ret, err
 }
