@@ -49,8 +49,12 @@ func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 		return map[string]string{}, errors.Wrap(err, constants.OSGetDataError+"failed to get OS data")
 	}
 	labels := map[string]string{
-		fmt.Sprintf("%s.%s", prefix, "docker_version"):       o.getDockerVersion(o.InfoData, false)["dockerVersion"],
-		fmt.Sprintf("%s.%s", prefix, "linux_kernel_version"): utils.SemverTrunk(osData["kernelVersion"], 2),
+		fmt.Sprintf("%s.%s", prefix, "docker_version"):                 o.getDockerVersion(o.InfoData, false)["dockerVersion"],
+		fmt.Sprintf("%s.%s%s", prefix, getOSName(), "_kernel_version"): utils.SemverTrunk(osData["kernelVersion"], 2),
+		fmt.Sprintf("%s.%s", prefix, "os"):                             getOSName(),
+	}
+	if getOSName() == "windows" {
+		labels["io.rancher.infra_service.healthcheck.deploy"] = "never"
 	}
 	return labels, nil
 }

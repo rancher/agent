@@ -25,3 +25,7 @@ func getKernelVersion() (string, error) {
 	version := regexp.MustCompile("\\d+.\\d+.\\d+").FindString(data[0])
 	return version, nil
 }
+
+func getOSName() string {
+	return "linux"
+}

@@ -19,10 +19,22 @@ fi
 cp -rf apply.sh build/${CONTENT}
 cp -rf bin/agent build/${CONTENT}/bin
 
-cd build
+pushd build
 
 sha1sum -b $(find ${CONTENT} -type f) > ${CONTENT}/SHA1SUMS
 sha1sum ${CONTENT}/SHA1SUMS > ${CONTENT}/SHA1SUMSSUM
 
 tar czf ../dist/artifacts/go-agent.tar.gz ${CONTENT}
 echo Created ../dist/artifacts/go-agent.tar.gz
+
+popd
+
+if [ "$CROSS" == "true" ]; then
+    pushd build
+    mkdir -p rancher
+    cp ../bin/windows/amd64/agent.exe rancher/
+    cp ../package/startup.ps1 rancher/
+    zip -r ../dist/artifacts/go-agent.zip rancher/
+    echo Created ../dist/artifacts/go-agent.zip
+    popd 
+fi
