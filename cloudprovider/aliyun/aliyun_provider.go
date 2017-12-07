@@ -3,7 +3,7 @@ package aliyun
 import (
 	"time"
 
-	"github.com/denverdino/aliyungo/metadata"
+	"github.com/loganhz/aliyungo/metadata"
 
 	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/core/hostInfo"

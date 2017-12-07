@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denverdino/aliyungo/util"
+	"github.com/loganhz/aliyungo/util"
 )
 
 type Request struct {
@@ -72,6 +72,11 @@ func (m *MetaData) HostName() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if len(hostname) == 0 {
+		return "", errors.New("can not find any hostname")
+	}
+
 	return hostname[0], nil
 }
 
@@ -135,6 +140,11 @@ func (m *MetaData) Region() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if len(region) == 0 {
+		return "", errors.New("can not find any region")
+	}
+
 	return region[0], nil
 }
 
@@ -223,9 +233,15 @@ func (m *MetaData) NTPConfigServers() ([]string, error) {
 func (m *MetaData) Zone() (string, error) {
 
 	zone, err := m.c.Resource(ZONE).Go()
+
 	if err != nil {
 		return "", err
 	}
+
+	if len(zone) == 0 {
+		return "", errors.New("can not find any zone")
+	}
+
 	return zone[0], nil
 }
 
@@ -296,7 +312,7 @@ func (vpc *MetaDataClient) send() ([]string, error) {
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, err
+		return nil, fmt.Errorf("Aliyun Metadata API Error: Status Code: %d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 
