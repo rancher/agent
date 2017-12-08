@@ -29,7 +29,7 @@ echo Created ../dist/artifacts/go-agent.tar.gz
 
 popd
 
-if [ "$CROSS" == "true" ]; then
+if [ -n "$CROSS" ]; then
     pushd build
     mkdir -p rancher
     cp ../bin/windows/amd64/agent.exe rancher/
