@@ -2,6 +2,7 @@ package hostInfo
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -54,7 +55,7 @@ func (o OSCollector) GetLabels(prefix string) (map[string]string, error) {
 		fmt.Sprintf("%s.%s", prefix, "os"):                             getOSName(),
 	}
 	if getOSName() == "windows" {
-		labels["io.rancher.infra_service.healthcheck.deploy"] = "never"
+		labels["io.rancher.host.healthcheck.deploy_strategy"] = "skip"
 	}
 	return labels, nil
 }
