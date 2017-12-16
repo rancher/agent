@@ -6,15 +6,16 @@ import (
 	"bufio"
 	"crypto/rand"
 	"fmt"
-	"github.com/Sirupsen/logrus"
-	"github.com/pkg/errors"
-	"github.com/rancher/go-rancher/v2"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
+	"github.com/rancher/go-rancher/v2"
 )
 
 const (
@@ -56,8 +57,12 @@ func loadEnv(url string) (string, string, string, string) {
 			str := strings.Split(line, "=")[1]
 			cattleURL = str[1 : len(str)-1]
 		} else if strings.Contains(line, "DETECTED_CATTLE_AGENT_IP") {
-			str := strings.Split(line, "=")[1]
-			agentIP = str[1 : len(str)-1]
+			if envAgentIP := os.Getenv("CATTLE_AGENT_IP"); envAgentIP != "" {
+				agentIP = envAgentIP
+			} else {
+				str := strings.Split(line, "=")[1]
+				agentIP = str[1 : len(str)-1]
+			}
 		}
 	}
 	return accessKey, secretKey, cattleURL, agentIP
