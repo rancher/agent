@@ -2,6 +2,9 @@ package compute
 
 import (
 	"context"
+	"strings"
+
+	"github.com/Sirupsen/logrus"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -12,9 +15,36 @@ import (
 	dutils "github.com/rancher/agent/utilities/docker"
 )
 
+const (
+	RancherDNSPriority = "io.rancher.container.dns.priority"
+	RancherDomain      = "rancher.internal"
+)
+
 func setupPublishPorts(hostConfig *container.HostConfig, instance model.Instance) {}
 
 func setupDNSSearch(hostConfig *container.HostConfig, instance model.Instance) error {
+	var defaultDomains []string
+	var svcNameSpace string
+	var stackNameSpace string
+
+	if instance.Data.Fields.Labels != nil {
+		setRancherSearchDomains := true
+		if strings.EqualFold(strings.TrimSpace(instance.Data.Fields.Labels[RancherDNSPriority]), "None") {
+			setRancherSearchDomains = false
+		}
+		if setRancherSearchDomains {
+			if value, ok := instance.Data.Fields.Labels["io.rancher.stack_service.name"]; ok {
+				splitted := strings.Split(value, "/")
+				svc := strings.ToLower(splitted[1])
+				stack := strings.ToLower(splitted[0])
+				svcNameSpace = svc + "." + stack + "." + RancherDomain
+				stackNameSpace = stack + "." + RancherDomain
+				defaultDomains = append(defaultDomains, svcNameSpace)
+				defaultDomains = append(defaultDomains, stackNameSpace)
+			}
+		}
+	}
+	hostConfig.DNSSearch = defaultDomains
 	return nil
 }
 
@@ -70,6 +100,18 @@ var cmdDNS = []string{
 func configureDNS(dockerClient *client.Client, containerID string) error {
 	var err error
 	var execObj types.ContainerExecCreateResponse
+	var currentCMD []string
+	currentCMD = append(currentCMD, cmdDNS...)
+	//Setup dns search list
+	info, err := dockerClient.ContainerInspect(context.Background(), containerID)
+	if err == nil && len(info.HostConfig.DNSSearch) != 0 {
+		dnsSearch := []string{}
+		for i := 0; i < len(info.HostConfig.DNSSearch); i++ {
+			dnsSearch = append(dnsSearch, `"`+info.HostConfig.DNSSearch[i]+`"`)
+		}
+		currentCMD[1] = currentCMD[1] + "; Set-DnsClientGlobalSetting -SuffixSearchList " + strings.Join(dnsSearch, ",")
+	}
+	logrus.Info(currentCMD)
 	execConfig := types.ExecConfig{
 		AttachStdout: true,
 		AttachStdin:  true,
@@ -77,7 +119,7 @@ func configureDNS(dockerClient *client.Client, containerID string) error {
 		Privileged:   true,
 		Tty:          false,
 		Detach:       false,
-		Cmd:          cmdDNS,
+		Cmd:          currentCMD,
 	}
 
 	if execObj, err = dockerClient.ContainerExecCreate(context.Background(), containerID, execConfig); err == nil {
