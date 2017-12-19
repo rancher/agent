@@ -93,7 +93,7 @@ func setupComputeResourceFields(hostConfig *container.HostConfig, instance model
 var cmdDNS = []string{
 	"powershell",
 	"Get-NetAdapter | Foreach { " +
-		"$a = (Get-DnsClientServerAddress -InterfaceIndex $_.ifIndex -Addressfamily IPv4).ServerAddresses + '169.254.169.251'; " +
+		"$a =@('169.254.169.251') + (Get-DnsClientServerAddress -InterfaceIndex $_.ifIndex -Addressfamily IPv4).ServerAddresses ; " +
 		"Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses $a }",
 }
 
