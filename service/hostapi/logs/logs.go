@@ -116,7 +116,7 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	if err := scanner.Err(); err != nil {
 		// hacky, but can't do a type assertion on the cancellation error, which is the "normal" error received
 		// when the logs are closed properly
-		if !strings.Contains(err.Error(), "request canceled") {
+		if !strings.Contains(err.Error(), "canceled") {
 			log.WithFields(log.Fields{"error": err}).Error("Error with the container log scanner.")
 		}
 	}
