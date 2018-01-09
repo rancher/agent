@@ -33,7 +33,7 @@ if [ -n "$CROSS" ]; then
     pushd build
     mkdir -p rancher
     cp ../bin/windows/amd64/agent.exe rancher/
-    cp ../package/startup.ps1 rancher/
+    cp ../package/startup_agent.ps1 rancher/
     zip -r ../dist/artifacts/go-agent.zip rancher/
     echo Created ../dist/artifacts/go-agent.zip
     popd 
