@@ -5,6 +5,6 @@ import (
 )
 
 // callRancherStorageVolumeAttach is not supported on windows
-func callRancherStorageVolumeAttach(volume model.Volume) error {
-	return nil
+func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {
+	return Response{}, nil
 }

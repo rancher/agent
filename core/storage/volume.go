@@ -21,8 +21,38 @@ import (
 )
 
 const (
+	Create         = "Create"
+	Remove         = "Remove"
+	Attach         = "Attach"
+	Mount          = "Mount"
+	Path           = "Path"
+	Unmount        = "Unmount"
+	Get            = "Get"
+	List           = "List"
+	Capabilities   = "Capabilities"
 	rancherSockDir = "/var/run/rancher/storage"
 )
+
+// Response is the strucutre that the plugin's responses are serialized to.
+type Response struct {
+	Mountpoint   string
+	Err          string
+	Volumes      []*Volume
+	Volume       *Volume
+	Capabilities Capability
+}
+
+// Volume represents a volume object for use with `Get` and `List` requests
+type Volume struct {
+	Name       string
+	Mountpoint string
+	Status     map[string]interface{}
+}
+
+// Capability represents the list of capabilities a volume driver can return
+type Capability struct {
+	Scope string
+}
 
 var rancherDrivers = map[string]bool{
 	"rancher-ebs":     true,
