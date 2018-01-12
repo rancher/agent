@@ -143,3 +143,7 @@ func dockerContainerCreate(ctx context.Context, dockerClient *client.Client, con
 	})
 	return ret, err
 }
+
+func unmountRancherFlexVolume(instance model.Instance) error {
+	return nil
+}
