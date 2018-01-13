@@ -55,10 +55,11 @@ type Capability struct {
 }
 
 var rancherDrivers = map[string]bool{
-	"rancher-ebs":     true,
-	"rancher-nfs":     true,
-	"rancher-efs":     true,
-	"rancher-secrets": true,
+	"rancher-ebs":       true,
+	"rancher-nfs":       true,
+	"rancher-efs":       true,
+	"rancher-secrets":   true,
+	"secrets-bridge-v2": true,
 }
 
 func VolumeActivateDocker(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
