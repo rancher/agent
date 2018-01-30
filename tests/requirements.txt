@@ -4,7 +4,6 @@ flake8==2.5.1
 mock==1.1.2
 pytest==2.9.2
 pytest-mock==0.7.0
-arrow
-setuptools
+arrow==0.10.0
+setuptools==38.4.0
 requests==2.11.0
-backports.functools_lru_cache

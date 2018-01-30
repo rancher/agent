@@ -96,7 +96,7 @@ func StartUp() {
 		handlers["/v1/container-proxy/"] = &proxy.Handler{}
 		handlers["/v2-beta/container-proxy/"] = &proxy.Handler{}
 		if err := backend.ConnectToProxy(tokenResponse.Url+"?token="+tokenResponse.Token, handlers); err != nil {
-			logrus.Error("Failed to connect to websocket proxy: %v", err)
+			logrus.Errorf("Failed to connect to websocket proxy. Error: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		}

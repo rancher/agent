@@ -66,14 +66,9 @@ func GetCloudProviderInfo() {
 				}
 
 				if i >= p.RetryCount() {
-					logrus.Errorf("checking %s cloud provider error after %d attempts, last error: %s", p.Name(), i, err)
+					logrus.Infof("checking %s cloud provider error after %d attempts with no response, skipping now", p.Name(), i)
 					return
 				}
-
-				logrus.WithFields(logrus.Fields{
-					"count": i,
-					"error": err,
-				}).Error("retry check cloud provider")
 
 				time.Sleep(p.Interval())
 			}
@@ -101,7 +96,6 @@ func WriteHostInfo(i *hostInfo.Info) error {
 
 func IsHostStateReady() bool {
 	if _, err := os.Stat(InfoPath); err != nil {
-		logrus.Warn(err)
 		return false
 	}
 	return true
