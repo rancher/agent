@@ -487,7 +487,9 @@ func configureDNS(dockerClient *client.Client, containerID string) error {
 
 func setupRancherFlexVolume(instance model.Instance, hostConfig *container.HostConfig) error {
 	for _, volume := range instance.VolumesFromDataVolumeMounts {
-		if storage.IsRancherVolume(volume) {
+		if ok, err := storage.IsRancherVolume(volume); err != nil {
+			return err
+		} else if ok {
 			payload := struct {
 				Name    string
 				Options map[string]string `json:"Opts,omitempty"`
@@ -527,7 +529,9 @@ func setupRancherFlexVolume(instance model.Instance, hostConfig *container.HostC
 
 func unmountRancherFlexVolume(instance model.Instance) error {
 	for _, volume := range instance.VolumesFromDataVolumeMounts {
-		if storage.IsRancherVolume(volume) {
+		if ok, err := storage.IsRancherVolume(volume); err != nil {
+			return err
+		} else if ok {
 			payload := struct{ Name string }{Name: volume.Name}
 			_, err := storage.CallRancherStorageVolumePlugin(volume, storage.Unmount, payload)
 			if err != nil {

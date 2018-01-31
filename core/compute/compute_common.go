@@ -144,7 +144,9 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 	rancherManagedVolumeNames := map[string]struct{}{}
 	if vMounts := instance.VolumesFromDataVolumeMounts; len(vMounts) > 0 {
 		for _, volume := range vMounts {
-			if storage.IsRancherVolume(volume) {
+			if ok, err := storage.IsRancherVolume(volume); err != nil {
+				return err
+			} else if ok {
 				rancherManagedVolumeNames[volume.Name] = struct{}{}
 			}
 		}
@@ -208,7 +210,9 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 		for _, vMount := range vMounts {
 			storagePool := model.StoragePool{}
 			// volume active == exists, possibly not attached to this host
-			if !storage.IsRancherVolume(vMount) {
+			if ok, err := storage.IsRancherVolume(vMount); err != nil {
+				return err
+			} else if !ok {
 				if ok, err := storage.IsVolumeActive(vMount, storagePool, client); !ok && err == nil {
 					if err := storage.DoVolumeActivate(vMount, storagePool, progress, client); err != nil {
 						return errors.Wrap(err, constants.SetupVolumesError+"failed to activate volume")
