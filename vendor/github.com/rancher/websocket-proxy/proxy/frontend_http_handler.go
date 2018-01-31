@@ -2,9 +2,11 @@ package proxy
 
 import (
 	"bufio"
+	"encoding/base64"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dgrijalva/jwt-go"
@@ -27,13 +29,15 @@ func (h *FrontendHTTPHandler) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 }
 
 func (h *FrontendHTTPHandler) serveHTTP(rw http.ResponseWriter, req *http.Request) error {
-	token, hostKey, authed, err := h.authAndLookup(req)
-	if err != nil {
-		http.Error(rw, "Service Unavailable", 503)
+	token, hostKey, err := h.authAndLookup(req)
+	if IsNoAuthError(err) {
+		redirect := *req.URL
+		redirect.RawQuery = "redirectTo=" + url.QueryEscape(req.URL.Path) + "#"
+		redirect.Path = "/login"
+		http.Redirect(rw, req, redirect.String(), 302)
 		return nil
-	}
-	if !authed {
-		http.Error(rw, "Failed authentication", 401)
+	} else if err != nil {
+		http.Error(rw, "Service unavailable", 503)
 		return nil
 	}
 
@@ -51,6 +55,8 @@ func (h *FrontendHTTPHandler) serveHTTP(rw http.ResponseWriter, req *http.Reques
 	}
 	defer writer.Close()
 	defer reader.Close()
+
+	h.copyAuthHeaders(req)
 
 	hijack := h.shouldHijack(req)
 
@@ -91,6 +97,24 @@ func (h *FrontendHTTPHandler) serveHTTP(rw http.ResponseWriter, req *http.Reques
 	return err
 }
 
+func (h *FrontendHTTPHandler) copyAuthHeaders(req *http.Request) {
+	c, err := req.Cookie("token")
+	if err != nil {
+		c = nil
+	}
+
+	authHeader := req.Header.Get("Authorization")
+	if authHeader != "" {
+		return
+	}
+
+	tokenValue := "unauthorized"
+	if c != nil {
+		tokenValue = c.Value
+	}
+	req.Header.Set("Authorization", "Bearer "+base64.StdEncoding.EncodeToString([]byte("Bearer "+tokenValue)))
+}
+
 type flusher struct {
 	writer io.Writer
 }
@@ -112,37 +136,33 @@ func (h *FrontendHTTPHandler) shouldHijack(req *http.Request) bool {
 	return req.Header.Get("Connection") == "Upgrade"
 }
 
-func (h *FrontendHTTPHandler) authAndLookup(req *http.Request) (*jwt.Token, string, bool, error) {
-	token, hostKey, authErr := h.FrontendHandler.auth(req)
-	if authErr == nil {
-		return token, hostKey, true, nil
-	} else if !IsNoTokenError(authErr) {
-		log.Infof("Frontend auth failed: %v. Getting new token.", authErr)
+func (h *FrontendHTTPHandler) authAndLookup(req *http.Request) (*jwt.Token, string, error) {
+	token, hostKey, err := h.FrontendHandler.auth(req)
+	if err == nil {
+		return token, hostKey, nil
 	}
 
 	tokenString, err := h.TokenLookup.Lookup(req)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Error looking up token.")
-		return nil, "", false, err
+		return nil, "", err
 	}
 
 	token, err = jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return h.parsedPublicKey, nil
 	})
 	if err != nil {
-		return nil, "", false, err
-	}
-
-	if !token.Valid {
-		return nil, "", false, nil
+		return nil, "", err
+	} else if !token.Valid {
+		return nil, "", noAuthError{err: "Token is not valid"}
 	}
 
 	hostUUID, found := token.Claims["hostUuid"]
 	if found {
 		if hostKey, ok := hostUUID.(string); ok && h.backend.hasBackend(hostKey) {
-			return token, hostKey, true, nil
+			return token, hostKey, nil
 		}
 	}
 	log.WithFields(log.Fields{"hostUuid": hostUUID}).Infof("Invalid backend host requested.")
-	return nil, "", false, nil
+	return nil, "", errors.New("invalid backend")
 }

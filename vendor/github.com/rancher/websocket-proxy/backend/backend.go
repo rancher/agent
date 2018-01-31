@@ -63,7 +63,9 @@ func connectToProxyWS(ws *websocket.Conn, handlers map[string]Handler) error {
 		_, msg, err := ws.ReadMessage()
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Received error reading from socket. Exiting.")
-			close(responseChannel)
+			for _, msgChan := range responders {
+				close(msgChan)
+			}
 			return err
 		}
 

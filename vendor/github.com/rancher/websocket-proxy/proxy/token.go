@@ -3,6 +3,7 @@ package proxy
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -33,7 +34,7 @@ type TokenLookup struct {
 
 func NewTokenLookup(cattleAddr string) *TokenLookup {
 	t := &TokenLookup{
-		cache:           cache.New(5*time.Minute, 30*time.Second),
+		cache:           cache.New(30*time.Second, 30*time.Second),
 		serviceProxyURL: fmt.Sprintf("http://%s/v1/serviceproxies", cattleAddr),
 	}
 	t.client.Timeout = 60 * time.Second
@@ -76,17 +77,23 @@ func (t *TokenLookup) callRancher(r *http.Request) (string, error) {
 
 	parts := strings.SplitN(service, ":", 2)
 	port := 80
+	scheme := "http"
 	if len(parts) == 2 {
 		var err error
 		port, err = strconv.Atoi(parts[1])
 		if err != nil {
 			return "", err
 		}
+
+		if strings.HasSuffix(parts[1], "443") {
+			scheme = "https"
+		}
 	}
 
 	body, err := json.Marshal(&ServiceProxyRequest{
 		Service: parts[0],
 		Port:    port,
+		Scheme:  scheme,
 	})
 
 	logrus.Debugf("Calling rancher to get token: %s", t.serviceProxyURL)
@@ -103,9 +110,8 @@ func (t *TokenLookup) callRancher(r *http.Request) (string, error) {
 		newReq.Header.Set("X-API-Client-Access-Key", r.TLS.PeerCertificates[0].Subject.CommonName)
 	} else {
 		// Other forms of auth
-		for _, k := range []string{authHeader, projectHeader} {
-			newReq.Header.Set(k, r.Header.Get(k))
-		}
+		newReq.Header.Set(authHeader, unwrapAuth(r.Header.Get(authHeader)))
+		newReq.Header.Set(projectHeader, r.Header.Get(projectHeader))
 
 		if project, ok := vars["project"]; ok {
 			newReq.Header.Set(projectHeader, project)
@@ -123,7 +129,9 @@ func (t *TokenLookup) callRancher(r *http.Request) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode == 401 {
+		return "", noAuthError{}
+	} else if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("HTTP error: %s, %d", resp.Status, resp.StatusCode)
 	}
 
@@ -133,6 +141,19 @@ func (t *TokenLookup) callRancher(r *http.Request) (string, error) {
 	}
 
 	return respBody.Token, nil
+}
+
+func unwrapAuth(auth string) string {
+	if !strings.HasPrefix(auth, "Bearer ") {
+		return auth
+	}
+
+	if tmp, err := base64.StdEncoding.DecodeString(auth[7:]); err == nil && len(strings.Split(string(tmp), " ")) == 2 {
+		// This is double base64 auth encoding that we do w/ k8s
+		return string(tmp)
+	}
+
+	return auth
 }
 
 func genKey(r *http.Request) string {
@@ -167,6 +188,7 @@ func writeHeader(h hash.Hash, key string, r *http.Request) {
 type ServiceProxyRequest struct {
 	Service string `json:"service"`
 	Port    int    `json:"port"`
+	Scheme  string `json:"scheme"`
 }
 
 type ServiceProxyResponse struct {
