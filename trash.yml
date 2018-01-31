@@ -84,7 +84,7 @@ import:
   version: 415abc325023f1a00cd2d9fa512e0e71745791a2
 
 - package: github.com/rancher/websocket-proxy
-  version: 4b6c147a7434c740067e7613002d87977c029fa2
+  version: a44ca2b1b0f6dad532ebc46f1ef31c3879cb241c
 
 - package: github.com/rakyll/goini
   version: 907cca0f578a5316fb864ec6992dc3d9730ec58c
