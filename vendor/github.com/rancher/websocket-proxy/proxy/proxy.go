@@ -86,7 +86,7 @@ func (s *Starter) StartProxy() error {
 		router.Handle(p, frontendHandler).Methods("GET")
 	}
 	for _, p := range s.FrontendHTTPPaths {
-		router.Handle(p, frontendHTTPHandler).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
+		router.Handle(p, frontendHTTPHandler).Methods("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD")
 	}
 	for _, p := range s.StatsPaths {
 		router.Handle(p, statsHandler).Methods("GET")

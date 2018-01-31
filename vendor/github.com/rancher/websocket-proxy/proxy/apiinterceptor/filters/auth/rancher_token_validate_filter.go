@@ -61,86 +61,94 @@ func (f *TokenValidationFilter) ProcessFilter(filter model.FilterData, input mod
 
 	log.Debugf("Request => %v", input)
 
-	var cookie []string
-	if input.Headers["Cookie"] == nil {
+	var cookie, authHeader []string
+	if input.Headers["Cookie"] == nil && input.Headers["Authorization"] == nil {
 		output.Status = http.StatusOK
-		log.Debug("No Cookie found in request")
+		log.Debug("No Cookie or Auth headers found in request")
 		return output, nil
 
 	}
+	usingTokenCookie := false
+
 	if len(input.Headers["Cookie"]) >= 1 {
 		cookie = input.Headers["Cookie"]
+		usingTokenCookie = true
+	} else if len(input.Headers["Authorization"]) >= 1 {
+		authHeader = input.Headers["Authorization"]
 	} else {
 		output.Status = http.StatusOK
-		log.Debug("No Cookie found in request")
-		return output, nil
-	}
-	var cookieString string
-	if len(cookie) >= 1 {
-		for i := range cookie {
-			if strings.Contains(cookie[i], "token") {
-				cookieString = cookie[i]
-			}
-		}
-	} else {
-		output.Status = http.StatusOK
-		log.Debug("No token found in cookie")
+		log.Debug("No Cookie or Auth headers found in request")
 		return output, nil
 	}
 
-	tokens := strings.Split(cookieString, ";")
-	tokenValue := ""
-	if len(tokens) >= 1 {
-		for i := range tokens {
-			if strings.Contains(tokens[i], "token") {
-				if len(strings.Split(tokens[i], "=")) > 1 {
-					tokenValue = strings.Split(tokens[i], "=")[1]
+	var cookieString, tokenValue string
+	if usingTokenCookie {
+		if len(cookie) >= 1 {
+			for i := range cookie {
+				if strings.Contains(cookie[i], "token") {
+					cookieString = cookie[i]
 				}
 			}
-
+		} else {
+			output.Status = http.StatusOK
+			log.Debug("No token found in cookie")
+			return output, nil
 		}
-	} else {
-		output.Status = http.StatusOK
-		log.Debug("No token found in cookie")
-		return output, nil
-	}
-	if tokenValue == "" {
-		output.Status = http.StatusOK
-		log.Debug("No token found in cookie")
-		return output, nil
+
+		tokens := strings.Split(cookieString, ";")
+
+		if len(tokens) >= 1 {
+			for i := range tokens {
+				if strings.Contains(tokens[i], "token") {
+					if len(strings.Split(tokens[i], "=")) > 1 {
+						tokenValue = strings.Split(tokens[i], "=")[1]
+					}
+				}
+
+			}
+		} else {
+			output.Status = http.StatusOK
+			log.Debug("No token found in cookie")
+			return output, nil
+		}
+		if tokenValue == "" {
+			output.Status = http.StatusOK
+			log.Debug("No token found in cookie")
+			return output, nil
+		}
 	}
 
 	//check if the token value is empty or not
-	if tokenValue != "" {
+	if tokenValue != "" || len(authHeader) >= 1 {
 		log.Debugf("token:" + tokenValue)
 		log.Debugf("envid:" + envid)
 		projectID, accountID := "", ""
 		var err error
 		if envid != "" {
-			projectID, accountID, err = getAccountAndProject(f.rancherURL, envid, tokenValue)
+			projectID, accountID, err = getAccountAndProject(f.rancherURL, envid, tokenValue, authHeader)
 			if err != nil {
 				output.Status = http.StatusNotFound
 				return output, fmt.Errorf("Error getting the accountid and projectid: %v", err)
 			}
 			if accountID == "Unauthorized" {
 				output.Status = http.StatusUnauthorized
-				return output, fmt.Errorf("Token is expired or unauthorized")
+				return output, fmt.Errorf("Token or Auth keys expired or unauthorized")
 			}
 
 			if accountID == "" {
 				output.Status = http.StatusForbidden
-				return output, fmt.Errorf("Token is forbidden to access the projectid")
+				return output, fmt.Errorf("Token or Auth keys forbidden to access the projectid")
 			}
 
 		} else {
-			accountID, err = getAccountID(f.rancherURL, tokenValue)
+			accountID, err = getAccountID(f.rancherURL, tokenValue, authHeader)
 			if err != nil {
 				output.Status = http.StatusNotFound
 				return output, fmt.Errorf("Error getting the accountid : %v", err)
 			}
 			if accountID == "Unauthorized" {
 				output.Status = http.StatusUnauthorized
-				return output, fmt.Errorf("Token is expired or unauthorized")
+				return output, fmt.Errorf("Token or Auth keys  expired or unauthorized")
 			}
 
 		}
@@ -163,11 +171,12 @@ func (f *TokenValidationFilter) ProcessFilter(filter model.FilterData, input mod
 
 		log.Debugf("Response <= %v", output)
 	}
+
 	return output, nil
 }
 
 //get the projectID and accountID from rancher API
-func getAccountAndProject(host string, envid string, token string) (string, string, error) {
+func getAccountAndProject(host string, envid string, token string, authHeaders []string) (string, string, error) {
 
 	client := &http.Client{}
 	requestURL := host + "/v2-beta/projects/" + envid + "/accounts"
@@ -176,8 +185,13 @@ func getAccountAndProject(host string, envid string, token string) (string, stri
 	if err != nil {
 		return "", "", fmt.Errorf("Cannot connect to the rancher server. Please check the rancher server URL")
 	}
-	cookie := http.Cookie{Name: "token", Value: token}
-	req.AddCookie(&cookie)
+	if token != "" {
+		cookie := http.Cookie{Name: "token", Value: token}
+		req.AddCookie(&cookie)
+	} else {
+		req.Header["Authorization"] = authHeaders
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", "", fmt.Errorf("Cannot connect to the rancher server. Please check the rancher server URL")
@@ -211,7 +225,7 @@ func getAccountAndProject(host string, envid string, token string) (string, stri
 }
 
 //get the accountID from rancher API
-func getAccountID(host string, token string) (string, error) {
+func getAccountID(host string, token string, authHeaders []string) (string, error) {
 
 	client := &http.Client{}
 	requestURL := host + "/v2-beta/accounts"
@@ -219,8 +233,14 @@ func getAccountID(host string, token string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Cannot get the account api [%v]", err)
 	}
-	cookie := http.Cookie{Name: "token", Value: token}
-	req.AddCookie(&cookie)
+
+	if token != "" {
+		cookie := http.Cookie{Name: "token", Value: token}
+		req.AddCookie(&cookie)
+	} else {
+		req.Header["Authorization"] = authHeaders
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("Cannot setup HTTP client [%v]", err)
