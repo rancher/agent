@@ -68,7 +68,9 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 	progress := utils.GetProgress(event, cli)
 
 	// if its rancher volume, use flexVolume and bypass docker volume plugin
-	if storage.IsRancherVolume(volume) {
+	if ok, err := storage.IsRancherVolume(volume); err != nil {
+		return err
+	} else if ok {
 		err := storage.VolumeActivateFlex(volume)
 		if err != nil {
 			return err
@@ -93,7 +95,9 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 	storagePool := volumeStoragePoolMap.StoragePool
 	progress := utils.GetProgress(event, cli)
 
-	if storage.IsRancherVolume(volume) {
+	if ok, err := storage.IsRancherVolume(volume); err != nil {
+		return err
+	} else if ok {
 		// we need to make sure the reference is cleaned up in docker, so if it exists in docker then clean up in docker first
 		if inspect, err := h.dockerClient.VolumeInspect(context.Background(), volume.Name); err != nil && !engineCli.IsErrVolumeNotFound(err) {
 			return errors.Wrapf(err, constants.VolumeRemoveError+"failed to inspect volume %v", volume.Name)

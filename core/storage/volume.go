@@ -252,11 +252,31 @@ func rancherStorageSockPath(volume model.Volume) string {
 	return filepath.Join(rancherSockDir, volume.Data.Fields.Driver+".sock")
 }
 
-func IsRancherVolume(volume model.Volume) bool {
+// IsRancherVolume checks if a volume to be considered as a flex volume if it is in rancherDrivers and the capability is flex
+// raise an error if its rancher-managed driver but the socket file is not available
+func IsRancherVolume(volume model.Volume) (bool, error) {
 	if _, ok := rancherDrivers[volume.Data.Fields.Driver]; ok {
-		return true
+		if _, err := os.Stat(rancherStorageSockPath(volume)); err == nil {
+			// check if Capabilities is flex
+			payload := struct {
+				Name    string
+				Options map[string]string `json:"Opts,omitempty"`
+			}{
+				Name:    volume.Name,
+				Options: volume.Data.Fields.DriverOpts,
+			}
+			response, err := CallRancherStorageVolumePlugin(volume, Capabilities, payload)
+			if err != nil {
+				return false, err
+			}
+			if response.Capabilities.Scope == "flex" {
+				return true, nil
+			}
+			return false, nil
+		}
+		return false, errors.Errorf("socket file not found at %s", rancherStorageSockPath(volume))
 	}
-	return false
+	return false, nil
 }
 
 func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *engineCli.Client) (bool, error) {
