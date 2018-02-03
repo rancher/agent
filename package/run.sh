@@ -6,11 +6,6 @@ error()
     echo "ERROR:" "$@" 1>&2
 }
 
-drun()
-{
-    docker run -i --rm --net=host $AGENT_IMAGE "$@"
-}
-
 AGENT_IMAGE=${AGENT_IMAGE:-ubuntu:14.04}
 
 export CATTLE_ADDRESS
@@ -48,13 +43,8 @@ if [ ! -w /var/run/docker.sock ] || [ ! -S /var/run/docker.sock ]; then
     exit 1
 fi
 
-docker info || {
-    error Failed to run docker
-    exit 1
-}
-
 if [ -z "$CATTLE_NODE_NAME" ]; then
-    CATTLE_NODE_NAME=$(drun hostname -s)
+    CATTLE_NODE_NAME=$(hostname -s)
 fi
 
 if [ "$CATTLE_ADDRESS" = "awslocal" ]; then
@@ -64,7 +54,7 @@ elif [ "$CATTLE_ADDRESS" = "ipify" ]; then
 fi
 
 if [ -z "$CATTLE_ADDRESS" ]; then
-    CATTLE_ADDRESS=$(drun ip route get 8.8.8.8 | grep via | awk '{print $NF}')
+    CATTLE_ADDRESS=$(ip route get 8.8.8.8 | grep via | awk '{print $NF}')
 fi
 
 if [ "$ALL" = true ]; then
@@ -84,6 +74,7 @@ fi
 if [ -n "$CA_CHECKSUM" ]; then
     temp=$(mktemp)
     curl --insecure -s -fL $CATTLE_SERVER/v3/settings/cacerts | jq -r .value > $temp
+    cat $temp
     if [ "$(sha256sum $temp | awk '{print $1}')" != $CA_CHECKSUM ]; then
         rm -f $temp
         error $CATTLE_SERVER/v3/settings/cacerts does not match $CA_CHECKSUM
@@ -109,4 +100,4 @@ if [ -z "$CATTLE_ADDRESS" ]; then
     exit 1
 fi
 
-exec go run agent.go
+exec agent
