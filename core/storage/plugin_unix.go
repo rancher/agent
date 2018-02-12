@@ -13,6 +13,7 @@ import (
 	"github.com/docker/go-connections/sockets"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
+	"strings"
 )
 
 func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {
@@ -31,8 +32,7 @@ func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload 
 	driver := volume.Data.Fields.Driver
 	resp, err := client.Post(url, "application/json", bytes.NewReader(bs))
 	if err != nil {
-		logrus.Errorf("Failed to call /VolumeDriver.%v '%s' (driver '%s'): %s", action, volume.Name, driver, err)
-		return Response{}, err
+		return Response{}, errors.Errorf("Failed to call /VolumeDriver.%v '%s' (driver '%s'): %s", action, volume.Name, driver, err)
 	}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -40,22 +40,21 @@ func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload 
 	}
 	defer resp.Body.Close()
 
+	response := Response{}
+	if err := json.Unmarshal(data, &response); err != nil {
+		return Response{}, err
+	}
+	if response.Err != "" {
+		return Response{}, errors.Errorf("Failed to %s volume %s. Driver: %s. Status code: %v. Status: %s. Error Message: %s", strings.ToLower(action), volume.Name, driver, resp.StatusCode, strings.ToLower(resp.Status), response.Err)
+	}
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
 		logrus.Infof("Success: /VolumeDriver.%v '%s' (driver '%s')", action, volume.Name, driver)
-		response := Response{}
-		err := json.Unmarshal(data, &response)
-		if err != nil {
-			return Response{}, err
-		}
-		if response.Err != "" {
-			return Response{}, errors.New(response.Err)
-		}
 		return response, nil
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
 		logrus.Infof("/VolumeDriver.%v '%s' is not supported by driver '%s'", action, volume.Name, driver)
 	default:
-		return Response{}, errors.Errorf("/VolumeDriver.Attach '%s' (driver '%s') returned status %v: %s", volume.Name, driver, resp.StatusCode, resp.Status)
+		return Response{}, errors.Errorf("Failed to %s volume %s. Driver: %s. Status code: %v. Status: %s", strings.ToLower(action), volume.Name, driver, resp.StatusCode, strings.ToLower(resp.Status))
 	}
 
 	return Response{}, nil
