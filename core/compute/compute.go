@@ -29,8 +29,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to get image tag")
 	}
 
-	started := false
-
 	instanceName := instance.Name
 	parts := strings.Split(instance.UUID, "-")
 	if len(parts) == 0 {
@@ -80,11 +78,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up volumes")
 	}
 
-	defer func() {
-		if !started {
-			unmountRancherFlexVolume(instance)
-		}
-	}()
 	if err := setupRancherFlexVolume(instance, &hostConfig); err != nil {
 		return errors.Wrap(err, constants.DoInstanceActivateError+"failed to set up rancher flex volumes")
 	}
@@ -142,7 +135,6 @@ func DoInstanceActivate(instance model.Instance, host model.Host, progress *prog
 	}
 
 	logrus.Infof("rancher id [%v]: Container with docker id [%v] has been started", instance.ID, containerID)
-	started = true
 	return nil
 }
 
