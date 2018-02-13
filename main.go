@@ -33,12 +33,12 @@ func main() {
 func run() error {
 	token := os.Getenv("CATTLE_TOKEN")
 	params := map[string]interface{}{
-		"customConfig": map[string]string{
+		"customConfig": map[string]interface{}{
 			"address":         os.Getenv("CATTLE_ADDRESS"),
 			"internalAddress": os.Getenv("CATTLE_INTERNAL_ADDRESS"),
+			"roles":           split(os.Getenv("CATTLE_ROLE")),
 		},
 		"requestedHostname": os.Getenv("CATTLE_NODE_NAME"),
-		"role":              split(os.Getenv("CATTLE_ROLE")),
 	}
 
 	for k, v := range params {

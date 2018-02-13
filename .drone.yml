@@ -16,7 +16,6 @@ pipeline:
       branch: master
       event: tag
 
-
   publish-image:
     image: plugins/docker
     dockerfile: package/Dockerfile
@@ -24,6 +23,8 @@ pipeline:
     context: package/
     tag: ${DRONE_TAG}
     secrets: [docker_username, docker_password]
+    build_args:
+    - VERSION=${DRONE_TAG}
     when:
       branch: master
       event: tag
