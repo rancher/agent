@@ -10,13 +10,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/remotedialer"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	Token  = "X-API-Tunnel-Token"
-	ID     = "X-API-Tunnel-ID"
 	Params = "X-API-Tunnel-Params"
 )
 
@@ -32,12 +32,16 @@ func main() {
 
 func run() error {
 	token := os.Getenv("CATTLE_TOKEN")
+	roles := split(os.Getenv("CATTLE_ROLE"))
 	params := map[string]interface{}{
 		"customConfig": map[string]interface{}{
 			"address":         os.Getenv("CATTLE_ADDRESS"),
 			"internalAddress": os.Getenv("CATTLE_INTERNAL_ADDRESS"),
 			"roles":           split(os.Getenv("CATTLE_ROLE")),
 		},
+		"etcd":              slice.ContainsString(roles, "etcd"),
+		"controlPlane":      slice.ContainsString(roles, "controlplane"),
+		"worker":            slice.ContainsString(roles, "worker"),
 		"requestedHostname": os.Getenv("CATTLE_NODE_NAME"),
 	}
 
