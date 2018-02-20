@@ -20,7 +20,7 @@ while true; do
         -d | --debug)              DEBUG=true                 ;;
         -s | --server)      shift; CATTLE_SERVER=$1           ;;
         -t | --token)       shift; CATTLE_TOKEN=$1            ;;
-        -c | --ca-checksum) shift; CA_CHECKSUM=$1             ;;
+        -c | --ca-checksum) shift; CATTLE_CA_CHECKSUM=$1      ;;
         -a | --all-roles)          ALL=true                   ;;
         -e | --etcd)               ETCD=true                  ;;
         -w | --worker)             WORKER=true                ;;
@@ -37,10 +37,12 @@ if [ "$DEBUG" = true ]; then
     set -x
 fi
 
-if [ ! -w /var/run/docker.sock ] || [ ! -S /var/run/docker.sock ]; then
-    error Please bind mount in the docker socket to /var/run/docker.sock
-    error example:  docker run -v /var/run/docker.sock:/var/run/docker.sock ...
-    exit 1
+if [ "$CATTLE_CLUSTER" != "true" ]; then
+    if [ ! -w /var/run/docker.sock ] || [ ! -S /var/run/docker.sock ]; then
+        error Please bind mount in the docker socket to /var/run/docker.sock
+        error example:  docker run -v /var/run/docker.sock:/var/run/docker.sock ...
+        exit 1
+    fi
 fi
 
 if [ -z "$CATTLE_NODE_NAME" ]; then
@@ -71,13 +73,13 @@ else
     fi
 fi
 
-if [ -n "$CA_CHECKSUM" ]; then
+if [ -n "$CATTLE_CA_CHECKSUM" ]; then
     temp=$(mktemp)
     curl --insecure -s -fL $CATTLE_SERVER/v3/settings/cacerts | jq -r .value > $temp
     cat $temp
-    if [ "$(sha256sum $temp | awk '{print $1}')" != $CA_CHECKSUM ]; then
+    if [ "$(sha256sum $temp | awk '{print $1}')" != $CATTLE_CA_CHECKSUM ]; then
         rm -f $temp
-        error $CATTLE_SERVER/v3/settings/cacerts does not match $CA_CHECKSUM
+        error $CATTLE_SERVER/v3/settings/cacerts does not match $CATTLE_CA_CHECKSUM
         exit 1
     fi
     mkdir -p certs
@@ -90,14 +92,16 @@ if [ -z "$CATTLE_SERVER" ]; then
     exit 1
 fi
 
-if [ -z "$CATTLE_TOKEN" ]; then
-    error -- --token is a required option
-    exit 1
-fi
+if [ "$CATTLE_CLUSTER" != "true" ]; then
+    if [ -z "$CATTLE_TOKEN" ]; then
+        error -- --token is a required option
+        exit 1
+    fi
 
-if [ -z "$CATTLE_ADDRESS" ]; then
-    error -- --address is a required option
-    exit 1
+    if [ -z "$CATTLE_ADDRESS" ]; then
+        error -- --address is a required option
+        exit 1
+    fi
 fi
 
 exec agent
