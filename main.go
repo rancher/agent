@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
-	"github.com/rancher/norman/types/slice"
+	"github.com/rancher/agent/cluster"
+	"github.com/rancher/agent/node"
 	"github.com/rancher/rancher/pkg/remotedialer"
 	"github.com/sirupsen/logrus"
 )
@@ -30,32 +30,32 @@ func main() {
 	}
 }
 
-func run() error {
-	token := os.Getenv("CATTLE_TOKEN")
-	roles := split(os.Getenv("CATTLE_ROLE"))
-	params := map[string]interface{}{
-		"customConfig": map[string]interface{}{
-			"address":         os.Getenv("CATTLE_ADDRESS"),
-			"internalAddress": os.Getenv("CATTLE_INTERNAL_ADDRESS"),
-			"roles":           split(os.Getenv("CATTLE_ROLE")),
-		},
-		"etcd":              slice.ContainsString(roles, "etcd"),
-		"controlPlane":      slice.ContainsString(roles, "controlplane"),
-		"worker":            slice.ContainsString(roles, "worker"),
-		"requestedHostname": os.Getenv("CATTLE_NODE_NAME"),
+func getParams() (map[string]interface{}, error) {
+	if os.Getenv("CATTLE_CLUSTER") == "true" {
+		return cluster.Params()
 	}
+	return node.Params(), nil
+}
 
-	for k, v := range params {
-		if m, ok := v.(map[string]string); ok {
-			for k, v := range m {
-				logrus.Infof("Option %s=%s", k, v)
-			}
-		} else {
-			logrus.Infof("Option %s=%v", k, v)
-		}
+func getTokenAndURL() (string, string, error) {
+	if os.Getenv("CATTLE_CLUSTER") == "true" {
+		return cluster.TokenAndURL()
+	}
+	return node.TokenAndURL()
+}
+
+func run() error {
+	params, err := getParams()
+	if err != nil {
+		return err
 	}
 
 	bytes, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	token, server, err := getTokenAndURL()
 	if err != nil {
 		return err
 	}
@@ -65,13 +65,13 @@ func run() error {
 		Params: {base64.StdEncoding.EncodeToString(bytes)},
 	}
 
-	server := os.Getenv("CATTLE_SERVER")
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return err
 	}
 
 	wsURL := fmt.Sprintf("wss://%s/v3/connect", serverURL.Host)
+	logrus.Infof("Connecting to %s with token %s", wsURL, token)
 	remotedialer.ClientConnect(wsURL, http.Header(headers), nil, func(proto, address string) bool {
 		switch proto {
 		case "tcp":
@@ -83,18 +83,4 @@ func run() error {
 	})
 
 	return nil
-}
-
-func split(s string) []string {
-	var result []string
-	for _, part := range strings.Split(s, ",") {
-		p := strings.TrimSpace(part)
-		if p != "" {
-			result = append(result, p)
-		}
-	}
-	if len(result) == 1 && result[0] == "" {
-		return nil
-	}
-	return result
 }
