@@ -279,6 +279,17 @@ func IsRancherVolume(volume model.Volume) (bool, error) {
 	return false, nil
 }
 
+// IsRancher checks if volume driver is rancher managed driver
+func IsRancher(volume model.Volume) (bool, error) {
+	if _, ok := rancherDrivers[volume.Data.Fields.Driver]; ok {
+		if _, err := os.Stat(rancherStorageSockPath(volume)); err == nil {
+			return true, nil
+		}
+		return false, errors.Errorf("rancher driver %s is not running: can't find socket file", volume.Driver)
+	}
+	return false, nil
+}
+
 func IsVolumeRemoved(volume model.Volume, storagePool model.StoragePool, client *engineCli.Client) (bool, error) {
 	if volume.DeviceNumber == 0 {
 		container, err := utils.GetContainer(client, volume.Instance, false)
