@@ -33,6 +33,10 @@ func (f fakeReplyImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIde
 	return ec2metadata.EC2InstanceIdentityDocument{Region: "fake", AvailabilityZone: "fake"}, nil
 }
 
+func (f fakeReplyImpl) getMetadata(s string) (string, error) {
+	return s, nil
+}
+
 type errorReplyImpl struct{}
 
 func (e errorReplyImpl) getInstanceIdentityDocument() (ec2metadata.EC2InstanceIdentityDocument, error) {
@@ -49,7 +53,7 @@ func (s *ComputeTestSuite) TestGetHostInfo(c *C) {
 	i.Labels = map[string]string{
 		cloudprovider.RegionLabel:           "fake",
 		cloudprovider.AvailabilityZoneLabel: "fake",
-		cloudprovider.CloudProviderLabel:    awsTag,
+		cloudprovider.CloudProviderLabel:    AwsTag,
 	}
 
 	p.client = fakeReplyImpl{}

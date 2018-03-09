@@ -11,6 +11,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
+	"github.com/rancher/agent/cloudprovider"
+	"github.com/rancher/agent/cloudprovider/aws"
 	"github.com/rancher/agent/core/hostInfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
@@ -48,6 +50,17 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	if err != nil {
 		return errors.Wrap(err, constants.AddResourceError+"failed to get hostname")
 	}
+
+	if config.DetectCloudProvider() {
+		awsProvider := &aws.Provider{}
+		if provider := cloudprovider.GetProviderByName(aws.AwsTag); provider != nil {
+			awsProvider = provider.(*aws.Provider)
+			if hostname, err = awsProvider.GetAWSLocalHostname(); err != nil {
+				logrus.Warnf("Failed to get Host AWS local-hostname: %v", err.Error())
+			}
+		}
+	}
+
 	labels, err := getHostLabels(collectors)
 	if err != nil {
 		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())

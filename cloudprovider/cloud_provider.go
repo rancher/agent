@@ -100,3 +100,10 @@ func IsHostStateReady() bool {
 	}
 	return true
 }
+
+func GetProviderByName(name string) Provider {
+	if provider, ok := providers[name]; ok {
+		return provider
+	}
+	return nil
+}
