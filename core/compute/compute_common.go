@@ -220,6 +220,22 @@ func setupVolumes(config *container.Config, instance model.Instance, hostConfig 
 				} else if err != nil {
 					return errors.Wrap(err, constants.SetupVolumesError+"failed to check whether volume is activated")
 				}
+				// call attach if driver is rancher managed
+				if ok, err := storage.IsRancher(vMount); err != nil {
+					return err
+				} else if ok {
+					payload := struct {
+						Name    string
+						Options map[string]string `json:"Opts,omitempty"`
+					}{
+						Name:    vMount.Name,
+						Options: vMount.Data.Fields.DriverOpts,
+					}
+					_, err = storage.CallRancherStorageVolumePlugin(vMount, storage.Attach, payload)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
