@@ -1,6 +1,6 @@
 //+build windows
 
-package hostInfo
+package hostinfo
 
 import (
 	"bufio"

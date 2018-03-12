@@ -10,7 +10,7 @@ import (
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
@@ -133,27 +133,27 @@ func initializeHandlers() *Handler {
 	}
 	storageCache := cache.New(5*time.Minute, 30*time.Second)
 	cache := cache.New(5*time.Minute, 30*time.Second)
-	Collectors := []hostInfo.Collector{
-		hostInfo.CPUCollector{},
-		hostInfo.DiskCollector{
+	Collectors := []hostinfo.Collector{
+		hostinfo.CPUCollector{},
+		hostinfo.DiskCollector{
 			Unit: 1048576,
 			InfoData: model.InfoData{
 				Info:    info,
 				Version: version,
 			},
 		},
-		hostInfo.IopsCollector{},
-		hostInfo.MemoryCollector{
+		hostinfo.IopsCollector{},
+		hostinfo.MemoryCollector{
 			Unit: 1024.00,
 		},
-		hostInfo.OSCollector{
+		hostinfo.OSCollector{
 			InfoData: model.InfoData{
 				Info:    info,
 				Version: version,
 			},
 		},
-		hostInfo.KeyCollector{},
-		hostInfo.CloudProviderCollector{},
+		hostinfo.KeyCollector{},
+		hostinfo.CloudProviderCollector{},
 	}
 	computerHandler := ComputeHandler{
 		dockerClientWithTimeout: clientWithTimeout,

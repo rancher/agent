@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/rancher/agent/cloudprovider"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 )
 
 const (
@@ -53,12 +53,12 @@ func (p *Provider) Name() string {
 	return awsTag
 }
 
-func (p *Provider) GetHostInfo() (i *hostInfo.Info, err error) {
+func (p *Provider) GetHostInfo() (i *hostinfo.Info, err error) {
 	document, err := p.client.getInstanceIdentityDocument()
 	if err != nil {
 		return
 	}
-	i = &hostInfo.Info{}
+	i = &hostinfo.Info{}
 	i.Labels = map[string]string{}
 	i.Labels[cloudprovider.RegionLabel] = document.Region
 	i.Labels[cloudprovider.AvailabilityZoneLabel] = document.AvailabilityZone
