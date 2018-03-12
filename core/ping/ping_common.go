@@ -11,7 +11,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
@@ -29,13 +29,13 @@ const (
 	requireAnyLabel = "io.rancher.scheduler.require_any"
 )
 
-func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostInfo.Collector) error {
+func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *client.Client, collectors []hostinfo.Collector) error {
 	if !pingIncludeResource(ping) {
 		return nil
 	}
 	stats := map[string]interface{}{}
 	if pingIncludeStats(ping) {
-		data := hostInfo.CollectData(collectors)
+		data := hostinfo.CollectData(collectors)
 		stats = data
 	}
 
@@ -208,8 +208,8 @@ func pingIncludeInstance(ping *revents.Event) bool {
 	return utils.InterfaceToBool(value)
 }
 
-func getHostLabels(collectors []hostInfo.Collector) (map[string]string, error) {
-	return hostInfo.HostLabels("io.rancher.host", collectors)
+func getHostLabels(collectors []hostinfo.Collector) (map[string]string, error) {
+	return hostinfo.HostLabels("io.rancher.host", collectors)
 }
 
 func getAllContainerByState(dockerClient *client.Client, done chan bool) (map[string]types.Container, map[string]types.Container, error) {

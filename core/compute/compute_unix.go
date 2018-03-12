@@ -18,7 +18,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/core/storage"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -426,7 +426,7 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 	for dev, options := range deviceOptions {
 		if dev == "DEFAULT_DISK" {
 			// ignore this error because if we can't find the device we just skip that device
-			dev, _ = hostInfo.GetDefaultDisk(infoData)
+			dev, _ = hostinfo.GetDefaultDisk(infoData)
 			if dev == "" {
 				logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
 				continue

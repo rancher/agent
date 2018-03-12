@@ -6,7 +6,7 @@ import (
 	"github.com/loganhz/aliyungo/metadata"
 
 	"github.com/rancher/agent/cloudprovider"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 )
 
 const (
@@ -53,7 +53,7 @@ func (p *Provider) Name() string {
 	return aliyunTag
 }
 
-func (p *Provider) GetHostInfo() (i *hostInfo.Info, err error) {
+func (p *Provider) GetHostInfo() (i *hostinfo.Info, err error) {
 	zone, err := p.client.Zone()
 	if err != nil {
 		return
@@ -62,7 +62,7 @@ func (p *Provider) GetHostInfo() (i *hostInfo.Info, err error) {
 	if err != nil {
 		return
 	}
-	i = &hostInfo.Info{}
+	i = &hostinfo.Info{}
 	i.Labels = map[string]string{}
 	i.Labels[cloudprovider.RegionLabel] = region
 	i.Labels[cloudprovider.AvailabilityZoneLabel] = zone

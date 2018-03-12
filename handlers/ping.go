@@ -3,7 +3,7 @@ package handlers
 import (
 	engineCli "github.com/docker/docker/client"
 	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/core/marshaller"
 	"github.com/rancher/agent/core/ping"
 	"github.com/rancher/agent/model"
@@ -15,7 +15,7 @@ import (
 
 type PingHandler struct {
 	dockerClient *engineCli.Client
-	collectors   []hostInfo.Collector
+	collectors   []hostinfo.Collector
 }
 
 func (h *PingHandler) Ping(event *revents.Event, cli *client.RancherClient) error {

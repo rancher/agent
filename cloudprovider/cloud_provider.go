@@ -8,7 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/utilities/config"
 )
 
@@ -31,7 +31,7 @@ var (
 
 type Provider interface {
 	Init() error
-	GetHostInfo() (*hostInfo.Info, error)
+	GetHostInfo() (*hostinfo.Info, error)
 	RetryCount() int
 	Interval() time.Duration
 	Name() string
@@ -77,7 +77,7 @@ func GetCloudProviderInfo() {
 	return
 }
 
-func WriteHostInfo(i *hostInfo.Info) error {
+func WriteHostInfo(i *hostinfo.Info) error {
 	bytes, err := json.Marshal(i)
 	if err != nil {
 		return err

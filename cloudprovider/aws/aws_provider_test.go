@@ -10,7 +10,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/rancher/agent/cloudprovider"
-	"github.com/rancher/agent/core/hostInfo"
+	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/utilities/config"
 )
 
@@ -45,7 +45,7 @@ func (s *ComputeTestSuite) TestGetHostInfo(c *C) {
 		interval:   time.Second,
 		retryCount: 2,
 	}
-	i := &hostInfo.Info{}
+	i := &hostinfo.Info{}
 	i.Labels = map[string]string{
 		cloudprovider.RegionLabel:           "fake",
 		cloudprovider.AvailabilityZoneLabel: "fake",

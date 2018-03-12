@@ -1,4 +1,4 @@
-package hostInfo
+package hostinfo
 
 func (i IopsCollector) parseIopsData() (map[string]interface{}, error) {
 	return map[string]interface{}{}, nil

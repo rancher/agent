@@ -1,6 +1,6 @@
 // +build linux freebsd solaris openbsd darwin
 
-package hostInfo
+package hostinfo
 
 import (
 	"encoding/json"

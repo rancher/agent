@@ -1,4 +1,4 @@
-package hostInfo
+package hostinfo
 
 import (
 	"github.com/pkg/errors"
