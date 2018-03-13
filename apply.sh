@@ -77,7 +77,13 @@ conf()
 
 start(){
     export PATH=${CATTLE_HOME}/bin:$PATH
-    check
+
+    if [ "${CATTLE_CHECK_NAMESERVER}" = "false" ];then
+        info Skipping DNS nameserver check
+    else
+        check
+    fi
+    
     
     chmod +x $MAIN
     if [ "$CATTLE_PYPY" = "true" ] && which pypy >/dev/null; then
