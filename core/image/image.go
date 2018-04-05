@@ -100,7 +100,7 @@ func wrapReader(reader io.ReadCloser, imageUUID string, progress *progress.Progr
 	for scanner.Scan() {
 		status := marshaller.FromString(scanner.Text())
 		if utils.HasKey(status, "error") {
-			return fmt.Errorf("Image [%s] failed to pull: %s", imageUUID, message)
+			return fmt.Errorf("Image [%s] failed to pull: %v", imageUUID, status["error"])
 		}
 		if utils.HasKey(status, "status") {
 			message = utils.InterfaceToString(status["status"])
