@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
@@ -13,7 +13,7 @@ import (
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
-	logrus.Infof("Listening for events on %v", eventURL)
+	log.Infof("Listening for events on %v", eventURL)
 
 	config.SetAccessKey(accessKey)
 	config.SetSecretKey(secretKey)
@@ -22,14 +22,14 @@ func Listen(eventURL, accessKey, secretKey string, workerCount int) error {
 	config.PhysicalHostUUID(true)
 	config.SetDockerUUID()
 
-	logrus.Info("launching hostapi")
+	log.Info("launching hostapi")
 	go hostapi.StartUp()
 
 	go func() {
 		timestamps := time.Time{}
 		for {
 			if !checkTS(&timestamps) {
-				logrus.Info("timestamp files have been changed. Exiting go-agent")
+				log.Info("timestamp files have been changed. Exiting go-agent")
 				os.Exit(1)
 			}
 			time.Sleep(time.Duration(2) * time.Second)

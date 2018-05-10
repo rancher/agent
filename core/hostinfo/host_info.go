@@ -1,7 +1,7 @@
 package hostinfo
 
 import (
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
@@ -18,7 +18,7 @@ func CollectData(collectors []Collector) map[string]interface{} {
 	for _, collector := range collectors {
 		collectedData, err := collector.GetData()
 		if err != nil {
-			logrus.Warnf("Failed to collect data from collector %v error msg: %v", collector.KeyName(), err.Error())
+			log.Warnf("Failed to collect data from collector %v error msg: %v", collector.KeyName(), err.Error())
 		}
 		data[collector.KeyName()] = collectedData
 	}

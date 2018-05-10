@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-connections/sockets"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
-	"strings"
 )
 
 func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {
@@ -49,10 +49,10 @@ func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload 
 	}
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		logrus.Infof("Success: /VolumeDriver.%v '%s' (driver '%s')", action, volume.Name, driver)
+		log.Infof("Success: /VolumeDriver.%v '%s' (driver '%s')", action, volume.Name, driver)
 		return response, nil
 	case resp.StatusCode >= 400 && resp.StatusCode < 500:
-		logrus.Infof("/VolumeDriver.%v '%s' is not supported by driver '%s'", action, volume.Name, driver)
+		log.Infof("/VolumeDriver.%v '%s' is not supported by driver '%s'", action, volume.Name, driver)
 	default:
 		return Response{}, errors.Errorf("Failed to %s volume %s. Driver: %s. Status code: %v. Status: %s", strings.ToLower(action), volume.Name, driver, resp.StatusCode, strings.ToLower(resp.Status))
 	}

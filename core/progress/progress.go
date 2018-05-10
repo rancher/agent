@@ -2,7 +2,8 @@ package progress
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
+
+	"github.com/leodotcloud/log"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 )
@@ -24,10 +25,10 @@ func (p *Progress) Update(msg string, types string, data map[string]interface{})
 		TransitioningProgress: 0,
 	}
 	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
-	logrus.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.Name, resp.ResourceId, resp.ResourceType, transition)
+	log.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.Name, resp.ResourceId, resp.ResourceType, transition)
 	err := publishReply(resp, p.Client)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 }
 
@@ -52,10 +53,10 @@ func (p *Progress) UpdateWithParent(msg string, types string, data map[string]in
 		TransitioningProgress: 0,
 	}
 	transition := fmt.Sprintf("%s: %s", resp.Transitioning, resp.TransitioningMessage)
-	logrus.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, transition)
+	log.Infof("Reply: %v, %v, %v:%v, transitioning: %v", p.Request.ID, p.Request.ReplyTo, resp.ResourceId, resp.ResourceType, transition)
 	err := publishReply(resp, p.Client)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 }
 

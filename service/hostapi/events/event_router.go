@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 )
 
 const workerTimeout = 60 * time.Second

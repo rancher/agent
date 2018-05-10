@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
@@ -203,7 +203,7 @@ func Labels() map[string]string {
 	if val != "" {
 		m, err := url.ParseQuery(val)
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		}
 		for k, v := range m {
 			ret[strings.TrimSpace(k)] = strings.TrimSpace(v[0])

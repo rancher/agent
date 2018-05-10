@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/docker/api/types/container"
+	"github.com/leodotcloud/log"
 	"github.com/nu7hatch/gouuid"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/config"
@@ -199,7 +199,7 @@ func setupDeviceOptionsTest(hostConfig *container.HostConfig, instance *model.In
 		if dev == "DEFAULT_DISK" {
 			dev = mockDevice
 			if dev == "" {
-				logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
+				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
 				continue
 			}
 		}

@@ -2,7 +2,6 @@ package compute
 
 import (
 	"fmt"
-
 	urls "net/url"
 	"os"
 	"strconv"
@@ -10,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/image"
 	"github.com/rancher/agent/core/progress"
@@ -306,7 +305,7 @@ func setupCattleConfigURL(instance model.Instance, config *container.Config) {
 		parsed, err := urls.Parse(url)
 
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
 			if strings.Contains(parsed.Host, "localhost") {
 				port := configuration.APIProxyListenPort()

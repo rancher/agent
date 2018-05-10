@@ -1,15 +1,14 @@
 package hostapi
 
 import (
-	"os"
-	"time"
-
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/golang/glog"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/console"
@@ -33,26 +32,26 @@ func StartUp() {
 		}
 		defer glog.Flush()
 		if config.Config.PidFile != "" {
-			logrus.Infof("Writing pid %d to %s", os.Getpid(), config.Config.PidFile)
+			log.Infof("Writing pid %d to %s", os.Getpid(), config.Config.PidFile)
 			if err := ioutil.WriteFile(config.Config.PidFile, []byte(strconv.Itoa(os.Getpid())), 0644); err != nil {
-				logrus.Errorf("Failed to write pid file [%s] for host-api startup: %v", config.Config.PidFile, err)
+				log.Errorf("Failed to write pid file [%s] for host-api startup: %v", config.Config.PidFile, err)
 				time.Sleep(time.Duration(5) * time.Second)
 				continue
 			}
 		}
 		if config.Config.LogFile != "" {
 			if output, err := os.OpenFile(config.Config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666); err != nil {
-				logrus.Errorf("Failed to log to file [%s] for host-api startup: %v", config.Config.LogFile, err)
+				log.Errorf("Failed to log to file [%s] for host-api startup: %v", config.Config.LogFile, err)
 				time.Sleep(time.Duration(5) * time.Second)
 				continue
 			} else {
-				logrus.SetOutput(output)
+				log.SetOutput(output)
 			}
 		}
 		processor := events.NewDockerEventsProcessor(config.Config.EventsPoolSize)
 		err = processor.Process()
 		if err != nil {
-			logrus.Errorf("Failed to get docker event processor for host-api startup: %v", err)
+			log.Errorf("Failed to get docker event processor for host-api startup: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		}
@@ -61,7 +60,7 @@ func StartUp() {
 	for {
 		rancherClient, err := util.GetRancherClient()
 		if err != nil {
-			logrus.Errorf("Failed to get rancher client for host-api startup: %v", err)
+			log.Errorf("Failed to get rancher client for host-api startup: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		}
@@ -70,7 +69,7 @@ func StartUp() {
 		}
 		tokenResponse, err := getConnectionToken(0, tokenRequest, rancherClient)
 		if err != nil {
-			logrus.Errorf("Failed to get connection token for host-api startup: %v", err)
+			log.Errorf("Failed to get connection token for host-api startup: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		} else if tokenResponse == nil {
@@ -96,7 +95,7 @@ func StartUp() {
 		handlers["/v1/container-proxy/"] = &proxy.Handler{}
 		handlers["/v2-beta/container-proxy/"] = &proxy.Handler{}
 		if err := backend.ConnectToProxy(tokenResponse.Url+"?token="+tokenResponse.Token, handlers); err != nil {
-			logrus.Errorf("Failed to connect to websocket proxy. Error: %v", err)
+			log.Errorf("Failed to connect to websocket proxy. Error: %v", err)
 			time.Sleep(time.Duration(5) * time.Second)
 			continue
 		}
@@ -124,13 +123,13 @@ func getConnectionToken(try int, tokenReq *rclient.HostApiProxyToken, rancherCli
 					}
 				}
 				if strings.EqualFold(m["code"], "InvalidReference") && strings.EqualFold(m["fieldName"], "reportedUuid") {
-					logrus.WithField("reportedUuid", config.Config.HostUUID).WithField("Attempt", try).Infof("Host not registered yet. Sleeping 1 second and trying again.")
+					log.Infof("Host not registered yet. Sleeping 1 second and trying again. reportedUuid=%v Attempt=%v", config.Config.HostUUID, try)
 					time.Sleep(time.Second)
 					try++
 					return getConnectionToken(try, tokenReq, rancherClient) // Recursion!
 				}
 			} else if apiError.StatusCode == 501 {
-				logrus.Infof("Host-api proxy disabled. Will not connect.")
+				log.Infof("Host-api proxy disabled. Will not connect.")
 				return nil, nil
 			}
 			return nil, errors.Wrap(err, "Failed to create hostApiProxyToken")

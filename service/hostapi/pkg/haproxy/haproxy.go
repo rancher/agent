@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 )
 
 type Stat map[string]string
@@ -36,7 +36,7 @@ func (h *Monitor) Stats() ([]Stat, error) {
 
 		values := strings.Split(line, ",")
 		if len(keys) != len(values) {
-			logrus.Errorf("Invalid stat line: %s", line)
+			log.Errorf("Invalid stat line: %s", line)
 		}
 
 		stat := Stat{}

@@ -2,7 +2,8 @@ package marshaller
 
 import (
 	"encoding/json"
-	"github.com/Sirupsen/logrus"
+
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
 )
@@ -11,7 +12,7 @@ func FromString(rawstring string) map[string]interface{} {
 	obj := map[string]interface{}{}
 	err := json.Unmarshal([]byte(rawstring), &obj)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 	return obj
 }

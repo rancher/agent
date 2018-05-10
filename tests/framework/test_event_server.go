@@ -1,12 +1,12 @@
 package framework
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
-	"encoding/json"
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"io/ioutil"
+	"github.com/leodotcloud/log"
 )
 
 func NewServer() *mux.Router {
@@ -28,7 +28,7 @@ func (s *server) Ping(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) Die(rw http.ResponseWriter, req *http.Request) {
-	logrus.Fatal("Instructed to die.")
+	log.Fatal("Instructed to die.")
 }
 
 func (s *server) PostEvent(rw http.ResponseWriter, req *http.Request) {

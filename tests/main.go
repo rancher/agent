@@ -1,20 +1,19 @@
 package main
 
 import (
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/tests/framework"
 	"net/http"
 )
 
 func main() {
-	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
-	logrus.Infof("Starting test event server.")
+	log.Infof("Starting test event server.")
 	s := framework.NewServer()
 	handler := http.Handler(s)
 	err := http.ListenAndServe("localhost:8089", handler)
 	if err == nil {
-		logrus.Infof("Test event server exited.")
+		log.Infof("Test event server exited.")
 	} else {
-		logrus.Errorf("Test event server errored out: %v", err)
+		log.Errorf("Test event server errored out: %v", err)
 	}
 }

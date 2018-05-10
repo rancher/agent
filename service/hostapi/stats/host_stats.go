@@ -6,8 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
@@ -21,7 +20,7 @@ func (s *HostStatsHandler) Handle(key string, initialMessage string, incomingMes
 
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "message": initialMessage}).Error("Couldn't parse url from message.")
+		log.Errorf("Couldn't parse url from message. url=%v error=%v", initialMessage, err)
 		return
 	}
 
@@ -64,13 +63,13 @@ func (s *HostStatsHandler) Handle(key string, initialMessage string, incomingMes
 			response <- message
 		}
 		if err := scanner.Err(); err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Error with the container stat scanner.")
+			log.Errorf("Error with the container stat scanner. error=%v", err)
 		}
 	}(reader)
 
 	memLimit, err := getMemCapcity()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Error getting memory capacity.")
+		log.Errorf("Error getting memory capacity. error=%v", err)
 		return
 	}
 

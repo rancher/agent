@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/event-subscriber/locks"
@@ -169,23 +169,17 @@ func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]revents.EventH
 	event := &revents.Event{}
 	err := json.Unmarshal(rawEvent, &event)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"err": err,
-		}).Error("Error unmarshalling event")
+		log.Error("Error unmarshalling event: %v", err)
 		return
 	}
 
 	if event.Name != "ping" {
-		logrus.WithFields(logrus.Fields{
-			"event": string(rawEvent[:]),
-		}).Debug("Processing event.")
+		log.Debug("Processing event=%v", string(rawEvent[:]))
 	}
 
 	unlocker := locks.Lock(event.ResourceID)
 	if unlocker == nil {
-		logrus.WithFields(logrus.Fields{
-			"resourceId": event.ResourceID,
-		}).Debug("Resource locked. Dropping event")
+		log.Debugf("Resource (resourceId: %v) locked. Dropping event", event.ResourceID)
 		return
 	}
 	defer unlocker.Unlock()
@@ -193,12 +187,7 @@ func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]revents.EventH
 	if fn, ok := eventHandlers[event.Name]; ok {
 		err = fn(event, apiClient)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
-				"eventName":  event.Name,
-				"eventId":    event.ID,
-				"resourceId": event.ResourceID,
-				"err":        err,
-			}).Error("Error processing event")
+			log.Errorf("Error processing event(eventName=%v, eventId=%v, resourceId=%v) error=%v", event.Name, event.ID, event.ResourceID, err)
 
 			reply := &client.Publish{
 				Name:                 event.ReplyTo,
@@ -208,14 +197,10 @@ func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]revents.EventH
 			}
 			_, err := apiClient.Publish.Create(reply)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"err": err,
-				}).Error("Error sending error-reply")
+				log.Errorf("Error sending error-reply: %v", err)
 			}
 		}
 	} else {
-		logrus.WithFields(logrus.Fields{
-			"eventName": event.Name,
-		}).Warn("No event handler registered for event")
+		log.Warn("No event handler registered for event (eventName=%v)", event.Name)
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/config"
 )
@@ -67,12 +67,12 @@ func (k KeyCollector) getKey() (string, error) {
 }
 
 func (k KeyCollector) genKey() ([]byte, error) {
-	logrus.Info("Generating host key")
+	log.Info("Generating host key")
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Info("Done generating host key")
+	log.Info("Done generating host key")
 	return pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(key),

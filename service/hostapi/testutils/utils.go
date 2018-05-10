@@ -3,9 +3,8 @@ package testutils
 import (
 	"io/ioutil"
 
-	log "github.com/Sirupsen/logrus"
 	jwt "github.com/dgrijalva/jwt-go"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/websocket-proxy/proxy"
 )
 

@@ -2,15 +2,14 @@ package storage
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	engineCli "github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
@@ -130,7 +129,7 @@ func DoVolumeActivate(volume model.Volume, storagePool model.StoragePool, progre
 	vol, err := client.VolumeInspect(context.Background(), volume.Name)
 	if err != nil {
 		if vol.Mountpoint == "moved" {
-			logrus.Info(fmt.Sprintf("Removing moved volume %s so that it can be re-added.", volume.Name))
+			log.Info(fmt.Sprintf("Removing moved volume %s so that it can be re-added.", volume.Name))
 			if err := client.VolumeRemove(context.Background(), volume.Name, true); err != nil {
 				return errors.Wrap(err, constants.DoVolumeActivateError+"failed to remove volume")
 			}
@@ -180,7 +179,7 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		}
 		if len(errorList) == 3 {
 			ca.Add(resourceID, true, cache.DefaultExpiration)
-			logrus.Warnf("Failed to remove container id [%v]. Tried three times and failed. Error msg: %v", container.ID, errorList)
+			log.Warnf("Failed to remove container id [%v]. Tried three times and failed. Error msg: %v", container.ID, errorList)
 		}
 	} else if isManagedVolume(volume) {
 		errorList := []error{}
@@ -198,7 +197,7 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		}
 		if len(errorList) == 3 {
 			ca.Add(resourceID, true, cache.DefaultExpiration)
-			logrus.Warnf("Failed to remove volume name [%v]. Tried three times and failed. Error msg: %v", volume.Name, errorList)
+			log.Warnf("Failed to remove volume name [%v]. Tried three times and failed. Error msg: %v", volume.Name, errorList)
 		}
 		return nil
 	}

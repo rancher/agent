@@ -3,7 +3,7 @@ package docker
 import (
 	"sync"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
 )
@@ -27,9 +27,9 @@ func Serialize(f func() error) error {
 	}
 
 	computeLock.Lock()
-	logrus.Info("Compute lock")
+	log.Info("Compute lock")
 	defer func() {
-		logrus.Info("Compute unlock")
+		log.Info("Compute unlock")
 		computeLock.Unlock()
 	}()
 

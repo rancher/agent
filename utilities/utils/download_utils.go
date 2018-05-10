@@ -7,11 +7,12 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"hash"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/leodotcloud/log"
 )
 
 func DownloadFile(url string, dest string, reporthook interface{}, checksum string) (string, error) {
@@ -20,8 +21,8 @@ func DownloadFile(url string, dest string, reporthook interface{}, checksum stri
 
 func downloadFileUtil(url string, dest string, reporthook interface{}, checksum string) (string, error) {
 	tempName := TempFileInWorkDir(dest)
-	logrus.Info(tempName)
-	logrus.Info(fmt.Sprintf("Downloading %s to %s", url, tempName))
+	log.Info(tempName)
+	log.Info(fmt.Sprintf("Downloading %s to %s", url, tempName))
 	err := downloadFromURL(url, tempName)
 	if err == nil {
 		if checksum != "" {
@@ -79,16 +80,16 @@ func downloadFromURL(rawurl string, filepath string) error {
 		defer file.Close()
 		response, err1 := http.Get(rawurl)
 		if err1 != nil {
-			logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
+			log.Error(fmt.Sprintf("Error while downloading error: %s", err1))
 			return err1
 		}
 		defer response.Body.Close()
 		n, err := io.Copy(file, response.Body)
 		if err != nil {
-			logrus.Error(fmt.Sprintf("Error while copy file: %s", err))
+			log.Error(fmt.Sprintf("Error while copy file: %s", err))
 			return err
 		}
-		logrus.Infof("%v bytes downloaded successfully", n)
+		log.Infof("%v bytes downloaded successfully", n)
 		return nil
 	}
 	return err

@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/core/storage"
@@ -428,7 +428,7 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 			// ignore this error because if we can't find the device we just skip that device
 			dev, _ = hostinfo.GetDefaultDisk(infoData)
 			if dev == "" {
-				logrus.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
+				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
 				continue
 			}
 		}
