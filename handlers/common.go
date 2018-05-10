@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -33,7 +33,7 @@ func GetHandlers() (map[string]revents.EventHandler, error) {
 	}
 
 	docker.SerializeCompute = (info.Driver == "devicemapper")
-	logrus.Infof("Serialize compute requests: %v, driver: %s", docker.SerializeCompute, info.Driver)
+	log.Infof("Serialize compute requests: %v, driver: %s", docker.SerializeCompute, info.Driver)
 
 	return map[string]revents.EventHandler{
 		"compute.instance.activate":   cleanLog(logRequest(handler.compute.InstanceActivate)),
@@ -52,7 +52,7 @@ func GetHandlers() (map[string]revents.EventHandler, error) {
 
 func logRequest(f revents.EventHandler) revents.EventHandler {
 	return func(event *revents.Event, cli *client.RancherClient) error {
-		logrus.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
+		log.Infof("Received event: Name: %s, Event Id: %s, Resource Id: %s", event.Name, event.ID, event.ResourceID)
 		return f(event, cli)
 	}
 }
@@ -61,7 +61,7 @@ func cleanLog(f revents.EventHandler) revents.EventHandler {
 	return func(event *revents.Event, cli *client.RancherClient) error {
 		err := f(event, cli)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{"err": err}).Debug("Verbose error message")
+			log.Debugf("Verbose error message err=%v", err)
 		}
 		return errors.Cause(err)
 	}
@@ -86,9 +86,9 @@ func reply(replyData map[string]interface{}, event *revents.Event, cli *client.R
 	}
 
 	if reply.ResourceType != "agent" {
-		logrus.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
+		log.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
 	}
-	logrus.Debugf("Reply: %+v", reply)
+	log.Debugf("Reply: %+v", reply)
 
 	err = publishReply(reply, cli)
 	if err != nil {
@@ -101,7 +101,7 @@ func initializeHandlers() *Handler {
 	client := docker.GetClient(docker.DefaultVersion)
 	clientWithTimeout, err := docker.NewEnvClientWithTimeout(time.Duration(2) * time.Second)
 	if err != nil {
-		logrus.Errorf("Err: %v. Can not initialize docker client. Exiting go-agent", err)
+		log.Errorf("Err: %v. Can not initialize docker client. Exiting go-agent", err)
 	}
 	clientWithTimeout.UpdateClientVersion(docker.DefaultVersion)
 	info := types.Info{}
@@ -128,7 +128,7 @@ func initializeHandlers() *Handler {
 	}
 	// if we can't get the initialization data the program should exit
 	if !flags[0] || !flags[1] {
-		logrus.Fatalf("Failed to initialize handlers. Exiting go-agent")
+		log.Fatalf("Failed to initialize handlers. Exiting go-agent")
 		os.Exit(1)
 	}
 	storageCache := cache.New(5*time.Minute, 30*time.Second)
@@ -215,9 +215,9 @@ func replyWithParent(replyData map[string]interface{}, event *revents.Event, par
 	}
 
 	if reply.ResourceType != "agent" {
-		logrus.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
+		log.Infof("Reply: %v, %v, %v:%v", event.ID, event.Name, reply.ResourceId, reply.ResourceType)
 	}
-	logrus.Debugf("Reply: %+v", reply)
+	log.Debugf("Reply: %+v", reply)
 
 	err = publishReply(reply, cli)
 	if err != nil {
@@ -238,7 +238,7 @@ func getUUID() (string, error) {
 func publishReply(reply *client.Publish, apiClient *client.RancherClient) error {
 	_, err := apiClient.Publish.Create(reply)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 	return err
 }

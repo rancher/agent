@@ -6,8 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/events"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
@@ -22,7 +21,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "message": initialMessage}).Error("Couldn't parse url from message.")
+		log.Errorf("Couldn't parse url from message. url=%v error=%v", initialMessage, err)
 		return
 	}
 
@@ -62,13 +61,13 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			response <- message
 		}
 		if err := scanner.Err(); err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Error with the container stat scanner.")
+			log.Errorf("Error with the container stat scanner. error=%v", err)
 		}
 	}(reader)
 
 	memLimit, err := getMemCapcity()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting memory capacity.")
+		log.Errorf("Error getting memory capacity. error=%v", err)
 		return
 	}
 	if id == "" {
@@ -97,12 +96,12 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	} else {
 		inspect, err := dclient.ContainerInspect(context.Background(), id)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Can not inspect containers")
+			log.Errorf("Can not inspect containers error=%v", err)
 			return
 		}
 		statsReader, err := dclient.ContainerStats(context.Background(), id, true)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Can not get stats reader from docker")
+			log.Errorf("Can not get stats reader from docker error=%v", err)
 			return
 		}
 		defer statsReader.Body.Close()
@@ -112,7 +111,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			cInfo, err := getContainerStats(statsReader.Body, id, pid)
 
 			if err != nil {
-				log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
+				log.Errorf("Error getting container info. id=%v error=%v", id, err)
 				return
 			}
 			infos = append(infos, cInfo)

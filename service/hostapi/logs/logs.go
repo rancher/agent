@@ -8,14 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
-	"github.com/rancher/websocket-proxy/backend"
-	"github.com/rancher/websocket-proxy/common"
-
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
+	"github.com/rancher/websocket-proxy/backend"
+	"github.com/rancher/websocket-proxy/common"
 	"golang.org/x/net/context"
 )
 
@@ -32,7 +30,7 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "url": initialMessage}).Error("Couldn't parse url.")
+		log.Errorf("Couldn't parse url. url=%v error=%v", initialMessage, err)
 		return
 	}
 	tokenString := requestURL.Query().Get("token")
@@ -59,7 +57,7 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	client, err := events.NewDockerClient()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Couldn't get docker client.")
+		log.Errorf("Couldn't get docker client. error=%v", err)
 		return
 	}
 
@@ -74,7 +72,7 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	ctx, cancelFnc := context.WithCancel(context.Background())
 	stdout, err := client.ContainerLogs(ctx, container, logOpts)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("error fetching container logs: %v", err)
 		return
 	}
 	defer stdout.Close()
@@ -96,7 +94,7 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			// hacky, but can't do a type assertion on the cancellation error, which is the "normal" error received
 			// when the logs are closed properly
 			if err != io.EOF && !strings.Contains(err.Error(), "context canceled") {
-				log.WithFields(log.Fields{"error": err}).Error("Error with the container log scanner.")
+				log.Errorf("Error with the container log scanner. error=%v", err)
 			}
 			break
 		}

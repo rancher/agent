@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/model"
@@ -50,7 +50,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	}
 	labels, err := getHostLabels(collectors)
 	if err != nil {
-		logrus.Warnf("Failed to get Host Labels err msg: %v", err.Error())
+		log.Warnf("Failed to get Host Labels err msg: %v", err.Error())
 	}
 	rancherImage := os.Getenv(agentImage)
 	createLabels := config.Labels()
@@ -98,7 +98,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	} else {
 		usage, err := disk.Usage(".")
 		if err != nil {
-			logrus.Errorf("Error getting local storage usage: %v", err)
+			log.Errorf("Error getting local storage usage: %v", err)
 		} else {
 			compute.LocalStorageMb = uint64(usage.Free) / 1000
 		}
@@ -115,7 +115,7 @@ func addResource(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 	resolvedIP, err := net.LookupIP(config.DockerHostIP())
 	ipAddr := ""
 	if err != nil {
-		logrus.Warn(err)
+		log.Warn(err)
 	} else {
 		ipAddr = resolvedIP[0].String()
 	}
@@ -135,7 +135,7 @@ func getResourceOverride(envVar string) uint64 {
 	if val := os.Getenv(envVar); val != "" {
 		resource, err = strconv.ParseUint(val, 10, 64)
 		if err != nil {
-			logrus.Warnf("Couldn't parse %v %v. Will not use it.", envVar, val)
+			log.Warnf("Couldn't parse %v %v. Will not use it.", envVar, val)
 			return 0
 		}
 	}
@@ -179,7 +179,7 @@ func addInstance(ping *revents.Event, pong *model.PingResponse, dockerClient *cl
 		pong.Options.Instances = true
 		return nil
 	case <-timeout:
-		logrus.Warn("Can not get response from docker daemon")
+		log.Warn("Can not get response from docker daemon")
 		return nil
 	}
 }

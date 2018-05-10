@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
+	logserver "github.com/leodotcloud/log/server"
 	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/events"
 	"github.com/rancher/agent/register"
@@ -21,6 +21,7 @@ var (
 )
 
 func main() {
+	logserver.StartServerWithDefaults()
 	version := flag.Bool("version", false, "go-agent version")
 	rurl := flag.String("url", "", "registration url")
 	registerService := flag.String("register-service", "", "register rancher-agent service")
@@ -30,27 +31,24 @@ func main() {
 		fmt.Printf("go-agent version %s \n", VERSION)
 		os.Exit(0)
 	}
-	if runtime.GOOS != "windows" {
-		logrus.SetOutput(os.Stdout)
-	}
 
 	if os.Getenv("CATTLE_SCRIPT_DEBUG") != "" || os.Getenv("RANCHER_DEBUG") != "" {
-		logrus.SetLevel(logrus.DebugLevel)
+		log.SetLevelString("debug")
 	}
 
 	if err := register.Init(*registerService, *unregisterService); err != nil {
-		logrus.Fatalf("Failed to Initialize Service err: %v", err)
+		log.Fatalf("Failed to Initialize Service err: %v", err)
 	}
 
 	if *rurl != "" {
 		err := register.RunRegistration(*rurl)
 		if err != nil {
-			logrus.Errorf("registration failed. err: %v", err)
+			log.Errorf("registration failed. err: %v", err)
 			os.Exit(1)
 		}
 	}
 
-	logrus.Info("Launching agent")
+	log.Info("Launching agent")
 
 	url := os.Getenv("CATTLE_URL")
 	accessKey := os.Getenv("CATTLE_ACCESS_KEY")
@@ -58,13 +56,13 @@ func main() {
 	workerCount := 250
 
 	if config.DetectCloudProvider() {
-		logrus.Info("Detecting cloud provider")
+		log.Info("Detecting cloud provider")
 		cloudprovider.GetCloudProviderInfo()
 	}
 
 	err := events.Listen(url, accessKey, secretKey, workerCount)
 	if err != nil {
-		logrus.Fatalf("Exiting. Error: %v", err)
+		log.Fatalf("Exiting. Error: %v", err)
 		register.NotifyShutdown(err)
 	}
 }

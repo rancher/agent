@@ -6,8 +6,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/utilities/config"
 )
@@ -39,7 +38,7 @@ type Provider interface {
 
 func AddCloudProvider(name string, provider Provider) {
 	if _, exists := providers[name]; exists {
-		logrus.Fatalf("Provider '%s' tried to register twice", name)
+		log.Fatalf("Provider '%s' tried to register twice", name)
 	}
 	providers[name] = provider
 }
@@ -47,7 +46,7 @@ func AddCloudProvider(name string, provider Provider) {
 func GetCloudProviderInfo() {
 	for name, provider := range providers {
 		if err := provider.Init(); err != nil {
-			logrus.Fatalf("Provider '%s' initial failed, err: '%s'", name, err)
+			log.Fatalf("Provider '%s' initial failed, err: '%s'", name, err)
 			continue
 		}
 
@@ -60,13 +59,13 @@ func GetCloudProviderInfo() {
 				hostInfo, err := p.GetHostInfo()
 				if err == nil {
 					if err = WriteHostInfo(hostInfo); err == nil {
-						logrus.Infof("success get %s host info", p.Name())
+						log.Infof("success get %s host info", p.Name())
 						return
 					}
 				}
 
 				if i >= p.RetryCount() {
-					logrus.Infof("checking %s cloud provider error after %d attempts with no response, skipping now", p.Name(), i)
+					log.Infof("checking %s cloud provider error after %d attempts with no response, skipping now", p.Name(), i)
 					return
 				}
 

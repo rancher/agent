@@ -4,20 +4,17 @@ import (
 	"encoding/base64"
 	"io"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
-	"github.com/rancher/websocket-proxy/backend"
-	"github.com/rancher/websocket-proxy/common"
-
-	"runtime"
-
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/agent/service/hostapi/events"
+	"github.com/rancher/websocket-proxy/backend"
+	"github.com/rancher/websocket-proxy/common"
 )
 
 type Handler struct {
@@ -28,7 +25,7 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "url": initialMessage}).Error("Couldn't parse url.")
+		log.Errorf("Couldn't parse url=%v error=%v", initialMessage, err)
 		return
 	}
 	tokenString := requestURL.Query().Get("token")
@@ -42,7 +39,7 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	client, err := events.NewDockerClient()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Couldn't get docker client.")
+		log.Errorf("Couldn't get docker client. error=%v", err)
 		return
 	}
 
@@ -60,7 +57,7 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			msg, ok := <-incomingMessages
 			if !ok {
 				if _, err := w.Write([]byte("\x04")); err != nil {
-					log.WithFields(log.Fields{"error": err}).Error("Error writing EOT message.")
+					log.Errorf("Error writing EOT message. error=%v", err)
 				}
 				w.Close()
 				return
@@ -73,13 +70,13 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 				var width uint64
 				width, err = strconv.ParseUint(resizeCommand[0], 10, 64)
 				if err != nil {
-					log.WithFields(log.Fields{"error": err}).Error("Error decoding TTY width.")
+					log.Errorf("Error decoding TTY width. error=%v", err)
 					continue
 				}
 				var height uint64
 				height, err = strconv.ParseUint(resizeCommand[1], 10, 64)
 				if err != nil {
-					log.WithFields(log.Fields{"error": err}).Error("Error decoding TTY height.")
+					log.Errorf("Error decoding TTY height. error=%v", err)
 					continue
 				}
 				resizeOptions := types.ResizeOptions{}
@@ -90,7 +87,7 @@ func (h *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			}
 			data, err := base64.StdEncoding.DecodeString(msg)
 			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Error decoding message.")
+				log.Errorf("Error decoding message. error=%v", err)
 				continue
 			}
 			w.Write([]byte(data))

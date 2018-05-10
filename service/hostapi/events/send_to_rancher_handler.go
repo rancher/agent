@@ -1,10 +1,10 @@
 package events
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/event-subscriber/locks"
 	rclient "github.com/rancher/go-rancher/client"
 )

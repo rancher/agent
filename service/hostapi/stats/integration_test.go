@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/gorilla/websocket"
-
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/gorilla/websocket"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/events"
 	"github.com/rancher/agent/service/hostapi/testutils"

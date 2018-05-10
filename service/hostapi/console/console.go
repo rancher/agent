@@ -7,8 +7,7 @@ import (
 	"net"
 	"net/url"
 
-	log "github.com/Sirupsen/logrus"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/auth"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
@@ -23,7 +22,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	defer backend.SignalHandlerClosed(key, response)
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "url": initialMessage}).Error("Couldn't parse url.")
+		log.Errorf("Couldn't parse url. url=%v error=%v", initialMessage, err)
 		return
 	}
 	tokenString := requestURL.Query().Get("token")
@@ -38,7 +37,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 	socketLoc := fmt.Sprintf(socketLocFmt, container)
 	conn, err := net.Dial("unix", socketLoc)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Couldn't dial VM socket [%v].", socketLoc)
+		log.Errorf("Couldn't dial VM socket [%v]. error=%v", socketLoc, err)
 		return
 	}
 
@@ -57,11 +56,11 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 			data, err := base64.StdEncoding.DecodeString(msg)
 
 			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Error decoding message.")
+				log.Errorf("Error decoding message. error=%v", err)
 				return
 			}
 			if _, err := conn.Write(data); err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Error write message.")
+				log.Errorf("Error write message. error=%v", err)
 				return
 			}
 		}
@@ -81,7 +80,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 		}
 		if err != nil {
 			if err != io.EOF && !closed {
-				log.WithFields(log.Fields{"error": err}).Errorf("Error reading response.")
+				log.Errorf("Error reading response. error=%v", err)
 			}
 			return
 		}

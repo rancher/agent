@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/events"
 	"github.com/rancher/websocket-proxy/backend"
@@ -23,7 +23,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 
 	requestURL, err := url.Parse(initialMessage)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "message": initialMessage}).Error("Couldn't parse url from message.")
+		log.Errorf("Couldn't parse url from message. url=%v error=%v", initialMessage, err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 	}
 
 	if err != nil {
-		log.WithFields(log.Fields{"id": id, "error": err}).Error("Couldn't find container for id.")
+		log.Errorf("Couldn't find container for id=%v error=%v", id, err)
 		return
 	}
 
@@ -86,25 +86,25 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			response <- message
 		}
 		if err := scanner.Err(); err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Error with the container stat scanner.")
+			log.Errorf("Error with the container stat scanner. error=%v", err)
 		}
 	}(reader)
 	memLimit, err := getMemCapcity()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting memory capacity.")
+		log.Errorf("Error getting memory capacity. id=%v error=%v", id, err)
 		return
 	}
 	// get single container stats
 	if id != "" {
 		inspect, err := dclient.ContainerInspect(context.Background(), id)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Can not inspect containers")
+			log.Errorf("Can not inspect containers")
 			return
 		}
 		pid := inspect.State.Pid
 		statsReader, err := dclient.ContainerStats(context.Background(), id, true)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Can not get stats reader from docker")
+			log.Errorf("Can not get stats reader from docker")
 			return
 		}
 		defer statsReader.Body.Close()
@@ -112,7 +112,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			infos := []containerInfo{}
 			cInfo, err := getContainerStats(statsReader.Body, id, pid)
 			if err != nil {
-				log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
+				log.Errorf("Error getting container info. id=%v error=%v", id, err)
 				return
 			}
 			infos = append(infos, cInfo)
@@ -130,7 +130,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 	} else {
 		contList, err := dclient.ContainerList(context.Background(), types.ContainerListOptions{})
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("Can not list containers")
+			log.Errorf("Can not list containers error=%v", err)
 			return
 		}
 		readerMap := map[string]io.ReadCloser{}
@@ -139,12 +139,12 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			if _, ok := containerIds[cont.ID]; ok {
 				inspect, err := dclient.ContainerInspect(context.Background(), cont.ID)
 				if err != nil {
-					log.WithFields(log.Fields{"error": err}).Error("Can not inspect containers")
+					log.Errorf("Can not inspect containers error=%v", err)
 					return
 				}
 				statsReader, err := dclient.ContainerStats(context.Background(), cont.ID, true)
 				if err != nil {
-					log.WithFields(log.Fields{"error": err}).Error("Can not get stats reader from docker")
+					log.Errorf("Can not get stats reader from docker error=%v", err)
 					return
 				}
 				defer statsReader.Body.Close()
@@ -158,7 +158,7 @@ func (s *ContainerStatsHandler) Handle(key string, initialMessage string, incomi
 			for id, r := range readerMap {
 				cInfo, err := getContainerStats(r, id, pidMap[id])
 				if err != nil {
-					log.WithFields(log.Fields{"error": err, "id": id}).Error("Error getting container info.")
+					log.Errorf("Error getting container info. id=%v error=%v", id, err)
 					return
 				}
 				infos = append(infos, cInfo)

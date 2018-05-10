@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/go-rancher/v2"
 )
@@ -174,13 +174,13 @@ func downloadAPICrt() error {
 	defer file.Close()
 	response, err1 := http.Get(os.Getenv(cattleURLEnv) + "/scripts/api.crt")
 	if err1 != nil {
-		logrus.Error(fmt.Sprintf("Error while downloading error: %s", err1))
+		log.Error(fmt.Sprintf("Error while downloading error: %s", err1))
 		return err1
 	}
 	defer response.Body.Close()
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("Error while copy file: %s", err))
+		log.Error(fmt.Sprintf("Error while copy file: %s", err))
 		return err
 	}
 	return nil

@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"context"
-	"github.com/Sirupsen/logrus"
+
 	engineCli "github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 	"github.com/mitchellh/mapstructure"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -53,7 +54,7 @@ func (h *StorageHandler) ImageActivate(event *revents.Event, cli *client.Rancher
 	} else if !ok && err == nil {
 		return errors.New(constants.ImageActivateError + "failed to activate image")
 	}
-	logrus.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ResourceID, im.Name)
+	log.Infof("rancher id [%v]: Image with name [%v] has been activated", event.ResourceID, im.Name)
 	return imageStoragePoolMapReply(event, cli)
 }
 
@@ -81,7 +82,7 @@ func (h *StorageHandler) VolumeActivate(event *revents.Event, cli *client.Ranche
 			return err
 		}
 	}
-	logrus.Infof("rancher id [%v]: Volume with name [%v] has been activated", event.ResourceID, volume.Name)
+	log.Infof("rancher id [%v]: Volume with name [%v] has been activated", event.ResourceID, volume.Name)
 	return volumeStoragePoolMapReply(event, cli)
 }
 
@@ -118,6 +119,6 @@ func (h *StorageHandler) VolumeRemove(event *revents.Event, cli *client.RancherC
 			return err
 		}
 	}
-	logrus.Infof("rancher id [%v]: Volume with name [%v] has been removed", event.ResourceID, volume.Name)
+	log.Infof("rancher id [%v]: Volume with name [%v] has been removed", event.ResourceID, volume.Name)
 	return volumeStoragePoolMapReply(event, cli)
 }

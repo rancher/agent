@@ -13,8 +13,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-
+	"github.com/leodotcloud/log"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 )
@@ -35,15 +34,14 @@ type Handler struct {
 
 func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-chan string, response chan<- common.Message) {
 	defer backend.SignalHandlerClosed(key, response)
-	log := log.WithField("url", initialMessage)
 
 	message, err := readMessage(incomingMessages)
 	if err != nil {
-		log.WithField("error", err).Error("Invalid content")
+		log.Error("Invalid content url=%v error=%v", initialMessage, err)
 		return
 	}
 
-	log.Debugf("START %s: %#v", key, message)
+	log.Debugf("START %s: %#v url=%v", key, message, initialMessage)
 
 	if message.Hijack {
 		s.doHijack(message, key, incomingMessages, response)
@@ -55,7 +53,7 @@ func (s *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMessages <-chan string, response chan<- common.Message) {
 	req, err := http.NewRequest(message.Method, message.URL, nil)
 	if err != nil {
-		log.WithField("error", err).Error("Failed to create request")
+		log.Errorf("Failed to create request error=%v", err)
 		return
 	}
 	req.Host = message.Host
@@ -72,7 +70,7 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 
 	u, err := url.Parse(message.URL)
 	if err != nil {
-		log.WithField("error", err).Errorf("Failed to parse URL %s", message.URL)
+		log.Errorf("Failed to parse URL %s error=%v", message.URL, err)
 		return
 	}
 
@@ -85,7 +83,7 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 		conn, err = net.Dial("tcp", u.Host)
 	}
 	if err != nil {
-		log.WithField("error", err).Errorf("Failed to connect to %s", u.Host)
+		log.Errorf("Failed to connect to %s error=%v", u.Host, err)
 		return
 	}
 	defer conn.Close()
@@ -105,13 +103,13 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 	if content > 0 {
 		buf := make([]byte, content, content)
 		if c, err := reader.Read(buf); err != nil || int64(c) != content {
-			log.WithField("error", err).Errorf("Failed to read initial content for %s", u.Host)
+			log.Errorf("Failed to read initial content for %s error=%v", u.Host, err)
 		}
 		req.Body = ioutil.NopCloser(bytes.NewReader(buf))
 	}
 
 	if err := req.Write(conn); err != nil {
-		log.WithField("error", err).Errorf("Failed to write request to %s", u.Host)
+		log.Errorf("Failed to write request to %s error=%v", u.Host, err)
 		return
 	}
 
@@ -121,7 +119,7 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 	go func() {
 		defer wg.Done()
 		if _, err := io.Copy(conn, reader); err != nil {
-			log.WithField("error", err).Errorf("Failed to read request %s", u.Host)
+			log.Errorf("Failed to read request %s error=%v", u.Host, err)
 		}
 		reader.Close()
 
@@ -132,7 +130,7 @@ func (s *Handler) doHijack(message *common.HTTPMessage, key string, incomingMess
 	}()
 
 	if _, err := io.Copy(writer, conn); err != nil {
-		log.WithField("error", err).Infof("Failed to write response for %s", u.Host)
+		log.Errorf("Failed to write response for %s error=%v", u.Host, err)
 	}
 	writer.Close()
 
@@ -143,7 +141,7 @@ func setContentLength(req *http.Request) (int64, error) {
 	if lengthString := req.Header.Get("Content-Length"); lengthString != "" {
 		length, err := strconv.Atoi(lengthString)
 		if err != nil {
-			log.WithField("error", err).Errorf("Failed to parse length %s", lengthString)
+			log.Errorf("Failed to parse length %s error=%v", lengthString, err)
 			return 0, err
 		}
 		req.ContentLength = int64(length)
@@ -159,7 +157,7 @@ func (s *Handler) doHTTP(message *common.HTTPMessage, key string, incomingMessag
 		MessageKey: key,
 	})
 	if err != nil {
-		log.WithField("error", err).Error("Failed to create request")
+		log.Errorf("Failed to create request error=%v", err)
 		return
 	}
 	req.Host = message.Host
@@ -171,7 +169,7 @@ func (s *Handler) doHTTP(message *common.HTTPMessage, key string, incomingMessag
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.WithField("error", err).Error("Failed to make request")
+		log.Errorf("Failed to make request error=%v", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -191,12 +189,12 @@ func (s *Handler) doHTTP(message *common.HTTPMessage, key string, incomingMessag
 	// Make sure we write the response codes if the response buffer is 0 bytes but blocking.
 	// This happens with streaming logs a log
 	if err := httpWriter.writeMessage(); err != nil {
-		log.WithField("error", err).Error("Failed to write header")
+		log.Errorf("Failed to write header error=%v", err)
 		return
 	}
 
 	if _, err := io.Copy(httpWriter, resp.Body); err != nil {
-		log.WithField("error", err).Error("Failed to write body")
+		log.Errorf("Failed to write body error=%v", err)
 		return
 	}
 }

@@ -1,14 +1,15 @@
 package events
 
 import (
-	"github.com/Sirupsen/logrus"
+	"testing"
+	"time"
+
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
+	"github.com/leodotcloud/log"
 	rclient "github.com/rancher/go-rancher/client"
-	"testing"
-	"time"
 )
 
 func TestProcessDockerEvents(t *testing.T) {
@@ -41,7 +42,7 @@ func TestProcessDockerEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	logrus.Infof("%+v", preexistRunning)
+	log.Infof("%+v", preexistRunning)
 	defer func() {
 		if err := dockerClient.ContainerRemove(context.Background(), preexistRunning.ID, types.ContainerRemoveOptions{
 			Force:         true,

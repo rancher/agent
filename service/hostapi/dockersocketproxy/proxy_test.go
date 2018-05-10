@@ -11,13 +11,11 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/gorilla/websocket"
-	"gopkg.in/check.v1"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/gorilla/websocket"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/events"
 	"github.com/rancher/agent/service/hostapi/testutils"
@@ -25,6 +23,7 @@ import (
 	"github.com/rancher/websocket-proxy/proxy"
 	wsp_utils "github.com/rancher/websocket-proxy/testutils"
 	"golang.org/x/net/context"
+	"gopkg.in/check.v1"
 )
 
 func Test(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/websocket-proxy/common"
 )
 
@@ -33,7 +33,7 @@ func (h *HTTPWriter) writeMessage() error {
 		Type: common.Body,
 		Body: string(bytes),
 	}
-	logrus.Debugf("HTTP WRITER %s: %#v", h.MessageKey, m)
+	log.Debugf("HTTP WRITER %s: %#v", h.MessageKey, m)
 	h.Chan <- m
 	h.Message = common.HTTPMessage{}
 	return nil
@@ -52,7 +52,7 @@ type HTTPReader struct {
 }
 
 func (h *HTTPReader) Close() error {
-	logrus.Debugf("HTTP READER CLOSE %s", h.MessageKey)
+	log.Debugf("HTTP READER CLOSE %s", h.MessageKey)
 	return nil
 }
 
@@ -67,17 +67,17 @@ func (h *HTTPReader) Read(bytes []byte) (int, error) {
 	h.Buffered = h.Buffered[count:]
 
 	if h.EOF {
-		logrus.Debugf("HTTP READER RETURN EOF %s", h.MessageKey)
+		log.Debugf("HTTP READER RETURN EOF %s", h.MessageKey)
 		return count, io.EOF
 	}
-	logrus.Debugf("HTTP READER RETURN COUNT %s %d %d: %s", h.MessageKey, count, len(h.Buffered), bytes[:count])
+	log.Debugf("HTTP READER RETURN COUNT %s %d %d: %s", h.MessageKey, count, len(h.Buffered), bytes[:count])
 	return count, nil
 }
 
 func (h *HTTPReader) read() error {
 	str, ok := <-h.Chan
 	if !ok {
-		logrus.Debugf("HTTP READER CHANNEL EOF %s", h.MessageKey)
+		log.Debugf("HTTP READER CHANNEL EOF %s", h.MessageKey)
 		return io.EOF
 	}
 
@@ -86,7 +86,7 @@ func (h *HTTPReader) read() error {
 		return err
 	}
 
-	logrus.Debugf("HTTP READER MESSAGE %s %s", h.MessageKey, message.Body)
+	log.Debugf("HTTP READER MESSAGE %s %s", h.MessageKey, message.Body)
 
 	h.Buffered = message.Body
 	h.EOF = message.EOF

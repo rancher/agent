@@ -10,8 +10,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
+	"github.com/leodotcloud/log"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
@@ -66,7 +66,7 @@ func lookUpIP(inspect types.ContainerJSON) (string, error) {
 			return ip, err
 		}
 
-		logrus.Debugf("Sleeping %v (%v remaining) waiting for IP on %s", initTime, endTime.Sub(time.Now()), inspect.ID)
+		log.Debugf("Sleeping %v (%v remaining) waiting for IP on %s", initTime, endTime.Sub(time.Now()), inspect.ID)
 		time.Sleep(initTime)
 		initTime = initTime * 2
 		if initTime.Seconds() > maxTime.Seconds() {
@@ -87,14 +87,14 @@ func getIPFromStateFile(inspect types.ContainerJSON) (string, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logrus.Warnf("Error reading cni state file %v: %v. Falling back to container inspection logic.", filename, err)
+			log.Warnf("Error reading cni state file %v: %v. Falling back to container inspection logic.", filename, err)
 		}
 		return "", nil
 	}
 
 	var state cniState
 	if err := json.Unmarshal(data, &state); err != nil {
-		logrus.Warnf("Error unmarshalling cni state data %s: %v. Falling back to container inspection logic.", data, err)
+		log.Warnf("Error unmarshalling cni state data %s: %v. Falling back to container inspection logic.", data, err)
 		return "", nil
 	}
 

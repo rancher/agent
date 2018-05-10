@@ -3,26 +3,24 @@ package logs
 import (
 	"net/http"
 	// "strconv"
+	"io"
 	"strings"
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	docker "github.com/docker/docker/client"
-	"github.com/gorilla/websocket"
-	"gopkg.in/check.v1"
-
-	"github.com/rancher/websocket-proxy/backend"
-	"github.com/rancher/websocket-proxy/proxy"
-	wsp_utils "github.com/rancher/websocket-proxy/testutils"
-
 	"github.com/docker/distribution/context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	docker "github.com/docker/docker/client"
+	"github.com/gorilla/websocket"
+	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/events"
 	"github.com/rancher/agent/service/hostapi/testutils"
-	"io"
+	"github.com/rancher/websocket-proxy/backend"
+	"github.com/rancher/websocket-proxy/proxy"
+	wsp_utils "github.com/rancher/websocket-proxy/testutils"
+	"gopkg.in/check.v1"
 )
 
 var privateKey interface{}
