@@ -180,6 +180,12 @@ func DoInstanceDeactivate(instance model.Instance, client *client.Client, timeou
 	if err != nil {
 		return errors.Wrap(err, constants.DoInstanceDeactivateError+"failed to get container")
 	}
+
+	if utils.IsRancherAgent(container) {
+		log.Warnf("Received event to stop rancher-agent container with id [%v]. Dropping event.", container.ID)
+		return nil
+	}
+
 	client.ContainerStop(context.Background(), container.ID, &t)
 	container, err = utils.GetContainer(client, instance, false)
 	if err != nil {
@@ -258,6 +264,12 @@ func DoInstanceRemove(instance model.Instance, dockerClient *client.Client) erro
 		}
 		return errors.Wrap(err, constants.DoInstanceRemoveError+"failed to get container")
 	}
+
+	if utils.IsRancherAgent(container) {
+		log.Warnf("Received event to delete rancher-agent container with id [%v].", container.ID)
+		return nil
+	}
+
 	if err := utils.RemoveContainer(dockerClient, container.ID); err != nil {
 		return errors.Wrap(err, constants.DoInstanceRemoveError+"failed to remove container")
 	}
