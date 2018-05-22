@@ -2,18 +2,6 @@ package utils
 
 import (
 	"fmt"
-	engineCli "github.com/docker/docker/client"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
-	"github.com/rancher/agent/core/progress"
-	"github.com/rancher/agent/model"
-	"github.com/rancher/agent/utilities/constants"
-	revents "github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/v2"
-	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -24,6 +12,18 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	engineCli "github.com/docker/docker/client"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
+	"github.com/rancher/agent/core/progress"
+	"github.com/rancher/agent/model"
+	"github.com/rancher/agent/utilities/constants"
+	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/go-rancher/v2"
+	"golang.org/x/net/context"
 )
 
 func GetInstanceAndHost(event *revents.Event) (model.Instance, model.Host, error) {
@@ -264,6 +264,10 @@ func ParseRepoTag(name string) string {
 		name = name[7:]
 	}
 	return name
+}
+
+func IsRancherAgent(c types.Container) bool {
+	return len(c.Names) > 0 && c.Names[0] == "/rancher-agent"
 }
 
 func GetContainer(client *engineCli.Client, instance model.Instance, byAgent bool) (types.Container, error) {

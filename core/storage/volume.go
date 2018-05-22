@@ -168,6 +168,12 @@ func DoVolumeRemove(volume model.Volume, storagePool model.StoragePool, progress
 		if container.ID == "" {
 			return nil
 		}
+
+		if utils.IsRancherAgent(container) {
+			log.Warnf("Received event to delete root volume for rancher-agent container with id [%v]. Dropping event for resource [%v].", container.ID, resourceID)
+			return nil
+		}
+
 		errorList := []error{}
 		for i := 0; i < 3; i++ {
 			if err := utils.RemoveContainer(dockerClient, container.ID); err != nil && !engineCli.IsErrContainerNotFound(err) {
