@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/docker/go-connections/sockets"
 	"github.com/pkg/errors"
@@ -16,12 +18,39 @@ import (
 	"github.com/rancher/log"
 )
 
-func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {
-	transport := new(http.Transport)
-	sockets.ConfigureTransport(transport, "unix", rancherStorageSockPath(volume))
-	client := &http.Client{
-		Transport: transport,
+var transportMap = &transportStore{
+	clientMap: make(map[string]*http.Client),
+	lock:      sync.RWMutex{},
+}
+
+type transportStore struct {
+	clientMap map[string]*http.Client
+	lock      sync.RWMutex
+}
+
+func (t *transportStore) add(driver string) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	if _, ok := t.clientMap[driver]; !ok {
+		transport := new(http.Transport)
+		sockets.ConfigureTransport(transport, "unix", filepath.Join(rancherSockDir, driver+".sock"))
+		t.clientMap[driver] = &http.Client{
+			Transport: transport,
+		}
 	}
+}
+
+func (t *transportStore) get(driver string) *http.Client {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	return t.clientMap[driver]
+}
+
+func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {
+	if transportMap.get(volume.Data.Fields.Driver) == nil {
+		transportMap.add(volume.Data.Fields.Driver)
+	}
+	client := transportMap.get(volume.Data.Fields.Driver)
 	url := fmt.Sprintf("http://volume-plugin/VolumeDriver.%v", action)
 
 	bs, err := json.Marshal(payload)
