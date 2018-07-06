@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rancher/log"
 	"github.com/rancher/norman/types/slice"
-	"github.com/sirupsen/logrus"
 )
 
 func TokenAndURL() (string, string, error) {
@@ -29,10 +29,10 @@ func Params() map[string]interface{} {
 	for k, v := range params {
 		if m, ok := v.(map[string]string); ok {
 			for k, v := range m {
-				logrus.Infof("Option %s=%s", k, v)
+				log.Infof("Option %s=%s", k, v)
 			}
 		} else {
-			logrus.Infof("Option %s=%v", k, v)
+			log.Infof("Option %s=%v", k, v)
 		}
 	}
 
