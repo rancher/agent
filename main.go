@@ -4,15 +4,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 
 	"github.com/rancher/agent/cluster"
 	"github.com/rancher/agent/node"
+	"github.com/rancher/log"
+	logserver "github.com/rancher/log/server"
 	"github.com/rancher/rancher/pkg/remotedialer"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -21,12 +21,13 @@ const (
 )
 
 func main() {
+	logserver.StartServerWithDefaults()
 	if os.Getenv("CATTLE_DEBUG") == "true" || os.Getenv("RANCHER_DEBUG") == "true" {
-		logrus.SetLevel(logrus.DebugLevel)
+		log.SetLevelString("debug")
 	}
 
 	if err := run(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("error=%s", err)
 	}
 }
 
@@ -71,7 +72,7 @@ func run() error {
 	}
 
 	wsURL := fmt.Sprintf("wss://%s/v3/connect", serverURL.Host)
-	logrus.Infof("Connecting to %s with token %s", wsURL, token)
+	log.Infof("Connecting to %s with token %s", wsURL, token)
 	remotedialer.ClientConnect(wsURL, http.Header(headers), nil, func(proto, address string) bool {
 		switch proto {
 		case "tcp":
