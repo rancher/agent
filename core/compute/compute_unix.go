@@ -16,7 +16,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/core/storage"
@@ -24,6 +23,7 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	dutils "github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/log"
 )
 
 var (

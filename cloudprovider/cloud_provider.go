@@ -6,9 +6,9 @@ import (
 	"path"
 	"time"
 
-	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/log"
 )
 
 const (

@@ -3,9 +3,9 @@ package marshaller
 import (
 	"encoding/json"
 
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/log"
 )
 
 func FromString(rawstring string) map[string]interface{} {

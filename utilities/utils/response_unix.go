@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/leodotcloud/log"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/log"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 )

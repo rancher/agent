@@ -4,12 +4,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/handlers"
 	"github.com/rancher/agent/service/hostapi"
 	"github.com/rancher/agent/utilities/config"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/log"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {

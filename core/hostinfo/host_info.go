@@ -1,10 +1,10 @@
 package hostinfo
 
 import (
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/log"
 )
 
 type Collector interface {

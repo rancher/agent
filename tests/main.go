@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/tests/framework"
+	"github.com/rancher/log"
 	"net/http"
 )
 

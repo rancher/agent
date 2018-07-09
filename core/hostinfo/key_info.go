@@ -9,9 +9,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/log"
 )
 
 type KeyCollector struct {

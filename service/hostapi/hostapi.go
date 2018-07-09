@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/service/hostapi/config"
 	"github.com/rancher/agent/service/hostapi/console"
@@ -20,6 +19,7 @@ import (
 	"github.com/rancher/agent/service/hostapi/stats"
 	"github.com/rancher/agent/service/hostapi/util"
 	rclient "github.com/rancher/go-rancher/client"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/backend"
 )
 

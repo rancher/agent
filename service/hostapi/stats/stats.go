@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/events"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 	"golang.org/x/net/context"

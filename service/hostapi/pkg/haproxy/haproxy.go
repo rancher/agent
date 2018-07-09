@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 )
 
 type Stat map[string]string

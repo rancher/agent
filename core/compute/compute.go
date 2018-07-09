@@ -9,7 +9,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/image"
 	"github.com/rancher/agent/core/progress"
@@ -17,6 +16,7 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	dutils "github.com/rancher/agent/utilities/docker"
 	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/log"
 	"golang.org/x/net/context"
 )
 

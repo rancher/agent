@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/leodotcloud/log"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
+	"github.com/rancher/log"
 )
 
 func URL() string {

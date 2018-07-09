@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/leodotcloud/log"
-	logserver "github.com/leodotcloud/log/server"
 	"github.com/rancher/agent/cloudprovider"
 	"github.com/rancher/agent/events"
 	"github.com/rancher/agent/register"
 	"github.com/rancher/agent/utilities/config"
+	"github.com/rancher/log"
+	logserver "github.com/rancher/log/server"
 
 	_ "github.com/rancher/agent/cloudprovider/aliyun"
 	_ "github.com/rancher/agent/cloudprovider/aws"

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/log"
 )
 
 const (

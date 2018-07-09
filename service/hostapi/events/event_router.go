@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/client"
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 )
 
 const workerTimeout = 60 * time.Second

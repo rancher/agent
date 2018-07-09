@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 )
 
 func DownloadFile(url string, dest string, reporthook interface{}, checksum string) (string, error) {

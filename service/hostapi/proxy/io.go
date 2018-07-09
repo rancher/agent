@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/common"
 )
 
