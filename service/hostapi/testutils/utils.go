@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/proxy"
 )
 

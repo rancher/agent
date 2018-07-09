@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 )

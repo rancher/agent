@@ -9,7 +9,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/hostinfo"
 	"github.com/rancher/agent/model"
@@ -17,6 +16,7 @@ import (
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
+	"github.com/rancher/log"
 	"github.com/shirou/gopsutil/disk"
 	"golang.org/x/net/context"
 )

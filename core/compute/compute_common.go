@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/image"
 	"github.com/rancher/agent/core/progress"
@@ -23,6 +22,7 @@ import (
 	configuration "github.com/rancher/agent/utilities/config"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/log"
 	"golang.org/x/net/context"
 )
 

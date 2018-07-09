@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/service/hostapi/config"
+	"github.com/rancher/log"
 	"github.com/rancher/websocket-proxy/backend"
 	"github.com/rancher/websocket-proxy/common"
 )

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	engineCli "github.com/docker/docker/client"
-	"github.com/leodotcloud/log"
 	"github.com/mitchellh/mapstructure"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -15,6 +14,7 @@ import (
 	"github.com/rancher/agent/utilities/utils"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/log"
 )
 
 type StorageHandler struct {

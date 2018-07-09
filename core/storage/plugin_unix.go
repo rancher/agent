@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/docker/go-connections/sockets"
-	"github.com/leodotcloud/log"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/model"
+	"github.com/rancher/log"
 )
 
 func CallRancherStorageVolumePlugin(volume model.Volume, action string, payload interface{}) (Response, error) {

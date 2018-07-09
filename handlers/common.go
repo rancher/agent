@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/leodotcloud/log"
 	goUUID "github.com/nu7hatch/gouuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -15,6 +14,7 @@ import (
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/log"
 	"golang.org/x/net/context"
 )
 

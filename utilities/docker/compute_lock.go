@@ -3,9 +3,9 @@ package docker
 import (
 	"sync"
 
-	"github.com/leodotcloud/log"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/log"
 )
 
 var (

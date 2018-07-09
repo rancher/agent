@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/leodotcloud/log"
+	"github.com/rancher/log"
 )
 
 func NewServer() *mux.Router {

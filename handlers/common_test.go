@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/leodotcloud/log"
 	"github.com/rancher/agent/utilities/docker"
 	revents "github.com/rancher/event-subscriber/events"
 	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/log"
 	"golang.org/x/net/context"
 	"gopkg.in/check.v1"
 )

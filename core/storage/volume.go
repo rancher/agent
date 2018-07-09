@@ -9,13 +9,13 @@ import (
 
 	"github.com/docker/docker/api/types"
 	engineCli "github.com/docker/docker/client"
-	"github.com/leodotcloud/log"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rancher/agent/core/progress"
 	"github.com/rancher/agent/model"
 	"github.com/rancher/agent/utilities/constants"
 	"github.com/rancher/agent/utilities/utils"
+	"github.com/rancher/log"
 	"golang.org/x/net/context"
 )
 
