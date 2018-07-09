@@ -2,8 +2,8 @@ import:
 - package: github.com/Sirupsen/logrus
   version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
 
-- package: github.com/leodotcloud/log
-  version: f509355
+- package: github.com/rancher/log
+  version: v0.1.0-u2
 
 - package: github.com/rancher/event-subscriber
   version: cdcd1659ec46128cf3118ae6c56ade83b220ff79
