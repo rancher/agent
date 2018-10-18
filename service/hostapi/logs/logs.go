@@ -41,32 +41,13 @@ func (l *Handler) Handle(key string, initialMessage string, incomingMessages <-c
 
 	logs := token.Claims["logs"].(map[string]interface{})
 	container := logs["Container"].(string)
-	follow, found := logs["Follow"].(bool)
 
-	if !found {
-		follow = true
-	}
-
-	tailTemp, found := logs["Lines"].(int)
-	var tail string
-	if found {
-		tail = strconv.Itoa(int(tailTemp))
-	} else {
-		tail = "100"
-	}
+	logOpts := processLogOptions(logs)
 
 	client, err := events.NewDockerClient()
 	if err != nil {
 		log.Errorf("Couldn't get docker client. error=%v", err)
 		return
-	}
-
-	logOpts := types.ContainerLogsOptions{
-		Follow:     follow,
-		ShowStdout: true,
-		ShowStderr: true,
-		Timestamps: true,
-		Tail:       tail,
 	}
 
 	ctx, cancelFnc := context.WithCancel(context.Background())
@@ -124,4 +105,44 @@ func processData(data []byte, key string, response chan<- common.Message) {
 		Body: body,
 	}
 	response <- message
+}
+
+func processLogOptions(logs map[string]interface{}) types.ContainerLogsOptions {
+	logOpts := types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+	}
+
+	follow, found := logs["Follow"].(bool)
+	if !found {
+		follow = true
+	}
+
+	logOpts.Follow = follow
+
+	tailTemp, found := logs["Lines"].(float64)
+	var tail string
+	if found {
+		tail = strconv.Itoa(int(tailTemp))
+	} else {
+		tail = "100"
+	}
+
+	logOpts.Tail = tail
+
+	timestamps, found := logs["Timestamps"].(bool)
+	if !found {
+		timestamps = true
+	}
+
+	logOpts.Timestamps = timestamps
+
+	since, found := logs["Since"].(string)
+	if !found {
+		since = ""
+	}
+
+	logOpts.Since = since
+
+	return logOpts
 }
