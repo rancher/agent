@@ -1,10 +1,17 @@
 #!/bin/bash
 set -e
-
+set -x 
 source $(dirname $0)/version
 
 cd $(dirname $0)/..
 
+# GoLang uses arm64, instead of aarch64 :(
+if [ "${GOARCH}" == "aarch64" ]; then
+  GOARCH=arm64
+  export CGO_ENABLED=1
+  export CC=aarch64-linux-gnu-gcc
+fi
+
 mkdir -p bin
 [ "$(uname)" != "Darwin" ] && LINKFLAGS="-linkmode external -extldflags -static -s"
-CGO_ENABLED=0 go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/agent
+go build -ldflags "-X main.VERSION=$VERSION $LINKFLAGS" -o bin/agent-${ARCH}

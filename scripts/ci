@@ -3,7 +3,8 @@ set -e
 
 cd $(dirname $0)
 
-./build
+GOOS=linux GOARCH=aarch64 ARCH=aarch64 ./build
+GOOS=linux GOARCH=amd64 ARCH=amd64 ./build
 ./test
 ./validate
 ARCH=aarch64 ./package

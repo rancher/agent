@@ -15,7 +15,7 @@ if echo $TAG | grep -q dirty; then
     TAG=dev${SUFFIX}
 fi
 
-cp ../bin/agent .
+cp ../bin/agent-${ARCH} ./agent
 
 IMAGE=${REPO}/agent:${TAG}
 docker build --build-arg VERSION=${TAG} -t ${IMAGE} -f ${ARCH}/Dockerfile .
