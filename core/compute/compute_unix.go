@@ -428,7 +428,7 @@ func setupDeviceOptions(hostConfig *container.HostConfig, instance model.Instanc
 			// ignore this error because if we can't find the device we just skip that device
 			dev, _ = hostinfo.GetDefaultDisk(infoData)
 			if dev == "" {
-				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
+				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %v", options))
 				continue
 			}
 		}
