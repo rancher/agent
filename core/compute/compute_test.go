@@ -199,7 +199,7 @@ func setupDeviceOptionsTest(hostConfig *container.HostConfig, instance *model.In
 		if dev == "DEFAULT_DISK" {
 			dev = mockDevice
 			if dev == "" {
-				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %v", options))
+				log.Warn(fmt.Sprintf("Couldn't find default device. Not setting device options: %s", options))
 				continue
 			}
 		}
