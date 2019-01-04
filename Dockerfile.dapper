@@ -1,7 +1,8 @@
-FROM golang:1.10.3
+FROM golang:1.9.0
 RUN apt-get update && \
     apt-get install -y uuid-runtime iptables zip
-RUN go get github.com/rancher/trash && go get golang.org/x/lint/golint
+RUN go get github.com/rancher/trash
+RUN go get golang.org/x/lint/golint
 ARG DOCKER_VERSION=1.10.3
 RUN if [ "${DOCKER_VERSION}" = "1.10.3" ]; then \
         curl -sL https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION} > /usr/bin/docker && \
