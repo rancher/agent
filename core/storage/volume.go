@@ -59,6 +59,7 @@ var rancherDrivers = map[string]bool{
 	"rancher-efs":       true,
 	"rancher-secrets":   true,
 	"secrets-bridge-v2": true,
+	"rancher-rbd":       true,
 }
 
 func VolumeActivateDocker(volume model.Volume, storagePool model.StoragePool, progress *progress.Progress, client *engineCli.Client) error {
